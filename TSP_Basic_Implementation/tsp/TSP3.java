@@ -3,8 +3,8 @@ package tsp;
 import java.util.Collection;
 import java.util.Iterator;
 
-public class TSP2 extends TemplateTSP {
-
+public class TSP3 extends TemplateTSP {
+//il semble que cette version soit moins performante que TSP2 (avec IteratorSeq)
 
 	@Override
 	protected int bound(Integer sommetCourant, Collection<Integer> nonVus) {
@@ -27,7 +27,7 @@ public class TSP2 extends TemplateTSP {
 
 	@Override
 	protected Iterator<Integer> iterator(Integer sommetCrt, Collection<Integer> nonVus, Graphe g) {
-		return new IteratorSeq(nonVus, sommetCrt, g);
+		return new IteratorSeqClosest(nonVus, sommetCrt, g);
 	}
 
 }
