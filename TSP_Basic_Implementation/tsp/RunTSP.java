@@ -3,7 +3,7 @@ package tsp;
 public class RunTSP {
 	
 	public static void main(String[] args) {
-		TSP tsp = new TSP1();
+		TSP tsp = new TSP2();
 		for (int nbSommets = 8; nbSommets <= 16; nbSommets += 2){
 			System.out.println("Graphes de "+nbSommets+" sommets :");
 			Graphe g = new GrapheComplet(nbSommets);
