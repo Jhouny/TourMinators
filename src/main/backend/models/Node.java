@@ -1,6 +1,6 @@
 package backend.models;
 
-class Node {
+public class Node {
 
     long id;
     double latitude;

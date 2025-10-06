@@ -1,10 +1,12 @@
 package backend; 
+import backend.models.Node;
+import backend.models.Edge;
+
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
 import java.io.File;
 import java.util.*;
-import backend.models.Node;
-import backend.models.Edge;
+
 
 
 public class XMLParser {
@@ -35,8 +37,9 @@ public class XMLParser {
             Element e = (Element) edgeList.item(i);
             long origin = Long.parseLong(e.getAttribute("origine"));
             long dest = Long.parseLong(e.getAttribute("destination"));
+            float length = Float.parseFloat(e.getAttribute("longueur"));
             String name = e.getAttribute("nomRue");
-            edges.add(new Edge(origin, dest, name));
+            edges.add(new Edge(origin, dest, length, name));
         }
         return edges;
     }
