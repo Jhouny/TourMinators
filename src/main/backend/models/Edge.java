@@ -1,6 +1,6 @@
 package backend.models;
 
-class Edge {
+public class Edge {
 
     long originId;
     long destinationId;

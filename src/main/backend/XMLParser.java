@@ -1,10 +1,12 @@
 package backend; 
+import backend.models.Node;
+import backend.models.Edge;
+
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
 import java.io.File;
 import java.util.*;
-import backend.models.Node;
-import backend.models.Edge;
+
 
 
 public class XMLParser {
