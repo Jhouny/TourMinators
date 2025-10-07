@@ -4,6 +4,13 @@ public class RunTSP {
 	
 	public static void main(String[] args) {
 		TSP tsp;
+		if (args.length != 1) {
+			System.out.println("Usage : java RunTSP <1|2|3>");
+			System.out.println("1 : TSP1 (plus proche voisin)");
+			System.out.println("2 : TSP2 (plus proche voisin ameliore)");
+			System.out.println("3 : TSP3 (recuit simule)");
+			return;
+		}
 		switch (args[0]) {
 			case "1":
 				tsp = new TSP1();
