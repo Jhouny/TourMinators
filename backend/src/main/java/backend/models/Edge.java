@@ -14,4 +14,14 @@ public class Edge {
         this.streetName = streetName;
         
     }
+
+    @Override
+    public String toString() {
+        return "Edge{" +
+                "originId=" + originId +
+                ", destinationId=" + destinationId +
+                ", length=" + length +
+                ", streetName='" + streetName + '\'' +
+                '}';
+    }
 }
