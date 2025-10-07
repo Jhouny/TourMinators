@@ -20,4 +20,12 @@ public class Node {
                 ", longitude=" + longitude +
                 '}';
     }
+
+    public double getLat() {
+        return latitude;
+    }
+
+    public double getLong() {
+        return longitude;
+    }
 }

@@ -19,15 +19,15 @@ public abstract class TemplateTSP_PnD implements TSP_PnD {
 		this.tpsLimite = tpsLimite;
 		this.g = g;
 		meilleureSolution = new Integer[g.getNbSommets()];
-		Collection<Integer> nonVus = new ArrayList<Integer>(g.getNbSommets()-1);
+		Collection<long> nonVus = new ArrayList<long>(g.getNbSommets()-1);
 		for (int i=1; i<g.getNbSommets(); i++) nonVus.add(i);
-		Collection<Integer> vus = new ArrayList<Integer>(g.getNbSommets());
+		Collection<long> vus = new ArrayList<long>(g.getNbSommets());
 		vus.add(0); // le premier sommet visite est 0
 		coutMeilleureSolution = Integer.MAX_VALUE;
 		branchAndBound(0, nonVus, vus, 0);
 	}
 	
-	public Integer getSolution(int i){
+	public long getSolution(int i){
 		if (g != null && i>=0 && i<g.getNbSommets())
 			return meilleureSolution[i];
 		return -1;
