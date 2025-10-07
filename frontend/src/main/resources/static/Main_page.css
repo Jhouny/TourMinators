@@ -1,0 +1,70 @@
+/* Main_page.css */
+
+/* Reset et styles de base */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-color: #F6F9F7; /* couleur douce pour le fond */
+}
+
+/* Conteneur principal */
+.main_container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Bandeau supérieur */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 10px 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Logo */
+.header img {
+    height: 50px; /* ajuster selon ton logo */
+}
+
+/* Boutons du bandeau */
+.header .buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.header button {
+    background-color: #50D76B; /* vert clair */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.header button:hover {
+    background-color: #39A758; /* vert légèrement plus foncé au survol */
+}
+
+/* Titre principal (optionnel si tu veux le garder en dehors du bandeau) */
+.main_title {
+    text-align: center;
+    margin: 20px 0;
+    color: #0B3213; /* vert foncé */
+}
+
+/* Carte */
+.map {
+    flex: 1; /* prend tout l’espace restant */
+    margin: 0 auto;
+    width: 90%;
+    max-width: 1200px;
+    border: 2px solid #0B3213;
+    border-radius: 8px;
+}
