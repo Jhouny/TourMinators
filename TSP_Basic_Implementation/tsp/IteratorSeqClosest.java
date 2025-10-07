@@ -2,12 +2,14 @@ package tsp;
 
 import java.util.Collection;
 import java.util.Iterator;
+import static java.lang.Math.max;
 
 public class IteratorSeqClosest implements Iterator<Integer> {
 
 	private Integer[] candidats;
 	private int nbCandidats;
 	private Graphe g;
+	private int nbIterated = Integer.MAX_VALUE;
 
 	/**
 	 * Cree un iterateur pour iterer sur l'ensemble des sommets de nonVus qui sont successeurs de sommetCrt dans le graphe g,
@@ -36,7 +38,7 @@ public class IteratorSeqClosest implements Iterator<Integer> {
 	public Integer next() {
 		int minLength = Integer.MAX_VALUE;
 		int minIndex = -1;
-		for (int i=0; i<nbCandidats; i++){
+		for (int i= max(nbCandidats-nbIterated, 0); i<nbCandidats; i++){
 			if (g.getCout(candidats[i],0) < minLength){
 				minLength = g.getCout(candidats[i],0);
 				minIndex = i;
