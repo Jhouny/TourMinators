@@ -11,4 +11,12 @@ public class Node {
         this.latitude = latitude;
         this.longitude = longitude;
     }
+
+    public double getLat() {
+        return latitude;
+    }
+
+    public double getLong() {
+        return longitude;
+    }
 }

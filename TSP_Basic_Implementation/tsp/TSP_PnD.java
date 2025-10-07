@@ -1,6 +1,6 @@
 package tsp;
 
-import backend.models.Edge;
+import backend.models.Node;
 
 public interface TSP_PnD {
 	
@@ -17,7 +17,7 @@ public interface TSP_PnD {
 	 * @return le ieme sommet visite dans la solution calculee par <code>chercheSolution</code> 
 	 * (-1 si <code>chercheSolution</code> n'a pas encore ete appele, ou si i < 0 ou i >= g.getNbSommets())
 	 */
-	public Edge getSolution(int i);
+	public Node getSolution(int i);
 	
 	/** 
 	 * @return la somme des couts des arcs de la solution calculee par <code>chercheSolution</code> 
