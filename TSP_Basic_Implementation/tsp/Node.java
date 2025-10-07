@@ -1,4 +1,4 @@
-package backend.models;
+package tsp;
 
 public class Node {
 

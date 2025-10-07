@@ -1,13 +1,12 @@
-package tsp;
+package tsp_pnd;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import backend.models.Edge;
 
-public abstract class TemplateTSP_PnD implements TSP_PnD {
+public abstract class TemplateTSP implements TSP {
 	
-	private Edge[] meilleureSolution;
+	private long[] meilleureSolution;
 	protected Graphe g;
 	private int coutMeilleureSolution;
 	private int tpsLimite;
@@ -18,10 +17,12 @@ public abstract class TemplateTSP_PnD implements TSP_PnD {
 		tpsDebut = System.currentTimeMillis();	
 		this.tpsLimite = tpsLimite;
 		this.g = g;
-		meilleureSolution = new Integer[g.getNbSommets()];
-		Collection<long> nonVus = new ArrayList<long>(g.getNbSommets()-1);
-		for (int i=1; i<g.getNbSommets(); i++) nonVus.add(i);
-		Collection<long> vus = new ArrayList<long>(g.getNbSommets());
+		meilleureSolution = new long[g.getNbSommets()];
+		Collection<Long> nonVus = new ArrayList<Long>(g.getNbSommets()-1);
+		//todo : mettre tous les sommets dans nonVus
+		//nonVus = g.
+		//for (int i=1; i<g.getNbSommets(); i++) nonVus.add(i);
+		Collection<Long> vus = new ArrayList<Long>(g.getNbSommets());
 		vus.add(0); // le premier sommet visite est 0
 		coutMeilleureSolution = Integer.MAX_VALUE;
 		branchAndBound(0, nonVus, vus, 0);
@@ -46,7 +47,7 @@ public abstract class TemplateTSP_PnD implements TSP_PnD {
 	 * @return une borne inferieure du cout des chemins de <code>g</code> partant de <code>sommetCourant</code>, visitant 
 	 * tous les sommets de <code>nonVus</code> exactement une fois, puis retournant sur le sommet <code>0</code>.
 	 */
-	protected abstract int bound(Integer sommetCourant, Collection<Integer> nonVus);
+	protected abstract int bound(Long sommetCourant, Collection<Long> nonVus);
 	
 	/**
 	 * Methode devant etre redefinie par les sous-classes de TemplateTSP
@@ -55,7 +56,7 @@ public abstract class TemplateTSP_PnD implements TSP_PnD {
 	 * @param g
 	 * @return un iterateur permettant d'iterer sur tous les sommets de <code>nonVus</code> qui sont successeurs de <code>sommetCourant</code>
 	 */
-	protected abstract Iterator<Integer> iterator(Integer sommetCrt, Collection<Integer> nonVus, Graphe g);
+	protected abstract Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graphe g);
 	
 	/**
 	 * Methode definissant le patron (template) d'une resolution par separation et evaluation (branch and bound) du TSP pour le graphe <code>g</code>.
@@ -64,7 +65,7 @@ public abstract class TemplateTSP_PnD implements TSP_PnD {
 	 * @param vus la liste des sommets deja visites (y compris sommetCrt)
 	 * @param coutVus la somme des couts des arcs du chemin passant par tous les sommets de vus dans l'ordre ou ils ont ete visites
 	 */	
-	private void branchAndBound(int sommetCrt, Collection<Integer> nonVus, Collection<Integer> vus, int coutVus){
+	private void branchAndBound(long sommetCrt, Collection<Long> nonVus, Collection<Long> vus, int coutVus){
 		if (System.currentTimeMillis() - tpsDebut > tpsLimite) return;
 	    if (nonVus.size() == 0){ // tous les sommets ont ete visites
 	    	if (g.estArc(sommetCrt,0)){ // on peut retourner au sommet de depart (0)
@@ -74,9 +75,9 @@ public abstract class TemplateTSP_PnD implements TSP_PnD {
 	    		}
 	    	}
 	    } else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
-	        Iterator<Integer> it = iterator(sommetCrt, nonVus, g);
+	        Iterator<Long> it = iterator(sommetCrt, nonVus, g);
 	        while (it.hasNext()){
-	        	Integer prochainSommet = it.next();
+	        	Long prochainSommet = it.next();
 	        	vus.add(prochainSommet);
 	            nonVus.remove(prochainSommet);
 	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCout(sommetCrt, prochainSommet));

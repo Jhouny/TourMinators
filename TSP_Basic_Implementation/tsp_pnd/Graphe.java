@@ -1,4 +1,4 @@
-package tsp;
+package tsp_pnd;
 
 public interface Graphe {
 
@@ -12,14 +12,14 @@ public interface Graphe {
 	 * @param j 
 	 * @return le cout de l'arc (i,j) si (i,j) est un arc ; -1 sinon
 	 */
-	public abstract int getCout(int i, int j);
+	public abstract int getCout(Long i, Long j);
 	
 	/**
 	 * @param i 
 	 * @param j 
 	 * @return true si <code>(i,j)</code> est un arc de <code>this</code>
 	 */
-	public abstract boolean estArc(int i, int j);
+	public abstract boolean estArc(long i, long j);
 
 
 }

@@ -1,4 +1,4 @@
-package backend.models;
+package tsp_pnd;
 
 public class Node {
 

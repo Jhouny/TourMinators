@@ -1,9 +1,9 @@
-package tsp;
+package tsp_pnd;
 
 import java.util.Collection;
 import java.util.Iterator;
 
-public class IteratorSeq_PnD implements Iterator<Long> {
+public class IteratorSeq implements Iterator<Long> {
 
 	private Long[] candidats;
 	private int nbCandidats;
