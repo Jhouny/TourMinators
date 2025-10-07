@@ -12,6 +12,23 @@ public class Main {
         List<Edge> edges = XMLParser.parseEdges(xmlPath);
         System.out.println("Nodes: " + nodes.size());
         System.out.println("Edges: " + edges.size());
+
+        if (!nodes.isEmpty()) {
+            // Map n’a pas d’ordre défini, on prend simplement le premier via iterator()
+            Node firstNode = nodes.values().iterator().next();
+            System.out.println("\n--- Premier Node ---");
+            System.out.println(firstNode);
+        } else {
+            System.out.println("Aucun Node trouvé !");
+        }
+
+        if (!edges.isEmpty()) {
+            Edge firstEdge = edges.get(0);
+            System.out.println("\n--- Premier Edge ---");
+            System.out.println(firstEdge);
+        } else {
+            System.out.println("Aucun Edge trouvé !");
+        }
     }
 
 }
