@@ -1,5 +1,7 @@
 package tsp_pnd;
 
+import java.util.ArrayList;
+
 public interface Graphe {
 
 	/**
@@ -12,7 +14,7 @@ public interface Graphe {
 	 * @param j 
 	 * @return le cout de l'arc (i,j) si (i,j) est un arc ; -1 sinon
 	 */
-	public abstract int getCout(Long i, Long j);
+	public abstract double getCout(Long i, Long j);
 	
 	/**
 	 * @param i 
@@ -20,6 +22,16 @@ public interface Graphe {
 	 * @return true si <code>(i,j)</code> est un arc de <code>this</code>
 	 */
 	public abstract boolean estArc(long i, long j);
+	
+	/**
+	 * @return la liste des identifiants des sommets a visiter (avec le sommet de depart)
+	 */
+	public abstract ArrayList<Long> getNodesToVisit();
+
+	/**
+	 * @return l'id du sommet de depart)
+	 */
+	public abstract Long getBeginId();
 
 
 }
