@@ -12,7 +12,7 @@ import java.util.HashMap;
 public class GrapheDistances implements Graphe {
 	
 	int nbSommets;
-	Map<Long, Pair<Node, Long>> sommets;
+	Map<Long, Pair<Node, Long>> sommets; // node id -> (Node, deliveryId) (deliveryId = null si le noeud n'est pas un pickup)
 	Map<Set<Long> , Double> cout;
 	Long beginId;
 	
