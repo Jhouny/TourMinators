@@ -65,9 +65,8 @@ public class GrapheDistances implements Graphe {
 			return cout.get(pair);
 		}
 		else{
-			double distance = (double) Math.pow((sommets.get(i).getLeft().getLat() - sommets.get(j).getLeft().getLat()), 2) + Math.pow((sommets.get(i).getLeft().getLong() - sommets.get(j).getLeft().getLong()), 2);
+			double distance = (double) Math.sqrt(Math.pow((sommets.get(i).getLeft().getLat() - sommets.get(j).getLeft().getLat()), 2) + Math.pow((sommets.get(i).getLeft().getLong() - sommets.get(j).getLeft().getLong()), 2));
 			cout.put(pair, distance);
-			System.out.println("distance entre "+sommets.get(i).getLeft().getId()+" et "+sommets.get(j).getLeft().getId()+" : "+distance+"  ");
 			return distance;
 		}
 	}

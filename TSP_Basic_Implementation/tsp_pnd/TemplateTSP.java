@@ -64,10 +64,6 @@ public abstract class TemplateTSP implements TSP {
 	 */	
 	private void branchAndBound(long sommetCrt, Collection<Long> nonVus, Collection<Long> vus, double coutVus){
 
-		System.out.println("*****vus : "+ vus);
-		System.out.println("*****non vus : "+ nonVus);
-
-
 		if (System.currentTimeMillis() - tpsDebut > tpsLimite) return;
 	    if (nonVus.size() == 0){ // tous les sommets ont ete visites
 			
@@ -75,19 +71,16 @@ public abstract class TemplateTSP implements TSP {
 				
 			
 	    		if (coutVus+g.getCout(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
-	    			System.out.println("*****Amelioration ");
+	    			
 					vus.toArray(meilleureSolution);
 	    			coutMeilleureSolution = coutVus+g.getCout(sommetCrt,g.getBeginId());
-					System.out.print("*****Solution de longueur "+getCoutSolution()+" : ");
-					for (int i=0; i<g.getNbSommets(); i++)
-						System.out.print(getSolution(i)+" ");
-					System.out.println();
 	    		}
 	    	}
 	    } else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
 	        Iterator<Long> it = iterator(sommetCrt, nonVus, g);
 	        while (it.hasNext()){
 	        	Long prochainSommet = it.next();
+				
 	        	vus.add(prochainSommet);
 				if (g.getDelivery(prochainSommet) != null) {
 					nonVus.add(g.getDelivery(prochainSommet));
