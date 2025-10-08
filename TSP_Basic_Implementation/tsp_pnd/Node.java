@@ -2,9 +2,9 @@ package tsp_pnd;
 
 public class Node {
 
-    long id;
-    double latitude;
-    double longitude;
+    private long id;
+    private double latitude;
+    private double longitude;
 
     public Node(long id, double latitude, double longitude) {
         this.id = id;

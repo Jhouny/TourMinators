@@ -6,12 +6,13 @@ import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+
 //import backend.models.Node;
 
 public class GrapheDistances implements Graphe {
 	
 	int nbSommets;
-	Map<Long, Node> sommets;
+	Map<Long, Pair<Node, Long>> sommets;
 	Map<Set<Long> , Double> cout;
 	Long beginId;
 	
@@ -19,7 +20,7 @@ public class GrapheDistances implements Graphe {
 	 * Cree un graphe complet dont les aretes ont un cout compris entre COUT_MIN et COUT_MAX
 	 * @param nbSommets
 	 */
-	public GrapheDistances(Map<Long, Node> sommets, Long beginId){
+	public GrapheDistances(Map<Long, Pair<Node, Long>> sommets, Long beginId){
 		this.cout = new HashMap<Set<Long> , Double>();
 		this.sommets = sommets;
 		this.beginId = beginId;
@@ -30,10 +31,19 @@ public class GrapheDistances implements Graphe {
 	public ArrayList<Long> getNodesToVisit() {
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
 		for (Long id : sommets.keySet()) {
-			nodesToVisit.add(id);
+			if (sommets.get(id).getRight() != null){
+				nodesToVisit.add(id);
+			}
 		}
-		nodesToVisit.remove(getBeginId());
 		return nodesToVisit;
+	}
+
+	@Override
+	public Long getDelivery(Long id) {
+		if (sommets.get(id).getRight() != null){
+			return sommets.get(id).getRight();
+		}
+		return null;
 	}
 
 	@Override
@@ -55,9 +65,9 @@ public class GrapheDistances implements Graphe {
 			return cout.get(pair);
 		}
 		else{
-			double distance = (double) Math.pow((sommets.get(i).getLat() - sommets.get(j).getLat()), 2) + Math.pow((sommets.get(i).getLong() - sommets.get(j).getLong()), 2);
+			double distance = (double) Math.pow((sommets.get(i).getLeft().getLat() - sommets.get(j).getLeft().getLat()), 2) + Math.pow((sommets.get(i).getLeft().getLong() - sommets.get(j).getLeft().getLong()), 2);
 			cout.put(pair, distance);
-			System.out.println("distance entre "+sommets.get(i).getId()+" et "+sommets.get(j).getId()+" : "+distance+"  ");
+			System.out.println("distance entre "+sommets.get(i).getLeft().getId()+" et "+sommets.get(j).getLeft().getId()+" : "+distance+"  ");
 			return distance;
 		}
 	}

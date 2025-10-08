@@ -33,5 +33,11 @@ public interface Graphe {
 	 */
 	public abstract Long getBeginId();
 
+	/**
+	 * @param id id du noeud
+	 * @return null si id est un delivery, l'id de son delivery si id est un pickup
+	 */
+	public abstract Long getDelivery(Long id);
+
 
 }

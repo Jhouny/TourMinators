@@ -63,12 +63,25 @@ public abstract class TemplateTSP implements TSP {
 	 * @param coutVus la somme des couts des arcs du chemin passant par tous les sommets de vus dans l'ordre ou ils ont ete visites
 	 */	
 	private void branchAndBound(long sommetCrt, Collection<Long> nonVus, Collection<Long> vus, double coutVus){
+
+		System.out.println("*****vus : "+ vus);
+		System.out.println("*****non vus : "+ nonVus);
+
+
 		if (System.currentTimeMillis() - tpsDebut > tpsLimite) return;
 	    if (nonVus.size() == 0){ // tous les sommets ont ete visites
+			
 	    	if (g.estArc(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
+				
+			
 	    		if (coutVus+g.getCout(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
-	    			vus.toArray(meilleureSolution);
+	    			System.out.println("*****Amelioration ");
+					vus.toArray(meilleureSolution);
 	    			coutMeilleureSolution = coutVus+g.getCout(sommetCrt,g.getBeginId());
+					System.out.print("*****Solution de longueur "+getCoutSolution()+" : ");
+					for (int i=0; i<g.getNbSommets(); i++)
+						System.out.print(getSolution(i)+" ");
+					System.out.println();
 	    		}
 	    	}
 	    } else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
@@ -76,10 +89,16 @@ public abstract class TemplateTSP implements TSP {
 	        while (it.hasNext()){
 	        	Long prochainSommet = it.next();
 	        	vus.add(prochainSommet);
+				if (g.getDelivery(prochainSommet) != null) {
+					nonVus.add(g.getDelivery(prochainSommet));
+				}
 	            nonVus.remove(prochainSommet);
 	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCout(sommetCrt, prochainSommet));
 	            vus.remove(prochainSommet);
 	            nonVus.add(prochainSommet);
+				if (g.getDelivery(prochainSommet) != null) {
+					nonVus.remove(g.getDelivery(prochainSommet));
+				}
 	        }	    
 	    }
 	}
