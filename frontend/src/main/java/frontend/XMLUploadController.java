@@ -18,9 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class XMLUploadController {
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadXML(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> uploadXML(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "File is empty"));
         }
         
         // Handle the XML file upload
@@ -33,17 +33,21 @@ public class XMLUploadController {
             Map<Long, Node> nodes = XMLParser.parseNodes(tempFile.getAbsolutePath());
             List<Edge> edges = XMLParser.parseEdges(tempFile.getAbsolutePath());
             
-            // For demonstration, print the parsed data
-            System.out.println("Parsed Nodes: " + nodes);
-            System.out.println("Parsed Edges: " + edges);
-            
             // Delete the temporary file
             tempFile.delete();
+
+            System.out.println("Parsed " + nodes.size() + " nodes and " + edges.size() + " edges.");
+
+            // Return a JSON object with nodes and edges. Convert nodes map to its values
+            // (list of Node objects)
+            Map<String, Object> responseBody = Map.of(
+                "nodes", nodes.values(),
+                "edges", edges
+            );
+            return ResponseEntity.ok().body(responseBody);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing file");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Error processing file"));
         }
-
-        return ResponseEntity.ok("File uploaded successfully");
     }
 }

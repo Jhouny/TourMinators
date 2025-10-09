@@ -12,6 +12,18 @@ public class Node {
         this.longitude = longitude;
     }
 
+    public long getId() {
+        return id;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
     @Override
     public String toString() {
         return "Node{" +

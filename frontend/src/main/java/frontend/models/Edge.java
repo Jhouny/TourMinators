@@ -15,6 +15,22 @@ public class Edge {
         
     }
 
+    public long getOriginId() {
+        return originId;
+    }
+
+    public long getDestinationId() {
+        return destinationId;
+    }
+
+    public float getLength() {
+        return length;
+    }
+
+    public String getStreetName() {
+        return streetName;
+    }
+
     @Override
     public String toString() {
         return "Edge{" +
