@@ -39,14 +39,6 @@ body, html {
     height: 40px; 
 }
 
-.logo-name {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--primary-green);
-    margin-left: 10px; 
-    letter-spacing: 1px;
-}
-
 .header .buttons {
     display: flex;
     gap: 15px;
