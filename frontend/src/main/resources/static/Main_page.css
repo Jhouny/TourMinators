@@ -1,70 +1,98 @@
-/* Main_page.css */
 
-/* Reset et styles de base */
+:root {
+    --primary-green: #0b3213; 
+    --secondary-green: #50d76b; 
+    --dark-text: #222222;
+    --light-bg: #F4F7F8;
+    --white: #FFFFFF;
+    --shadow-color: rgba(56, 163, 165, 0.2); 
+}
+
 body, html {
     margin: 0;
     padding: 0;
     height: 100%;
-    font-family: Arial, sans-serif;
-    background-color: #F6F9F7; /* couleur douce pour le fond */
+    font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    color: var(--dark-text);
+    background-color: var(--light-bg); 
 }
 
-/* Conteneur principal */
 .main_container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh; /
 }
 
-/* Bandeau supérieur */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: white;
-    padding: 10px 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: var(--white);
+    padding: 15px 40px; 
+    box-shadow: 0 4px 12px var(--shadow-color);
+    position: sticky; 
+    top: 0;
+    z-index: 1000; 
 }
 
-/* Logo */
 .header img {
-    height: 50px; /* ajuster selon ton logo */
+    height: 40px; 
 }
 
-/* Boutons du bandeau */
+.logo-name {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-green);
+    margin-left: 10px; 
+    letter-spacing: 1px;
+}
+
 .header .buttons {
     display: flex;
-    gap: 10px;
+    gap: 15px;
 }
 
 .header button {
-    background-color: #50D76B; /* vert clair */
-    color: white;
+    background-color: var(--primary-green);
+    color: var(--white);
     border: none;
-    padding: 8px 16px;
-    border-radius: 5px;
+    padding: 10px 20px;
+    border-radius: 25px;
     cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease; 
+}
+
+.header button:first-child {
+    background-color: var(--light-bg);
+    color: var(--primary-green);
+    border: 2px solid var(--primary-green);
 }
 
 .header button:hover {
-    background-color: #39A758; /* vert légèrement plus foncé au survol */
+    background-color: var(--secondary-green); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transform: translateY(-2px); 
 }
 
-/* Titre principal (optionnel si tu veux le garder en dehors du bandeau) */
-.main_title {
-    text-align: center;
-    margin: 20px 0;
-    color: #0B3213; /* vert foncé */
+.header button:first-child:hover {
+    background-color: rgba(56, 163, 165, 0.1);
+    transform: translateY(-2px); 
 }
 
-/* Carte */
 #map {
-    flex: 1; /* prend tout l’espace restant */
-    margin: 0 auto;
-    width: 90%;
-    max-width: 1200px;
-    border: 2px solid #0B3213;
-    border-radius: 8px;
+    flex: 1; 
+    margin: 20px auto; 
+    width: 95%; 
+    max-width: 1400px; 
+    border: 1px solid #DDDDDD; 
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); 
+}
+
+.logo-group {
+    display: flex;
+    align-items: center;
 }
