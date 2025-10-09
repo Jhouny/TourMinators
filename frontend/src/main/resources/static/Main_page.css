@@ -60,7 +60,7 @@ body, html {
 }
 
 /* Carte */
-.map {
+#map {
     flex: 1; /* prend tout l’espace restant */
     margin: 0 auto;
     width: 90%;
