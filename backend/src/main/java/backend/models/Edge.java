@@ -24,4 +24,15 @@ public class Edge {
                 ", streetName='" + streetName + '\'' +
                 '}';
     }
+
+    public long getOrigin() {
+        return originId;
+    }
+    public long getDestination() {
+        return destinationId;
+    }
+    public float getLength() {
+        return length;
+    }
+    
 }

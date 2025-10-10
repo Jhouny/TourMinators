@@ -2,26 +2,26 @@ package backend.models;
 
 import java.util.ArrayList;
 
-public interface Graphe {
+public interface Graph {
 
 	/**
 	 * @return le nombre de sommets de <code>this</code>
 	 */
-	public abstract int getNbSommets();
+	public abstract int getNbNodes();
 
 	/**
 	 * @param i 
 	 * @param j 
 	 * @return le cout de l'arc (i,j) si (i,j) est un arc ; -1 sinon
 	 */
-	public abstract double getCout(Long i, Long j);
+	public abstract float getCost(long i, long j);
 	
 	/**
 	 * @param i 
 	 * @param j 
 	 * @return true si <code>(i,j)</code> est un arc de <code>this</code>
 	 */
-	public abstract boolean estArc(long i, long j);
+	public abstract boolean isEdge(long i, long j);
 	
 	/**
 	 * @return la liste des identifiants des sommets a visiter (avec le sommet de depart)
