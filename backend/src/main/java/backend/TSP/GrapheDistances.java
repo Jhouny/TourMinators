@@ -77,7 +77,7 @@ public class GrapheDistances implements Graphe {
 	}
 
 	@Override
-	public boolean isArc(long i, long j) {
+	public boolean estArc(long i, long j) {
 		if (sommets.containsKey(i) && sommets.containsKey(j))
 			return i != j;
 		return false;
