@@ -1,13 +1,15 @@
 package backend;
 
 import backend.models.Node;
+import backend.models.Triple;
 import backend.models.Edge;
 import java.util.Map;
 import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String xmlPath = "resources/Plan/petitPlan.xml";
+        String xmlPath = "../frontend/src/main/resources/Plan/petitPlan.xml";
+        String deliveriesPath = "../frontend/src/main/resources/Demande/demandePetit1.xml";
         Map<Long, Node> nodes = XMLParser.parseNodes(xmlPath);
         List<Edge> edges = XMLParser.parseEdges(xmlPath);
         System.out.println("Nodes: " + nodes.size());
@@ -28,6 +30,15 @@ public class Main {
             System.out.println(firstEdge);
         } else {
             System.out.println("Aucun Edge trouvé !");
+        }
+
+        System.out.println("\n--- Demande de delivery---");
+
+        Map<Long, Triple<Node, Long, Integer>> sommets =
+                DeliveryRequestParser.parseDeliveries(deliveriesPath, nodes);
+
+        for (Map.Entry<Long, Triple<Node, Long, Integer>> entry : sommets.entrySet()) {
+            System.out.println("NodeId=" + entry.getKey() + " -> " + entry.getValue());
         }
     }
 
