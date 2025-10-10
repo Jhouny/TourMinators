@@ -22,7 +22,7 @@ public class IteratorSeq implements Iterator<Long> {
 		Iterator<Long> it = nonVus.iterator();
 		while (it.hasNext()){
 			Long s = it.next();
-			if (g.estArc(sommetCrt, s))
+			if (g.isEdge(sommetCrt, s))
 				candidats[nbCandidats++] = s;
 		}
 	}

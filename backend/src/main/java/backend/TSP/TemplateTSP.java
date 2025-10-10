@@ -19,16 +19,16 @@ public abstract class TemplateTSP implements TSP {
 		tpsDebut = System.currentTimeMillis();	
 		this.tpsLimite = tpsLimite;
 		this.g = g;
-		meilleureSolution = new Long[g.getNbSommets()];
+		meilleureSolution = new Long[g.getNbNodes()];
 		Collection<Long> nonVus = g.getNodesToVisit();
-		Collection<Long> vus = new ArrayList<Long>(g.getNbSommets());
+		Collection<Long> vus = new ArrayList<Long>(g.getNbNodes());
 		vus.add(g.getBeginId()); // le premier sommet visite
 		coutMeilleureSolution = Double.MAX_VALUE;
 		branchAndBound(g.getBeginId(), nonVus, vus, g.getBeginId());
 	}
 	
 	public long getSolution(int i){
-		if (g != null && i>=0 && i<g.getNbSommets())
+		if (g != null && i>=0 && i<g.getNbNodes())
 			return meilleureSolution[i];
 		return -1;
 	}
@@ -69,13 +69,13 @@ public abstract class TemplateTSP implements TSP {
 		if (System.currentTimeMillis() - tpsDebut > tpsLimite) return;
 	    if (nonVus.size() == 0){ // tous les sommets ont ete visites
 			
-	    	if (g.estArc(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
+	    	if (g.isEdge(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
 				
 			
-	    		if (coutVus+g.getCout(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
+	    		if (coutVus+g.getCost(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
 	    			
 					vus.toArray(meilleureSolution);
-	    			coutMeilleureSolution = coutVus+g.getCout(sommetCrt,g.getBeginId());
+	    			coutMeilleureSolution = coutVus+g.getCost(sommetCrt,g.getBeginId());
 	    		}
 	    	}
 	    } else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
@@ -88,7 +88,7 @@ public abstract class TemplateTSP implements TSP {
 					nonVus.add(g.getDelivery(prochainSommet));
 				}
 	            nonVus.remove(prochainSommet);
-	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCout(sommetCrt, prochainSommet));
+	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCost(sommetCrt, prochainSommet));
 	            vus.remove(prochainSommet);
 	            nonVus.add(prochainSommet);
 				if (g.getDelivery(prochainSommet) != null) {
