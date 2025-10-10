@@ -1,8 +1,10 @@
-package tsp_pnd;
+package backend.TSP;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+
+import backend.models.Graphe;
 
 public abstract class TemplateTSP implements TSP {
 	

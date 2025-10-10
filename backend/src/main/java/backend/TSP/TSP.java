@@ -1,4 +1,6 @@
-package tsp_pnd;
+package backend.TSP;
+
+import backend.models.Graphe;
 
 //import backend.models.Node;
 

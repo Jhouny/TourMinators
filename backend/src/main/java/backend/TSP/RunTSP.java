@@ -1,6 +1,11 @@
-package tsp_pnd;
+package backend.TSP;
 
 import java.util.Map;
+
+import backend.models.Graphe;
+import backend.models.Node;
+import backend.models.Pair;
+
 import java.util.HashMap;
 
 public class RunTSP {

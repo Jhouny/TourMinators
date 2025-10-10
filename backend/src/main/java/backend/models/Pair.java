@@ -1,4 +1,4 @@
-package tsp_pnd;
+package backend.models;
 
 public class Pair<K, V> {
     private K left;

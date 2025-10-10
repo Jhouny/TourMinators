@@ -2,9 +2,9 @@ package backend.models;
 
 public class Node {
 
-    long id;
-    double latitude;
-    double longitude;
+    private long id;
+    private double latitude;
+    private double longitude;
 
     public Node(long id, double latitude, double longitude) {
         this.id = id;
@@ -19,5 +19,17 @@ public class Node {
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
                 '}';
+    }
+
+    public double getLat() {
+        return latitude;
+    }
+
+    public double getLong() {
+        return longitude;
+    }
+    
+    public long getId() {
+        return id;
     }
 }

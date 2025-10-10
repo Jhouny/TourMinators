@@ -1,7 +1,9 @@
-package tsp_pnd;
+package backend.TSP;
 
 import java.util.Collection;
 import java.util.Iterator;
+
+import backend.models.Graphe;
 
 public class TSP2 extends TemplateTSP {
 

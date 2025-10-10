@@ -1,7 +1,12 @@
-package tsp_pnd;
+package backend.TSP;
 
 import java.util.Map;
 import java.util.Set;
+
+import backend.models.Graphe;
+import backend.models.Node;
+import backend.models.Pair;
+
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.HashMap;
