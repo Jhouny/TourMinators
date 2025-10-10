@@ -1,25 +1,32 @@
 <!doctype html>
 <html>
-    <head><meta charset="utf-8"><title>Exemple</title></head>
+    <head>
+        <meta charset="utf-8">
+        <title>TourMinators</title>
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+    </head>
     <link href="Main_page.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha512-..." crossorigin="anonymous">
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
     <body>
         <div class="main_container">
             <div class="header">
-                <img src="Tourminators_logo.jpg" alt="Logo TourMinators">
+                <div class="logo-group"> 
+                    <img src="logo.png" alt="Logo TourMinators">
+                </div>
                 <div class="buttons">
-                    <button onclick="">Charger un plan</button>
+                    <button onclick="load_xml_map()">Charger un plan</button>
                     <button onclick="">Charger un programme Pickup and Delivery</button>
                     <button onclick="">Calculer la tournée</button>
                 </div>
             </div>
-
             <div class="map" id="map"></div>
         </div>
-
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha512-..." crossorigin=""></script>
-        <script src="Main_page.js"></script>
+        <script src="script.js"></script>
     </body>
 </html>
 

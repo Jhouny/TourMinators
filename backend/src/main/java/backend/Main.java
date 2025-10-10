@@ -14,7 +14,7 @@ public class Main {
         System.out.println("Edges: " + edges.size());
 
         if (!nodes.isEmpty()) {
-            // Map n’a pas d’ordre défini, on prend simplement le premier via iterator()
+            // Map n'a pas d'ordre défini, on prend simplement le premier via iterator()
             Node firstNode = nodes.values().iterator().next();
             System.out.println("\n--- Premier Node ---");
             System.out.println(firstNode);
