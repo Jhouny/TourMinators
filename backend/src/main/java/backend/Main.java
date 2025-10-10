@@ -7,7 +7,7 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String xmlPath = "resources/petitPlan.xml";
+        String xmlPath = "resources/Plan/petitPlan.xml";
         Map<Long, Node> nodes = XMLParser.parseNodes(xmlPath);
         List<Edge> edges = XMLParser.parseEdges(xmlPath);
         System.out.println("Nodes: " + nodes.size());
