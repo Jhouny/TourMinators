@@ -1,11 +1,16 @@
 package frontend;
 
+import java.io.Console;
+
+import frontend.models.Triple;
+
 import frontend.models.Node;
 import frontend.models.Edge;
 
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +53,49 @@ public class XMLUploadController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Error processing file"));
+        }
+    }
+
+    @PostMapping("/uploadDeliveries")
+    public ResponseEntity<Map<String, Object>> uploadDeliveriesXML(
+            @RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "File(s) missing"));
+        }
+
+        try {
+            // Fichier temporaire pour la demande de livraison
+            File tempDeliveryFile = File.createTempFile("delivery-", ".xml");
+            file.transferTo(tempDeliveryFile);
+
+            // Fichier temporaire pour le graphe
+            File tempGraphFile = File.createTempFile("graph-", ".xml");
+
+            // Parse le graphe pour obtenir tous les nodes
+            Map<Long, Node> graphNodes = XMLParser.parseNodes(tempGraphFile.getAbsolutePath());
+            System.out.println("Graph nodes: " + graphNodes.size());
+            // Parse les demandes de livraison pour obtenir uniquement les nodes pickups/deliveries
+            Map<Long, Triple<Node, Long, Integer>> deliveryNodes =
+                    DeliveryRequestParser.parseDeliveries(tempDeliveryFile.getAbsolutePath(), graphNodes);
+            System.out.println("Delivery nodes: " + deliveryNodes.size());
+            // On peut renvoyer juste les nodes en tant que liste
+            List<Node> nodesList = deliveryNodes.values().stream()
+                                                .map(triple -> triple.first) // Triple<Node, Long, Integer>
+                                                .collect(Collectors.toList());
+            System.out.println("Nodes list size: " + nodesList.size());
+            // Supprimer fichiers temporaires
+            tempDeliveryFile.delete();
+            tempGraphFile.delete();
+
+            Map<String, Object> responseBody = Map.of(
+                "nodes", nodesList
+            );
+            return ResponseEntity.ok(responseBody);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body(Map.of("error", "Error processing files"));
         }
     }
 }

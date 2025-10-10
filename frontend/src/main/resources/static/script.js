@@ -23,73 +23,73 @@ var newIcon = L.icon({
 
 var nodeMarkers = [];
 var edgeLines = [];
+var nodeMap = new Map(); // Graphe déjà chargé
+
 
 // Charger la map en fonction du fichier XML choisi
 function load_xml_map() {
-    // Créer un input de type file pour choisir le fichier XML
     console.log("Loading XML map...");
+    
     let input = document.createElement('input');
     input.type = 'file';
     input.accept = '.xml';
 
-    // Quand un fichier est choisi, on le lit et on l'envoie au backend
     input.onchange = e => {
         let file = e.target.files[0];
         let formData = new FormData();
         formData.append('file', file);
 
-        fetch('/upload', {
-            method: 'POST',
-            body: formData
-        })
+        fetch('/upload', { method: 'POST', body: formData })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
+            if (!response.ok) throw new Error("HTTP error " + response.status);
+            return response.json();
         })
         .then(data => {
-            var nodes = JSON.parse(data).nodes;
-            var edges = JSON.parse(data).edges;
+            var nodes = data.nodes;
+            var edges = data.edges;
 
             console.log('Nodes:', nodes);
             console.log('Edges:', edges);
 
-            var topLeftNode, bottomRightNode;
-
-            nodeMarkers.forEach(marker => {
-                map.removeLayer(marker);
-            });
+            // Supprimer anciens markers et edges
+            nodeMarkers.forEach(m => map.removeLayer(m));
             nodeMarkers = [];
-            edgeLines.forEach(line => {
-                map.removeLayer(line);
-            });
+            edgeLines.forEach(l => map.removeLayer(l));
             edgeLines = [];
 
-            var nodeMap = new Map();
-            nodes.forEach(element => {
-                nodeMap.set(element.id, element);
-                nodeMarkers.push(L.marker([element.latitude, element.longitude], { icon: newIcon }).addTo(map));
+            // Réinitialiser le graphe global
+            nodeMap.clear();
+            nodes.forEach(node => nodeMap.set(node.id, node));
 
-                if (!topLeftNode || (element.latitude > topLeftNode.latitude && element.longitude < topLeftNode.longitude)) {
-                    topLeftNode = element;
+            // Variables pour calculer les bounds
+            let topLeftNode = null;
+            let bottomRightNode = null;
+
+            // Ajouter les markers
+            nodes.forEach(node => {
+
+                if (!topLeftNode || (node.latitude > topLeftNode.latitude && node.longitude < topLeftNode.longitude)) {
+                    topLeftNode = node;
                 }
-                if (!bottomRightNode || (element.latitude < bottomRightNode.latitude && element.longitude > bottomRightNode.longitude)) {
-                    bottomRightNode = element;
+                if (!bottomRightNode || (node.latitude < bottomRightNode.latitude && node.longitude > bottomRightNode.longitude)) {
+                    bottomRightNode = node;
                 }
             });
-            
-            edges.forEach(element => {
-                let startNode = nodeMap.get(element.originId);
-                let endNode = nodeMap.get(element.destinationId);
+
+            // Ajouter les edges
+            edges.forEach(edge => {
+                let startNode = nodeMap.get(edge.originId);
+                let endNode = nodeMap.get(edge.destinationId);
                 if (startNode && endNode) {
                     let latlngs = [
                         [startNode.latitude, startNode.longitude],
                         [endNode.latitude, endNode.longitude]
                     ];
-                    edgeLines.push(L.polyline(latlngs, {color: 'blue'}).addTo(map));
+                    edgeLines.push(L.polyline(latlngs, { color: 'blue' }).addTo(map));
                 }
             });
+
+            // Ajuster le zoom pour englober tous les nodes
             if (topLeftNode && bottomRightNode) {
                 let bounds = L.latLngBounds(
                     [bottomRightNode.latitude, topLeftNode.longitude],
@@ -98,9 +98,47 @@ function load_xml_map() {
                 map.flyToBounds(bounds, { duration: 2.0 });
             }
         })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-    }
+        .catch(error => console.error("Error loading XML map:", error));
+    };
+
     input.click();
-};
+}
+
+function load_xml_delivery() {
+    if (!nodeMap || nodeMap.size === 0) {
+        alert("Veuillez d'abord importer un plan avant de charger une demande de livraison.");
+        return;
+    }
+
+    let input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xml';
+
+    input.onchange = e => {
+        let deliveryFile = e.target.files[0];
+        let formData = new FormData();
+        formData.append('file', deliveryFile);
+
+        // On envoie aussi l'info du graphe déjà chargé côté serveur si besoin
+        // Ici, on pourrait l'envoyer sous forme de JSON ou juste récupérer côté serveur
+        // Si ton backend prend en param graphFile, il faut l'adapter pour accepter le graphe déjà chargé côté serveur
+
+        fetch('/uploadDeliveries', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("HTTP error " + response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log("Pickup/Delivery Nodes:", data.nodes);
+            data.nodes.forEach(element => {
+                nodeMarkers.push(L.marker([element.latitude, element.longitude], { icon: newIcon }).addTo(map));
+            });
+        })
+        .catch(err => console.error(err));
+    }
+
+    input.click();
+}
