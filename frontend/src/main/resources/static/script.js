@@ -21,6 +21,12 @@ var newIcon = L.icon({
     iconAnchor: [7, 7], // point of the icon which will correspond to marker's location
 });
 
+var warehouseIcon = L.icon({
+    iconUrl: 'warehouse-icon.png', 
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+});
+
 var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
@@ -134,8 +140,12 @@ function load_xml_delivery() {
         .then(data => {
             console.log("Pickup/Delivery Nodes:", data.nodes);
             data.nodes.forEach(element => {
-                nodeMarkers.push(L.marker([element.latitude, element.longitude], { icon: newIcon }).addTo(map));
-            });
+            let iconToUse = element.deliveryId === -1 ? warehouseIcon : newIcon;
+
+            nodeMarkers.push(
+                L.marker([element.latitude, element.longitude], { icon: iconToUse }).addTo(map)
+            );
+        })
         })
         .catch(err => console.error(err));
     }

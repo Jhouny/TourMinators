@@ -1,13 +1,11 @@
 package frontend;
 
-import java.io.Console;
-
 import frontend.models.Triple;
-
 import frontend.models.Node;
 import frontend.models.Edge;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,9 +16,31 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.stereotype.Component;
+
+// Singleton pour stocker le graphe en mémoire
+@Component
+class GraphStorage {
+    private Map<Long, Node> graphNodes;
+
+    public void setGraphNodes(Map<Long, Node> nodes) {
+        this.graphNodes = nodes;
+    }
+
+    public Map<Long, Node> getGraphNodes() {
+        return this.graphNodes;
+    }
+}
 
 @RestController
 public class XMLUploadController {
+
+    private final GraphStorage graphStorage;
+
+    // Injection du GraphStorage
+    public XMLUploadController(GraphStorage graphStorage) {
+        this.graphStorage = graphStorage;
+    }
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadXML(@RequestParam("file") MultipartFile file) {
@@ -28,23 +48,18 @@ public class XMLUploadController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "File is empty"));
         }
         
-        // Handle the XML file upload
         try {
-            // Save the file to a temporary location
             File tempFile = File.createTempFile("upload-", ".xml");
             file.transferTo(tempFile);
             
-            // Parse nodes and edges from the XML file
             Map<Long, Node> nodes = XMLParser.parseNodes(tempFile.getAbsolutePath());
             List<Edge> edges = XMLParser.parseEdges(tempFile.getAbsolutePath());
-            
-            // Delete the temporary file
+
+            // Stockage du graphe pour le futur /uploadDeliveries
+            graphStorage.setGraphNodes(nodes);
+
             tempFile.delete();
 
-            System.out.println("Parsed " + nodes.size() + " nodes and " + edges.size() + " edges.");
-
-            // Return a JSON object with nodes and edges. Convert nodes map to its values
-            // (list of Node objects)
             Map<String, Object> responseBody = Map.of(
                 "nodes", nodes.values(),
                 "edges", edges
@@ -52,7 +67,8 @@ public class XMLUploadController {
             return ResponseEntity.ok().body(responseBody);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Error processing file"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body(Map.of("error", "Error processing file"));
         }
     }
 
@@ -60,42 +76,43 @@ public class XMLUploadController {
     public ResponseEntity<Map<String, Object>> uploadDeliveriesXML(
             @RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "File(s) missing"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "File missing"));
         }
 
         try {
-            // Fichier temporaire pour la demande de livraison
             File tempDeliveryFile = File.createTempFile("delivery-", ".xml");
             file.transferTo(tempDeliveryFile);
 
-            // Fichier temporaire pour le graphe
-            File tempGraphFile = File.createTempFile("graph-", ".xml");
+            // Récupère le graphe déjà chargé
+            Map<Long, Node> graphNodes = graphStorage.getGraphNodes();
+            if (graphNodes == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "No graph loaded. Please upload a map first."));
+            }
 
-            // Parse le graphe pour obtenir tous les nodes
-            Map<Long, Node> graphNodes = XMLParser.parseNodes(tempGraphFile.getAbsolutePath());
-            System.out.println("Graph nodes: " + graphNodes.size());
-            // Parse les demandes de livraison pour obtenir uniquement les nodes pickups/deliveries
             Map<Long, Triple<Node, Long, Integer>> deliveryNodes =
                     DeliveryRequestParser.parseDeliveries(tempDeliveryFile.getAbsolutePath(), graphNodes);
-            System.out.println("Delivery nodes: " + deliveryNodes.size());
-            // On peut renvoyer juste les nodes en tant que liste
-            List<Node> nodesList = deliveryNodes.values().stream()
-                                                .map(triple -> triple.first) // Triple<Node, Long, Integer>
-                                                .collect(Collectors.toList());
-            System.out.println("Nodes list size: " + nodesList.size());
-            // Supprimer fichiers temporaires
-            tempDeliveryFile.delete();
-            tempGraphFile.delete();
 
-            Map<String, Object> responseBody = Map.of(
-                "nodes", nodesList
-            );
-            return ResponseEntity.ok(responseBody);
+            List<Map<String, Object>> nodesList = deliveryNodes.values().stream()
+            .map(triple -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", triple.first.getId());
+                map.put("latitude", triple.first.getLatitude());
+                map.put("longitude", triple.first.getLongitude());
+                map.put("deliveryId", triple.second); // -1 pour l’entrepôt
+                return map;
+            })
+            .collect(Collectors.toList());
+
+
+            tempDeliveryFile.delete();
+
+            return ResponseEntity.ok(Map.of("nodes", nodesList));
 
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body(Map.of("error", "Error processing files"));
+                                 .body(Map.of("error", "Error processing file"));
         }
     }
 }
