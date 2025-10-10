@@ -91,7 +91,7 @@ function load_xml_map() {
                         [startNode.latitude, startNode.longitude],
                         [endNode.latitude, endNode.longitude]
                     ];
-                    edgeLines.push(L.polyline(latlngs, { color: 'blue' }).addTo(map));
+                    edgeLines.push(L.polyline(latlngs, { color: '#0b3213' }).addTo(map));
                 }
             });
 
