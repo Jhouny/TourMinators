@@ -21,7 +21,7 @@ public interface Graphe {
 	 * @param j 
 	 * @return true si <code>(i,j)</code> est un arc de <code>this</code>
 	 */
-	public abstract boolean estArc(long i, long j);
+	public abstract boolean isArc(long i, long j);
 	
 	/**
 	 * @return la liste des identifiants des sommets a visiter (avec le sommet de depart)

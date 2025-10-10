@@ -69,7 +69,7 @@ public abstract class TemplateTSP implements TSP {
 		if (System.currentTimeMillis() - tpsDebut > tpsLimite) return;
 	    if (nonVus.size() == 0){ // tous les sommets ont ete visites
 			
-	    	if (g.estArc(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
+	    	if (g.isArc(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
 				
 			
 	    		if (coutVus+g.getCout(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
