@@ -13,10 +13,10 @@ import java.util.Set;
 import backend.models.Edge;
 import backend.models.Node;
 
-import backend.models.Graphe;
+import backend.models.Graph;
 
 
-public class GraphAWA implements Graphe {
+public class GraphAWA implements Graph {
 	
     List<Edge> edges;
     Map<Long, Node> nodes;
