@@ -31,6 +31,33 @@ var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
 
+// Génère une couleur hexadécimale aléatoire
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// Génère une icône de flèche colorée (orientée selon le type)
+function createArrowIcon(color, direction) {
+    const rotation = direction === 'down' ? 'rotate(180 12 12)' : 'rotate(0 12 12)';
+    return L.divIcon({
+        className: "",
+        html: `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+                 viewBox="0 0 24 24">
+                <g transform="${rotation}">
+                    <path fill="${color}" d="M12 2L5 9h4v9h6V9h4z"/>
+                </g>
+            </svg>
+        `,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+    });
+}
 
 // Charger la map en fonction du fichier XML choisi
 function load_xml_map() {
@@ -125,10 +152,6 @@ function load_xml_delivery() {
         let formData = new FormData();
         formData.append('file', deliveryFile);
 
-        // On envoie aussi l'info du graphe déjà chargé côté serveur si besoin
-        // Ici, on pourrait l'envoyer sous forme de JSON ou juste récupérer côté serveur
-        // Si ton backend prend en param graphFile, il faut l'adapter pour accepter le graphe déjà chargé côté serveur
-
         fetch('/uploadDeliveries', {
             method: 'POST',
             body: formData
@@ -138,16 +161,66 @@ function load_xml_delivery() {
             return response.json();
         })
         .then(data => {
-            console.log("Pickup/Delivery Nodes:", data.nodes);
-            data.nodes.forEach(element => {
-            let iconToUse = element.deliveryId === -1 ? warehouseIcon : newIcon;
+            console.log("Pickup/Delivery response:", data);
 
-            nodeMarkers.push(
-                L.marker([element.latitude, element.longitude], { icon: iconToUse }).addTo(map)
-            );
+            if (!data.nodes) {
+                console.error("No nodes in response:", data);
+                return;
+            }
+
+            // Supprime les anciens marqueurs (on veut rafraîchir)
+            nodeMarkers.forEach(m => map.removeLayer(m));
+            nodeMarkers = [];
+
+            // map deliveryId -> couleur (persistant pour cette réponse)
+            const colorMap = new Map();
+            let colorIndex = 0;
+
+            data.nodes.forEach(element => {
+                // entree de sécurité si les champs manquent
+                if (typeof element.latitude !== 'number' || typeof element.longitude !== 'number') {
+                    console.warn("Node missing coords:", element);
+                    return;
+                }
+
+                // entrepot
+                if (element.deliveryId === -1) {
+                    nodeMarkers.push(
+                        L.marker([element.latitude, element.longitude], { icon: warehouseIcon }).addTo(map)
+                    );
+                    return;
+                }
+
+                // On suppose que chaque deliveryId correspond à une paire (pickup/delivery)
+                if (element.deliveryId === -1) {
+                    // entrepôt
+                    nodeMarkers.push(
+                        L.marker([element.latitude, element.longitude], { icon: warehouseIcon }).addTo(map)
+                    );
+                } else {
+                    // Couleur associée à la paire pickup/delivery
+                    if (!window.pairColors) window.pairColors = {};
+                    if (!pairColors[element.deliveryId]) {
+                        pairColors[element.deliveryId] = getRandomColor();
+                    }
+
+                    const color = pairColors[element.deliveryId];
+                    const direction = element.type === "pickup" ? "up" : "down";
+
+                    const icon = createArrowIcon(color, direction);
+
+                    nodeMarkers.push(
+                        L.marker([element.latitude, element.longitude], { icon }).addTo(map)
+                    );
+                }
+
+            });
         })
-        })
-        .catch(err => console.error(err));
+
+        .catch(err => {
+            console.error("Error fetching /uploadDeliveries:", err);
+            alert("Erreur lors du chargement de la demande de livraison (voir console).");
+        });
     }
 
     input.click();
