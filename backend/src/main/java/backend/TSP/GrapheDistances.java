@@ -72,7 +72,7 @@ public class GrapheDistances implements Graph {
 	public ArrayList<Long> getNodesToVisit() {
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
 		for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == "pickup"){
+			if (tour.get(id).getType() == PointOfInterest.PoIEnum.PICKUP){
 				nodesToVisit.add(id);
 			}
 		}
@@ -86,7 +86,7 @@ public class GrapheDistances implements Graph {
 	public Long getBeginId() {
         Long warehouseId = null;
         for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == "warehouse"){
+			if (tour.get(id).getType() == PointOfInterest.PoIEnum.WAREHOUSE){
 				warehouseId = id;
                 break;
 			}
