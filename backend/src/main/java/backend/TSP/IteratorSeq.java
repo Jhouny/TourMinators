@@ -17,7 +17,7 @@ public class IteratorSeq implements Iterator<Long> {
 	 * @param sommetCrt
 	 * @param g
 	 */
-	public IteratorSeq(Collection<Long> nonVus, Long sommetCrt, Graphe g){
+	public IteratorSeq(Long sommetCrt, Collection<Long> nonVus, Graph g){
 		this.candidats = new Long[nonVus.size()];
 		Iterator<Long> it = nonVus.iterator();
 		while (it.hasNext()){

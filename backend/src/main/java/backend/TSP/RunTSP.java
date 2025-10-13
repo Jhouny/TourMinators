@@ -22,7 +22,7 @@ public class RunTSP {
 
 		long entrepot = 0;
 
-		Graphe g = new GrapheDistances(sommets, Long.valueOf(0));
+		Graph g = new GrapheDistances(sommets, Long.valueOf(0));
 		long tempsDebut = System.currentTimeMillis();
 		tsp.chercheSolution(60000, g);
 		System.out.print("Solution de longueur "+tsp.getCoutSolution()+" trouvee en "

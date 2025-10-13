@@ -4,17 +4,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.models.Graphe;
+import backend.models.Graph;
 
 public abstract class TemplateTSP implements TSP {
 	
 	private Long[] meilleureSolution;
-	protected Graphe g;
+	protected Graph g;
 	private double coutMeilleureSolution;
 	private int tpsLimite;
 	private long tpsDebut;
 	
-	public void chercheSolution(int tpsLimite, Graphe g){
+	public void chercheSolution(int tpsLimite, Graph g){
 		if (tpsLimite <= 0) return;
 		tpsDebut = System.currentTimeMillis();	
 		this.tpsLimite = tpsLimite;

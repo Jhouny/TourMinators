@@ -3,7 +3,7 @@ package backend.TSP;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.models.Graphe;
+import backend.models.Graph;
 
 public class TSP2 extends TemplateTSP {
 
@@ -26,7 +26,7 @@ public class TSP2 extends TemplateTSP {
 	}
 
 	@Override
-	protected Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graphe g) {
+	protected Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graph g) {
 		return new IteratorSeq(nonVus, sommetCrt, g);
 	}
 

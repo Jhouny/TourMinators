@@ -1,6 +1,6 @@
 package backend.TSP;
 
-import backend.models.Graphe;
+import backend.models.Graph;
 
 //import backend.models.Node;
 
@@ -12,7 +12,7 @@ public interface TSP {
 	 * @param tpsLimite
 	 * @param g
 	 */
-	public void chercheSolution(int tpsLimite, Graphe g);
+	public void chercheSolution(int tpsLimite, Graph g);
 	
 	/**
 	 * @param i
