@@ -26,18 +26,18 @@ public interface Graph {
 	/**
 	 * @return la liste des identifiants des sommets a visiter (avec le sommet de depart)
 	 */
-	public abstract ArrayList<Long> getNodesToVisit();
+	//public abstract ArrayList<Long> getNodesToVisit();
 
 	/**
 	 * @return l'id du sommet de depart)
 	 */
-	public abstract Long getBeginId();
+	//public abstract Long getBeginId();
 
 	/**
 	 * @param id id du noeud
 	 * @return null si id est un delivery, l'id de son delivery si id est un pickup
 	 */
-	public abstract Long getDelivery(Long id);
+	//public abstract Long getDelivery(Long id);
 
 
 }
