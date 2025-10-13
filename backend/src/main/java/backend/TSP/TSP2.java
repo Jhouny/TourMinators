@@ -27,7 +27,7 @@ public class TSP2 extends TemplateTSP {
 
 	@Override
 	protected Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graph g) {
-		return new IteratorSeq(nonVus, sommetCrt, g);
+		return new IteratorSeq(sommetCrt, nonVus, g);
 	}
 
 }

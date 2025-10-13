@@ -55,7 +55,7 @@ public abstract class TemplateTSP implements TSP {
 	 * @param g
 	 * @return un iterateur permettant d'iterer sur tous les sommets de <code>nonVus</code> qui sont successeurs de <code>sommetCourant</code>
 	 */
-	protected abstract Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graphe g);
+	protected abstract Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graph g);
 	
 	/**
 	 * Methode definissant le patron (template) d'une resolution par separation et evaluation (branch and bound) du TSP pour le graphe <code>g</code>.
