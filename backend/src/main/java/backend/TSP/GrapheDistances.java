@@ -9,6 +9,7 @@ import backend.models.Edge;
 import backend.models.Graph;
 import backend.models.Node;
 import backend.models.Pair;
+import backend.models.PointOfInterest;
 import backend.models.NodeWithCost;
 
 import java.util.HashSet;
@@ -18,22 +19,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 
-
-//import backend.models.Node;
+import backend.models.PointOfInterest;
 
 public class GrapheDistances implements Graph {
 	
 	List<Edge> all_edges;
 	Map<Long, Node> all_nodes;
-	Map<Set<Long>, Float> all_costs = new HashMap<>();
+	Map<Set<Long>, Float> all_costs;//KO : Set is not ordered !!!
 
-
-	// TODO : creer point of interest wrapper class
-	Map<Long, Pair<Node, Long>> tour; // node id -> (Node, deliveryId) (deliveryId = null si le noeud n'est pas un pickup)
-	Map<Set<Long> , Float> pathCost;
-	Long beginId;
-
-	Map<Long, Set<Long>> adjacency = new HashMap<>();
+	Map<Long, PointOfInterest> tour;
+	Map<Set<Long> , Float> pathCost;//KO : Set is not ordered !!!
+	Map<Long, Set<Long>> adjacency; //KO : Set is not ordered !!!
 	
 	/**
 	 * Cree un graphe complet dont les aretes ont un cout compris entre COUT_MIN et COUT_MAX
@@ -47,9 +43,14 @@ public class GrapheDistances implements Graph {
 	// 	this.nbSommets = sommets.size();
 	// }
 	
-	public GrapheDistances(Map<Long, Node> nodes, List<Edge> edges){
+	public GrapheDistances(Map<Long, Node> nodes, List<Edge> edges, Map<Long, PointOfInterest> tour){
         this.all_nodes = nodes; 
         this.all_edges = edges;
+        this.tour = tour;
+
+        this.pathCost = new HashMap<Set<Long> , Float>();
+        this.adjacency = new HashMap<Long, Set<Long>>();
+        this.all_costs = new HashMap<Set<Long> , Float>();
 
         // Build adjacency and cost tables
         for (Edge edge : edges) {
@@ -68,7 +69,6 @@ public class GrapheDistances implements Graph {
         }
 	}
 
-	//@Override
 	public ArrayList<Long> getNodesToVisit() {
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
 		for (Long id : tour.keySet()) {
@@ -79,17 +79,19 @@ public class GrapheDistances implements Graph {
 		return nodesToVisit;
 	}
 
-	//@Override
-	public Long getDelivery(Long id) {
-		if (tour.get(id).getType() == "pickup"){
-			return tour.get(id).getAssociatedPoI();
-		}
-		return null;
+	public Long getAssociatedPoI(Long id) {
+        return tour.get(id).getAssociatedPoI();
 	}
 
-	//@Override
 	public Long getBeginId() {
-		return beginId;
+        Long warehouseId = null;
+        for (Long id : tour.keySet()) {
+			if (tour.get(id).getType() == "warehouse"){
+				warehouseId = id;
+                break;
+			}
+		}
+		return warehouseId;
 	}
 
 	@Override
