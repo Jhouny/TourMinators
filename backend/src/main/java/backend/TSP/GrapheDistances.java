@@ -47,7 +47,7 @@ public class GrapheDistances implements Graph {
 	// 	this.nbSommets = sommets.size();
 	// }
 	
-	public GraphDistances(Map<Long, Node> nodes, List<Edge> edges){
+	public GrapheDistances(Map<Long, Node> nodes, List<Edge> edges){
         this.all_nodes = nodes; 
         this.all_edges = edges;
 
@@ -68,26 +68,26 @@ public class GrapheDistances implements Graph {
         }
 	}
 
-	@Override
+	//@Override
 	public ArrayList<Long> getNodesToVisit() {
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
-		for (Long id : sommets.keySet()) {
-			if (sommets.get(id).getRight() != null){
+		for (Long id : tour.keySet()) {
+			if (tour.get(id).getType() == "pickup"){
 				nodesToVisit.add(id);
 			}
 		}
 		return nodesToVisit;
 	}
 
-	@Override
+	//@Override
 	public Long getDelivery(Long id) {
-		if (sommets.get(id).getRight() != null){
-			return sommets.get(id).getRight();
+		if (tour.get(id).getType() == "pickup"){
+			return tour.get(id).getAssociatedPoI();
 		}
 		return null;
 	}
 
-	@Override
+	//@Override
 	public Long getBeginId() {
 		return beginId;
 	}
@@ -97,21 +97,21 @@ public class GrapheDistances implements Graph {
 		return this.all_nodes.size();
 	}
 
-    @Override
-    public float getCost(long i, long j) {
+    // @Override
+    // public float getCost(long i, long j) {
 
-        Set<Long> pair = new HashSet<>(Arrays.asList(i, j));
-        if (costs.containsKey(pair)) {
-            return costs.get(pair);
-        } else {
-            throw new IllegalArgumentException("No edge between " + i + " and " + j);
-        }
-    }
+    //     Set<Long> pair = new HashSet<>(Arrays.asList(i, j));
+    //     if (costs.containsKey(pair)) {
+    //         return costs.get(pair);
+    //     } else {
+    //         throw new IllegalArgumentException("No edge between " + i + " and " + j);
+    //     }
+    // }
 
 
 	@Override
 	public boolean isEdge(long i, long j) {
-		if (sommets.containsKey(i) && sommets.containsKey(j))
+		if (tour.containsKey(i) && tour.containsKey(j))
 			return i != j;
 		return false;
 	}
