@@ -50,9 +50,12 @@ public class Graph  {
             // computeIfAbsent is a lambda key function to add a Set to the adjancency if it doesnt exist
             adjacency.computeIfAbsent(origin, k -> new HashSet<>()).add(destination);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
+=======
+>>>>>>> 9ddbda1 (Testing of all Graph functions except AWA Star)
 
             // Store edge cost (unordered pair)
             Pair<Long, Long> pair = new Pair<Long, Long>(origin, destination);
@@ -74,11 +77,19 @@ public class Graph  {
 	public Long getAssociatedPoI(Long id) {
         // Return the associated PoI of a pickup/delivery node (null if warehouse)
 <<<<<<< HEAD
+<<<<<<< HEAD
         Long associatedPoI = null;
         if (tour.containsKey(id))
             associatedPoI = tour.get(id).getAssociatedPoI();
         return associatedPoI;
 =======
+=======
+        Long associatedPoI = null;
+        if (tour.containsKey(id))
+            associatedPoI = tour.get(id).getAssociatedPoI();
+        if (associatedPoI == null)
+            throw new IllegalArgumentException("Node " + id + " is not a pickup or delivery node.");
+>>>>>>> 9ddbda1 (Testing of all Graph functions except AWA Star)
         return tour.get(id).getAssociatedPoI();
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
 	}
@@ -130,8 +141,12 @@ public class Graph  {
 	// }
 
 	//=========================== AWA ======================================//
+<<<<<<< HEAD
 	public float getPathCost(Long i, Long j) {
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
+=======
+	public Float getPathCost(Long i, Long j) {
+>>>>>>> 9ddbda1 (Testing of all Graph functions except AWA Star)
         // Returns the cost of the optimal path between i and j, or null if AWA* has not been called for this pair
         return pathCost.get(new Pair<Long, Long>(i, j));
     }
