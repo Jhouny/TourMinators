@@ -4,9 +4,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-import backend.TSP.GraphAWA.NodeCost;
 import backend.models.Edge;
-import backend.models.Graph;
 import backend.models.Node;
 import backend.models.Pair;
 import backend.models.PointOfInterest;
@@ -21,41 +19,31 @@ import java.util.HashMap;
 
 import backend.models.PointOfInterest;
 
-public class GrapheDistances implements Graph {
+public class Graph  {
 	
 	List<Edge> all_edges;
 	Map<Long, Node> all_nodes;
-	Map<Set<Long>, Float> all_costs;//KO : Set is not ordered !!!
+	Map<Pair<Long, Long>, Float> all_costs; // If there is no edge between i and j, there is no entry (i,j) in this map and an exception is thrown
 
 	Map<Long, PointOfInterest> tour;
-	Map<Set<Long> , Float> pathCost;//KO : Set is not ordered !!!
-	Map<Long, Set<Long>> adjacency; //KO : Set is not ordered !!!
+	Map<Pair<Long, Long> , Float> pathCost;
+	Map<Long, Set<Long>> adjacency; 
 	
-	/**
-	 * Cree un graphe complet dont les aretes ont un cout compris entre COUT_MIN et COUT_MAX
-	 * @param nbSommets
-	 */
-
-	// public GrapheDistances(Map<Long, Pair<Node, Long>> nodes, Long beginId){
-	// 	this.cout = new HashMap<Set<Long> , Double>();
-	// 	this.sommets = sommets;
-	// 	this.beginId = beginId;
-	// 	this.nbSommets = sommets.size();
-	// }
 	
-	public GrapheDistances(Map<Long, Node> nodes, List<Edge> edges, Map<Long, PointOfInterest> tour){
+	public Graph(Map<Long, Node> nodes, List<Edge> edges, Map<Long, PointOfInterest> tour){
+        // Initialize graph attributes
         this.all_nodes = nodes; 
         this.all_edges = edges;
         this.tour = tour;
 
-        this.pathCost = new HashMap<Set<Long> , Float>();
+        this.pathCost = new HashMap<Pair<Long, Long> , Float>(); // Empty - to be filled when WA* called
         this.adjacency = new HashMap<Long, Set<Long>>();
-        this.all_costs = new HashMap<Set<Long> , Float>();
+        this.all_costs = new HashMap<Pair<Long, Long> , Float>();
 
         // Build adjacency and cost tables
         for (Edge edge : edges) {
-            long origin = edge.getOrigin();
-            long destination = edge.getDestination();
+            Long origin = edge.getOrigin();
+            Long destination = edge.getDestination();
             float distance = edge.getLength();
 
             // Build adjacency
@@ -64,12 +52,13 @@ public class GrapheDistances implements Graph {
             adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
 
             // Store edge cost (unordered pair)
-            Set<Long> pair = new HashSet<>(Arrays.asList(origin, destination));
+            Pair<Long, Long> pair = new Pair<Long, Long>(origin, destination);
             all_costs.put(pair, distance);
         }
 	}
 
 	public ArrayList<Long> getNodesToVisit() {
+        // Return the list of pickup nodes to visit (not deliveries, not warehouse)
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
 		for (Long id : tour.keySet()) {
 			if (tour.get(id).getType() == PointOfInterest.PoIEnum.PICKUP){
@@ -80,10 +69,12 @@ public class GrapheDistances implements Graph {
 	}
 
 	public Long getAssociatedPoI(Long id) {
+        // Return the associated PoI of a pickup/delivery node (null if warehouse)
         return tour.get(id).getAssociatedPoI();
 	}
 
 	public Long getBeginId() {
+        // Return the id of the warehouse
         Long warehouseId = null;
         for (Long id : tour.keySet()) {
 			if (tour.get(id).getType() == PointOfInterest.PoIEnum.WAREHOUSE){
@@ -91,50 +82,53 @@ public class GrapheDistances implements Graph {
                 break;
 			}
 		}
+        // tester si warehouse est null
 		return warehouseId;
 	}
 
-	@Override
 	public int getNbNodes() {
 		return this.all_nodes.size();
 	}
 
-    // @Override
-    // public float getCost(long i, long j) {
+    public Float getCost(Long i, Long j) {
+        //Returns the cost between 2 nodes, or throws an exception if there is no edge between them
+        Pair<Long, Long> pair = new Pair<Long, Long>(i, j);
+        if (all_costs.containsKey(pair)) {
+            return all_costs.get(pair);
+        } else {
+            throw new IllegalArgumentException("No edge between " + i + " and " + j);
+        }
+    }
 
-    //     Set<Long> pair = new HashSet<>(Arrays.asList(i, j));
-    //     if (costs.containsKey(pair)) {
-    //         return costs.get(pair);
-    //     } else {
-    //         throw new IllegalArgumentException("No edge between " + i + " and " + j);
-    //     }
-    // }
+    // Est-ce que cette fonction est utile ? Pourquoi utiliser tour ?
+	// public boolean isEdge(Long i, Long j) {
+    //     // Returns true if there is an edge between i and j, false otherwise
+	// 	if (tour.containsKey(i) && tour.containsKey(j))
+	// 		return !i.equals(j);
+	// 	return false;
+	// }
 
+	//=========================== AWA ======================================//
+	public float getPathCost(Long i, Long j) {
+        // Returns the cost of the optimal path between i and j, or null if AWA* has not been called for this pair
+        return pathCost.get(new Pair<Long, Long>(i, j));
+    }
 
-	@Override
-	public boolean isEdge(long i, long j) {
-		if (tour.containsKey(i) && tour.containsKey(j))
-			return i != j;
-		return false;
-	}
-
-	//===========================AWA - Methodes de Vini======================================//
-	
 	public Set<Long> getNeighbors(long i) {
-        //GetOrDefault renvoie soit i si pas nul, soit un Set vide si i est nul
+        //GetOrDefault returns either adjacency.get(i) if not null, either an empty Set if i is null
         return adjacency.getOrDefault(i, Collections.emptySet());
     }
 
-    private float heuristic(long i, long j) {
+    private float heuristic(Long i, Long j) {
         int weight = 1;
         Node nodeI = all_nodes.get(i);
         Node nodeJ = all_nodes.get(j);
-        // Utilisation de la distance euclidienne comme heuristique
+        // Current heuristic : euclidian distance
         return weight * ((int) Math.sqrt(Math.pow(nodeI.getLat() - nodeJ.getLat(), 2) + Math.pow(nodeI.getLong() - nodeJ.getLong(), 2)));
     }
 
 	private void printSolution(long startId, long endId, Map<Long, Float> costMap, Map<Long, Long> cameFrom) {
-		// TODO: Test and implement properlys
+		// TODO: Test and implement properly
 
         // Reconstruct the path from end to start using cameFrom
         List<Long> path = new ArrayList<>();
@@ -161,11 +155,18 @@ public class GrapheDistances implements Graph {
         System.out.println("Total path cost: " + totalCost);
     }
 
-
-
-	public int AWAStar(long startId, long endId) {
+	public Map<Long, Long> AWAStar(Long startId, Long endId) {
+        // This function returns the mapping of predecessors 
+        // and modifies the pathCost attribute to store the cost of the optimal path between startId and endId
+        // If there is no path between startId and endId, the cost is set to null
 
         int nbIter = 0;
+
+        if(getNeighbors(startId).isEmpty() || getNeighbors(endId).isEmpty()){
+            // If either the startId or the endId have no neighbors, there is no path between them
+            pathCost.put(new Pair<Long, Long>(startId, endId), null);
+            return null;
+        }
 
         Map<Long, Float> costMap  = new HashMap<>(); // cout cumulatif pour chaque noeud
         Map<Long, Long> cameFrom = new HashMap<>(); // prédecesseur (pour reconstruire le chemin)
@@ -190,7 +191,8 @@ public class GrapheDistances implements Graph {
             if(current.getId() == endId){
                 System.out.println("Nombre d'itérations : " + nbIter);
                 printSolution(startId, endId, costMap, cameFrom);
-                return 0;
+                pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
+                return cameFrom;
             }
 
             for(long neighbor : getNeighbors(current.getId())){
@@ -207,8 +209,8 @@ public class GrapheDistances implements Graph {
 
             visited.add(current.getId());
         }
-
-        return 0;
+        pathCost.put(new Pair<Long, Long>(startId, endId), null);
+        return cameFrom;
     }
 
 
