@@ -31,6 +31,9 @@ var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
 
+var edgeTourLines = [];
+
+
 // Génère une couleur hexadécimale aléatoire
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
@@ -118,7 +121,7 @@ function load_xml_map() {
                         [startNode.latitude, startNode.longitude],
                         [endNode.latitude, endNode.longitude]
                     ];
-                    edgeLines.push(L.polyline(latlngs, { color: '#0b3213' }).addTo(map));
+                    edgeLines.push(L.polyline(latlngs, { color: '#50d76b' }).addTo(map));
                 }
             });
 
@@ -224,4 +227,43 @@ function load_xml_delivery() {
     }
 
     input.click();
+}
+
+function compute_tour() {
+    if (!nodeMap || nodeMap.size === 0) {
+        alert("Veuillez d'abord importer un plan avant de calculer une tournée.");
+        return;
+    }
+
+    // Prepare data to send to backend to compute the tour
+    let formData = new FormData();
+
+
+
+    console.log("Computing tour...");
+
+    fetch('/backend/src/main/java/backend/TSP/computeTour',
+        { 
+        method: 'POST', 
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Tour response:", data);
+        if (!data.tour || data.tour.length === 0) {
+            console.error("No tour in response:", data);
+            return;
+        }
+        var bestSolution = data.bestSolution;
+        var tour = data.tour;
+
+        
+
+
+
+
+    })
 }
