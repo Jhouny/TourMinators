@@ -63,6 +63,11 @@ public class Graph  {
         }
 	}
 
+    public int getNbPoI(){
+        // Return the number of PoIs in the tour (including warehouse, pickups and deliveries)
+        return tour.size();
+    }
+
 	public ArrayList<Long> getNodesToVisit() {
         // Return the list of pickup nodes to visit (not deliveries, not warehouse)
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
