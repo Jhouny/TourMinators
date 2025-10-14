@@ -15,7 +15,7 @@ public class DeliveryRequestParser {
      * deliveryId = -1 pour entrepôt, identifiant unique pour chaque livraison.
      */
     public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
-        Map<Long, Triple<Node, Long, Integer>> sommets = new HashMap<>();
+        Map<Long, Triple<Node, Long, Integer>> sommets = new LinkedHashMap<>();
 
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File(filename));
         doc.getDocumentElement().normalize();
