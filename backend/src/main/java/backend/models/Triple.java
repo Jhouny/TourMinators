@@ -11,6 +11,16 @@ public class Triple<A, B, C> {
         this.third = third;
     }
 
+    public A getFirst() {
+        return first;
+    }
+    public B getSecond() {
+        return second;
+    }  
+    public C getThird() {
+        return third;
+    }
+
     @Override
     public String toString() {
         return "(" + first + ", " + second + ", " + third + ")";
