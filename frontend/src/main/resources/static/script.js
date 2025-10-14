@@ -31,6 +31,9 @@ var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
 
+var edgeTourLines = [];
+
+
 // Génère une couleur hexadécimale aléatoire
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
@@ -118,7 +121,7 @@ function load_xml_map() {
                         [startNode.latitude, startNode.longitude],
                         [endNode.latitude, endNode.longitude]
                     ];
-                    edgeLines.push(L.polyline(latlngs, { color: '#0b3213' }).addTo(map));
+                    edgeLines.push(L.polyline(latlngs, { color: '#50d76b' }).addTo(map));
                 }
             });
 
@@ -224,4 +227,96 @@ function load_xml_delivery() {
     }
 
     input.click();
+}
+
+function compute_tour() {
+    if (!nodeMap || nodeMap.size === 0) {
+        alert("Veuillez d'abord importer un plan avant de calculer une tournée.");
+        return;
+    }
+
+    // Prepare data to send to backend to compute the tour
+    let formData = new FormData();
+    formData.append('firstParam', 'firstValue'); // Add actual parameters as needed
+    formData.append('secondParam', 'secondValue');
+    formData.append('thirdParam', 'thirdValue');
+
+    console.log("Computing tour...");
+
+    fetch('/backend/src/main/java/backend/TSP/computeTour',
+        { 
+        method: 'POST', 
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Tour response:", data);
+        if (!data.tour || data.tour.length === 0) {
+            console.error("No tour in response:", data);
+            return;
+        }
+        var bestSolution = data.bestSolution; // Pair<Long,LocalTime> []
+        var POIbestSolution = bestSolution.map(pair => pair.first); //List<Long>
+        var LocalTimebestSolution = bestSolution.map(pair => pair.second) // List<LocalTime>
+        var tour = data.tour; // Map<Pair<Long,Long>, Map<Long,Long>>
+
+        // Diplay the tour edges lines above the existing edges lines
+        // Remove previous tour lines
+        edgeTourLines.forEach(l => map.removeLayer(l));
+        edgeTourLines = [];
+
+        // Draw new tour lines
+        
+        for (let i=0; i < POIbestSolution.length - 1; i++) {
+            let fromId = bestSolution[i];
+            let toId = bestSolution[i+1];
+
+            let pairKey = '(${fromId},${toId})';
+            let subTourMap = tour[pairKey];
+
+            if (subTourMap) {
+                
+                let arivalId = toId;
+                let predecessorId = subTourMap.get(toId);
+
+                while (predecessorId && predecessorId !== fromId) {
+                    
+
+                    let startNode = nodeMap.get(predecessorId);
+                    let endNode = nodeMap.get(arivalId);
+
+                    if (startNode && endNode) {
+                        let latlngs = [
+                            [startNode.latitude, startNode.longitude], [endNode.latitude, endNode.longitude] ];
+                        edgeTourLines.push(L.polyline(latlngs, { color: '#0000FF' }).addTo(map));
+                    }   
+
+                    arivalId = predecessorId;
+                    predecessorId = subTourMap[arivalId];
+
+            }
+
+            
+
+
+            // Add edges tour lines
+            edges.forEach(edge => {
+                let startNode = nodeMap.get(edge.originId);
+                let endNode = nodeMap.get(edge.destinationId);
+                if (startNode && endNode) {
+                    let latlngs = [
+                        [startNode.latitude, startNode.longitude],
+                        [endNode.latitude, endNode.longitude]
+                    ];
+                    edgeTourLines.push(L.polyline(latlngs, { color: '#FFFF' }).addTo(map));
+                }
+            });
+
+
+
+
+    })
 }
