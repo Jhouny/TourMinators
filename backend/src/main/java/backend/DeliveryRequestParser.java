@@ -2,11 +2,11 @@ package backend;
 
 import backend.models.Node;
 import backend.models.Triple;
-import backend.models.PointOfInterest;
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DeliveryRequestParser {
 
@@ -15,22 +15,6 @@ public class DeliveryRequestParser {
      * Map<nodeId, Triple<Node, deliveryId, duration>>
      * deliveryId = -1 pour entrepôt, identifiant unique pour chaque livraison.
      */
-    public static Map<Long, Triple<Node, Long, Integer>> mapDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
-        Map<Long, Triple<Node, Long, Integer>> deliveries = parseDeliveries(filename, graphNodes);
-
-        Map<Long, PointOfInterest> poiMap = new HashMap<Long, PointOfInterest>();
-
-        for (Map.Entry<Long, Triple<Node, Long, Integer>> entry : deliveries.entrySet()) {
-            Long nodeId = entry.getKey();
-            Triple<Node, Long, Integer> triple = entry.getValue();
-            Node node = triple.getFirst();
-            Long deliveryId = triple.getSecond();
-            Integer duration = triple.getThird();
-
-            PointOfInterest poi = new PointOfInterest(node, PoIEnum type, Long associatedPoI, duration);
-            poiMap.put(nodeId, poi);
-        }
-    }
 
     public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
         Map<Long, Triple<Node, Long, Integer>> sommets = new HashMap<>();
