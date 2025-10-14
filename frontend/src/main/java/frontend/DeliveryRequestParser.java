@@ -1,6 +1,8 @@
 package frontend;
 
 import frontend.models.Node;
+import frontend.models.PointOfInterest;
+import frontend.models.PointOfInterest.PoIEnum;
 import frontend.models.Triple;
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
@@ -14,6 +16,41 @@ public class DeliveryRequestParser {
      * Map<nodeId, Triple<Node, deliveryId, duration>>
      * deliveryId = -1 pour entrepôt, identifiant unique pour chaque livraison.
      */
+    public static Map<Long, PointOfInterest> mapDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
+        Map<Long, Triple<Node, Long, Integer>> deliveries = parseDeliveries(filename, graphNodes);
+
+        Map<Long, PointOfInterest> poiMap = new HashMap<Long, PointOfInterest>();
+
+        for (Map.Entry<Long, Triple<Node, Long, Integer>> entry : deliveries.entrySet()) {
+            Long nodeId = entry.getKey();
+            Triple<Node, Long, Integer> triple = entry.getValue();
+            Node node = triple.first;
+            Long deliveryCounter = triple.second;
+            Integer duration = triple.third;
+            PoIEnum type;
+            Long associatedPickupId = null;
+
+            // On garde une trace des pickup déjà vus
+            Map<Long , Long> seenPickups = new HashMap<Long , Long>(); //deliveryCounter -> pickupId
+
+            if (deliveryCounter == -1) {
+                type = PoIEnum.WAREHOUSE;
+            } else if (!seenPickups.containsKey(deliveryCounter)) {
+                type = PoIEnum.PICKUP;
+                seenPickups.put(deliveryCounter, nodeId);
+            } else {
+                type = PoIEnum.DELIVERY;
+                associatedPickupId = seenPickups.get(deliveryCounter);
+
+                poiMap.get(associatedPickupId).setAssociatedPickupId(nodeId);
+            }
+
+            poiMap.put(nodeId, new PointOfInterest(node, type, associatedPickupId, duration));
+
+        }
+        return poiMap;
+    }
+
     public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
         Map<Long, Triple<Node, Long, Integer>> sommets = new HashMap<>();
 

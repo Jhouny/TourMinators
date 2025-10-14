@@ -1,4 +1,4 @@
-package backend.models;
+package frontend.models;
 
 public class PointOfInterest {
 
@@ -32,5 +32,8 @@ public class PointOfInterest {
     }
     public Node getNode() {
         return node;
+    }
+    public void setAssociatedPickupId(Long associatedPoI) {
+        this.associatedPoI = associatedPoI;
     }
 }
