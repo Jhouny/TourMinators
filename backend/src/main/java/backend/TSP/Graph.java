@@ -49,6 +49,10 @@ public class Graph  {
             // Build adjacency
             // computeIfAbsent is a lambda key function to add a Set to the adjancency if it doesnt exist
             adjacency.computeIfAbsent(origin, k -> new HashSet<>()).add(destination);
+<<<<<<< HEAD
+=======
+            adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
 
             // Store edge cost (unordered pair)
             Pair<Long, Long> pair = new Pair<Long, Long>(origin, destination);
@@ -69,10 +73,14 @@ public class Graph  {
 
 	public Long getAssociatedPoI(Long id) {
         // Return the associated PoI of a pickup/delivery node (null if warehouse)
+<<<<<<< HEAD
         Long associatedPoI = null;
         if (tour.containsKey(id))
             associatedPoI = tour.get(id).getAssociatedPoI();
         return associatedPoI;
+=======
+        return tour.get(id).getAssociatedPoI();
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
 	}
 
 	public Long getBeginId() {
@@ -102,6 +110,7 @@ public class Graph  {
         }
     }
 
+<<<<<<< HEAD
 	public boolean isEdge(Long i, Long j) {
         // Returns true if there is an edge between i and j, false otherwise
 		if (tour.containsKey(i) && tour.containsKey(j))
@@ -111,6 +120,18 @@ public class Graph  {
 
 	//=========================== AWA ======================================//
 	public Float getPathCost(Long i, Long j) {
+=======
+    // Est-ce que cette fonction est utile ? Pourquoi utiliser tour ?
+	// public boolean isEdge(Long i, Long j) {
+    //     // Returns true if there is an edge between i and j, false otherwise
+	// 	if (tour.containsKey(i) && tour.containsKey(j))
+	// 		return !i.equals(j);
+	// 	return false;
+	// }
+
+	//=========================== AWA ======================================//
+	public float getPathCost(Long i, Long j) {
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
         // Returns the cost of the optimal path between i and j, or null if AWA* has not been called for this pair
         return pathCost.get(new Pair<Long, Long>(i, j));
     }
@@ -156,12 +177,15 @@ public class Graph  {
         System.out.println("Total path cost: " + totalCost);
     }
 
+<<<<<<< HEAD
     private void printd(String s) {
         boolean debug = true;
         if (debug)
             System.out.println(s);
     }
 
+=======
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
 	public Map<Long, Long> AWAStar(Long startId, Long endId) {
         // This function returns the mapping of predecessors 
         // and modifies the pathCost attribute to store the cost of the optimal path between startId and endId
@@ -170,10 +194,14 @@ public class Graph  {
         int nbIter = 0;
 
         if(getNeighbors(startId).isEmpty() || getNeighbors(endId).isEmpty()){
+<<<<<<< HEAD
             printd("No neighbors for start or end node.");
             // If either the startId or the endId have no outgoing neighbors, there is no path between them
             // It's important that we're able to get out of the end node as well to go back to warehouse
 
+=======
+            // If either the startId or the endId have no neighbors, there is no path between them
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
             pathCost.put(new Pair<Long, Long>(startId, endId), null);
             return null;
         }
@@ -197,12 +225,19 @@ public class Graph  {
 
             if (visited.contains(current.getId()))
                 continue;
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
             if(current.getId() == endId){
                 System.out.println("Nombre d'itérations : " + nbIter);
                 printSolution(startId, endId, costMap, cameFrom);
                 pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
+<<<<<<< HEAD
                 printd("Path found from " + startId + " to " + endId + " with cost " + costMap.get(endId));
+=======
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
                 return cameFrom;
             }
 
@@ -221,7 +256,10 @@ public class Graph  {
             visited.add(current.getId());
         }
         pathCost.put(new Pair<Long, Long>(startId, endId), null);
+<<<<<<< HEAD
         printd("No path found from " + startId + " to " + endId);
+=======
+>>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
         return cameFrom;
     }
 
