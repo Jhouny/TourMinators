@@ -159,6 +159,12 @@ public class Graph  {
         System.out.println("Total path cost: " + totalCost);
     }
 
+    private void printd(String s) {
+        boolean debug = true;
+        if (debug)
+            System.out.println(s);
+    }
+
 	public Map<Long, Long> AWAStar(Long startId, Long endId) {
         // This function returns the mapping of predecessors 
         // and modifies the pathCost attribute to store the cost of the optimal path between startId and endId
@@ -167,7 +173,10 @@ public class Graph  {
         int nbIter = 0;
 
         if(getNeighbors(startId).isEmpty() || getNeighbors(endId).isEmpty()){
-            // If either the startId or the endId have no neighbors, there is no path between them
+            printd("No neighbors for start or end node.");
+            // If either the startId or the endId have no outgoing neighbors, there is no path between them
+            // It's important that we're able to get out of the end node as well to go back to warehouse
+
             pathCost.put(new Pair<Long, Long>(startId, endId), null);
             return null;
         }
@@ -196,6 +205,7 @@ public class Graph  {
                 System.out.println("Nombre d'itérations : " + nbIter);
                 printSolution(startId, endId, costMap, cameFrom);
                 pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
+                printd("Path found from " + startId + " to " + endId + " with cost " + costMap.get(endId));
                 return cameFrom;
             }
 
@@ -214,6 +224,7 @@ public class Graph  {
             visited.add(current.getId());
         }
         pathCost.put(new Pair<Long, Long>(startId, endId), null);
+        printd("No path found from " + startId + " to " + endId);
         return cameFrom;
     }
 
