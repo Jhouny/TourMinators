@@ -7,15 +7,15 @@ import javax.xml.parsers.*;
 import java.io.File;
 import java.util.*;
 
-    public class DeliveryRequestParser {
+public class DeliveryRequestParser {
 
-        /**
-         * Parse un fichier de livraisons XML et retourne :
-         * Map<nodeId, Triple<Node, deliveryId, duration>>
-         * deliveryId = -1 pour entrepôt, identifiant unique pour chaque livraison.
-         */
-        public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
-        Map<Long, Triple<Node, Long, Integer>> sommets = new LinkedHashMap<>();
+    /**
+     * Parse un fichier de livraisons XML et retourne :
+     * Map<nodeId, Triple<Node, deliveryId, duration>>
+     * deliveryId = -1 pour entrepôt, identifiant unique pour chaque livraison.
+     */
+    public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
+        Map<Long, Triple<Node, Long, Integer>> sommets = new HashMap<>();
 
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File(filename));
         doc.getDocumentElement().normalize();
