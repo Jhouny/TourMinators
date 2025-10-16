@@ -37,12 +37,22 @@ public class Server {
         System.out.print("Solution de longueur "+tsp.getCoutSolution()+" trouvee en "
 				+(System.currentTimeMillis() - tempsDebut)+"ms : ");
 
-        Pair<Long, LocalTime>[] bestSolution = new Pair[g.getNbPoI()+1];
-        for (int i=0; i<g.getNbPoI()+1; i++) {
-            long nodeId = tsp.getSolution(i);
-            time = time.plusSeconds(all_nodes.get(nodeId).getDuration());
+        Pair<Long, LocalTime>[] bestSolution = new Pair[tour.size()+1]; // +1 for return to warehouse
+
+        long previousNodeId = tsp.getSolution(0);
+        long nodeId = tsp.getSolution(0);
+        bestSolution[0] = new Pair<Long, LocalTime>(nodeId, time);
+
+        for (int i=1; i<tour.size()+1; i++) {
+            previousNodeId = nodeId;
+            if (i!=tour.size()) nodeId = tsp.getSolution(i);
+            else nodeId = tsp.getSolution(0);
+
+            if (i!=1) time = time.plusSeconds(tour.get(previousNodeId).getDuration());// add duration of previous PoI
+            time = time.plusSeconds((long)(g.getPathCost(previousNodeId, nodeId)*3600/15000));// add travel time between previous and current PoI, assuming 15km/h speed
             bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
         }
+
         //TODO : retourner bestSolution ET g.getPredecesseurs()
         Map<String, Object> responseBody = Map.of(
                 "bestSolution", bestSolution,
