@@ -187,6 +187,10 @@ function load_xml_delivery() {
           return;
         }
 
+        // Reset des POI de la tournée
+        tourPOIMap.clear();
+        data.nodes.forEach((node) => tourPOIMap.set(node.id, node));
+
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
         nodeMarkers = [];
@@ -231,6 +235,7 @@ function load_xml_delivery() {
             }
 
             const color = pairColors[element.deliveryId];
+            console.log(`élement du type est ${element.type} et id est ${element.deliveryId}`);
             const direction = element.type === "pickup" ? "up" : "down";
 
             const icon = createArrowIcon(color, direction);
@@ -265,10 +270,12 @@ function compute_tour() {
   let formData = new FormData();
   // Add actual parameters as needed
   formData.append("all_nodes", JSON.stringify(Object.fromEntries(nodeMap))); // all_nodes Map<Long,Node>
-  formData.append("all_edges", JSON.stringify(Array.from(edgeMap.values()))); // all_edges Edge[]
-  formData.append("tour", JSON.stringify(Object.fromEntries(tourMap))); // tour Map<Long, POI>
+  // formData.append("all_edges", JSON.stringify(Array.from(edges_list.values()))); // all_edges Edge[]
+  // formData.append("tourPOI", JSON.stringify(Object.fromEntries(tourPOIMap))); // tour Map<Long, POI>
 
   console.log("Computing tour...");
+
+  // fetch("/runTSP", { method: "POST", body: formData }) 
 
   fetch("/test_tour.json", {
     method: "GET",
@@ -300,33 +307,29 @@ function compute_tour() {
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
         let fromId = POIbestSolution[i];
         let toId = POIbestSolution[i + 1];
-
-        let pairKey = `(${fromId},${toId})`;
-        let subTourMap = tour[pairKey];
-
-        console.log(`Drawing sub-tour from ${fromId} to ${toId}:`, subTourMap);
-
-        if (subTourMap) {
-          let arrivalId = toId;
-          let predecessorId = subTourMap[toId];
-
-          while (predecessorId && predecessorId !== fromId) {
-            let startNode = nodeMap.get(predecessorId);
-            let endNode = nodeMap.get(arrivalId);
-
+        console.log(`Drawing tour segment from ${fromId} to ${toId}`);
+        let subtour = tour[`(${fromId},${toId})`];
+        let currentId = toId;
+        let nextId = subtour[currentId];
+        console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
+        while (currentId && currentId !== fromId) {
+            let startNode = nodeMap.get(parseInt(currentId));
+            let endNode = nodeMap.get(parseInt(nextId));
+            console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
+            console.log("Start Node:", startNode);
             if (startNode && endNode) {
-              let latlngs = [
-                [startNode.latitude, startNode.longitude],
-                [endNode.latitude, endNode.longitude],
-              ];
-              edgeTourLines.push(
-                L.polyline(latlngs, { color: "#0000FF" }).addTo(map)
-              );
+            console.log(`Drawing edge from ${currentId} to ${nextId}`);
+                let latlngs = [
+                    [startNode.latitude, startNode.longitude],
+                    [endNode.latitude, endNode.longitude],
+                ];
+                edgeTourLines.push(
+                    L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+                );
             }
 
-            arrivalId = predecessorId;
-            predecessorId = subTourMap[arrivalId];
-          }
+            currentId = nextId;
+            nextId = subtour[currentId];
         }
       }
     })

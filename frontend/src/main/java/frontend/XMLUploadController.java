@@ -101,11 +101,13 @@ public class XMLUploadController {
                     Map<String, Object> map = new HashMap<>();
                     Node node = triple.first;
                     Long deliveryId = triple.second;
+                    int duration = triple.third;
 
                     map.put("id", node.getId());
                     map.put("latitude", node.getLatitude());
                     map.put("longitude", node.getLongitude());
                     map.put("deliveryId", deliveryId);
+                    map.put("duration", duration);
 
                     // Déterminer le type : "pickup" ou "delivery"
                     if (deliveryId == -1) {
