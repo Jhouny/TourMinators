@@ -43,7 +43,8 @@ public class Main {
         }
 
         HashMap tour = new HashMap<Long, PointOfInterest>();
-        Graph g = new Graph(sommets, edges, tour);
+
+        //Graph g = new Graph(sommets, edges, tour);
 
 
     }
