@@ -2,23 +2,38 @@ package backend;
 
 import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import backend.TSP.TSP;
 import backend.TSP.TSP2;
 import backend.TSP.Graph;
+import backend.models.Edge;
 import backend.models.Node;
 import backend.models.Pair;
+import backend.models.Response;
 import backend.models.PointOfInterest;
 
 @SpringBootApplication
 public class Server {
-    private static LocalTime time = LocalTime.of(8, 0); // 8:00 AM
-    public static void main(String[] args) {
-        SpringApplication.run(Server.class, args);
+
+    @PostMapping("/runTSP")
+    public ResponseEntity<?> runTSP(@RequestBody Map<Long, PointOfInterest> all_nodes,
+                                        @RequestBody List<Edge> all_edges,
+                                        @RequestBody Map<Long, PointOfInterest> tour) {
+        
+
+        LocalTime time = LocalTime.of(8, 0); // 8:00 AM
+        //public static void main(String[] args) {
+        //SpringApplication.run(Server.class, args);
 
         TSP tsp = new TSP2();
 
@@ -39,6 +54,8 @@ public class Server {
             bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
         }
         //TODO : retourner bestSolution ET g.getPredecesseurs()
+
+        return new ResponseEntity<Object>(new Response(bestSolution, g.getPredecesseurs()),HttpStatus.OK);
 
     } 
 }
