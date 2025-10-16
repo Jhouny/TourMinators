@@ -26,20 +26,11 @@ import backend.models.PointOfInterest;
 public class Server {
 
     @PostMapping("/runTSP")
-    public ResponseEntity<?> runTSP(@RequestBody Map<Long, PointOfInterest> all_nodes,
-                                        @RequestBody List<Edge> all_edges,
-                                        @RequestBody Map<Long, PointOfInterest> tour) {
-        
-
-        LocalTime time = LocalTime.of(8, 0); // 8:00 AM
-        //public static void main(String[] args) {
-        //SpringApplication.run(Server.class, args);
+    public ResponseEntity<?> runTSP(@RequestBody String request) {
 
         TSP tsp = new TSP2();
-
-        //TODO : recuperer all_nodes, all_edges and tour from frontend
-        //Map<Long, PointOfInterest> all_nodes = new HashMap<>();
 		Graph g = new Graph(all_nodes, all_edges, tour);
+        LocalTime time = LocalTime.of(8, 0); // 8:00 AM
 
 		long tempsDebut = System.currentTimeMillis();
 		tsp.chercheSolution(60000, g);
@@ -50,12 +41,16 @@ public class Server {
         Pair<Long, LocalTime>[] bestSolution = new Pair[g.getNbPoI()+1];
         for (int i=0; i<g.getNbPoI()+1; i++) {
             long nodeId = tsp.getSolution(i);
-            time = time.plusSeconds( all_nodes.get(nodeId).getDuration());
+            time = time.plusSeconds(all_nodes.get(nodeId).getDuration());
             bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
         }
         //TODO : retourner bestSolution ET g.getPredecesseurs()
+        Map<String, Object> responseBody = Map.of(
+                "bestSolution", bestSolution,
+                "predecesseurs", g.getPredecesseurs()
+            );
 
-        return new ResponseEntity<Object>(new Response(bestSolution, g.getPredecesseurs()),HttpStatus.OK);
+        return new ResponseEntity<>(responseBody ,HttpStatus.OK);
 
     } 
 }
