@@ -1,13 +1,16 @@
 package backend;
 
-import backend.models.Node;
-import backend.models.Triple;
-import backend.models.Edge;
+import backend.models.*;
+import backend.TSP.*;
+
 import java.util.Map;
 import java.util.List;
+import java.util.HashMap;
 
 public class Main {
     public static void main(String[] args) throws Exception {
+        String xmlPath = "../frontend/src/main/resources/Plan/petitPlan.xml";
+        String deliveriesPath = "../frontend/src/main/resources/Demande/demandePetit1.xml";
         String xmlPath = "../frontend/src/main/resources/Plan/petitPlan.xml";
         String deliveriesPath = "../frontend/src/main/resources/Demande/demandePetit1.xml";
         Map<Long, Node> nodes = XMLParser.parseNodes(xmlPath);
@@ -40,6 +43,11 @@ public class Main {
         for (Map.Entry<Long, Triple<Node, Long, Integer>> entry : sommets.entrySet()) {
             System.out.println("NodeId=" + entry.getKey() + " -> " + entry.getValue());
         }
-    }
 
+        HashMap tour = new HashMap<Long, PointOfInterest>();
+
+        //Graph g = new Graph(sommets, edges, tour);
+
+
+    }
 }
