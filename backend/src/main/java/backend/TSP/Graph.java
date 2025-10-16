@@ -1,22 +1,18 @@
 package backend.TSP;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
 import backend.models.Edge;
 import backend.models.Node;
-import backend.models.Pair;
-import backend.models.PointOfInterest;
 import backend.models.NodeWithCost;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-
+import backend.models.Pair;
 import backend.models.PointOfInterest;
 
 public class Graph  {
@@ -98,7 +94,7 @@ public class Graph  {
         if (all_costs.containsKey(pair)) {
             return all_costs.get(pair);
         } else {
-            throw new IllegalArgumentException("No edge between " + i + " and " + j);
+            return null;
         }
     }
 
@@ -112,7 +108,15 @@ public class Graph  {
 	//=========================== AWA ======================================//
 	public Float getPathCost(Long i, Long j) {
         // Returns the cost of the optimal path between i and j, or null if AWA* has not been called for this pair
-        return pathCost.get(new Pair<Long, Long>(i, j));
+        if(pathCost.get(new Pair<Long, Long>(i, j)) == null){
+            AWAStar(i, j);
+            System.out.println("Path cost between " + i + " and " + j + " computed using getPathCost().");
+        }
+        Float cost = pathCost.get(new Pair<Long, Long>(i, j));
+        if(cost == null){
+            throw new IllegalArgumentException("No path between " + i + " and " + j);
+        }
+        return cost;
     }
 
 	public Set<Long> getNeighbors(long i) {
@@ -168,6 +172,11 @@ public class Graph  {
         // If there is no path between startId and endId, the cost is set to null
 
         int nbIter = 0;
+        if (startId.equals(endId)){
+            printd("Start and end nodes are the same.");
+            pathCost.put(new Pair<Long, Long>(startId, endId), 0f);
+            return null;
+        }
 
         if(getNeighbors(startId).isEmpty() || getNeighbors(endId).isEmpty()){
             printd("No neighbors for start or end node.");
@@ -225,7 +234,24 @@ public class Graph  {
         return cameFrom;
     }
 
-
-
+    //=========================== Getters ==================================
+        public List<Edge> getAllEdges() {
+            return all_edges;
+        }
+        public Map<Long, Node> getAllNodes() {
+            return all_nodes;
+        }
+        public Map<Pair<Long, Long>, Float> getAllCosts() {
+            return all_costs;
+        }
+        public Map<Long, PointOfInterest> getTour() {
+            return tour;
+        }
+        public Map<Pair<Long, Long>, Float> getPathCostMap() {
+            return pathCost;
+        }
+        public Map<Long, Set<Long>> getAdjacency() {
+            return adjacency;
+        }
 
 }
