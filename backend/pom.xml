@@ -34,7 +34,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>backend.Server</mainClass>
+                            <mainClass>backend.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
