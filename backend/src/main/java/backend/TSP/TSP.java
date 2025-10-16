@@ -1,6 +1,6 @@
 package backend.TSP;
 
-import backend.models.Graph;
+import backend.TSP.Graph;
 
 //import backend.models.Node;
 

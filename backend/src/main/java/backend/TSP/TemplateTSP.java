@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.models.Graph;
+import backend.TSP.Graph;
 
 public abstract class TemplateTSP implements TSP {
 	
@@ -84,15 +84,15 @@ public abstract class TemplateTSP implements TSP {
 	        	Long prochainSommet = it.next();
 				
 	        	vus.add(prochainSommet);
-				if (g.getDelivery(prochainSommet) != null) {
-					nonVus.add(g.getDelivery(prochainSommet));
+				if (g.getAssociatedPoI(prochainSommet) != null) {
+					nonVus.add(g.getAssociatedPoI(prochainSommet));
 				}
 	            nonVus.remove(prochainSommet);
 	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCost(sommetCrt, prochainSommet));
 	            vus.remove(prochainSommet);
 	            nonVus.add(prochainSommet);
-				if (g.getDelivery(prochainSommet) != null) {
-					nonVus.remove(g.getDelivery(prochainSommet));
+				if (g.getAssociatedPoI(prochainSommet) != null) {
+					nonVus.remove(g.getAssociatedPoI(prochainSommet));
 				}
 	        }	    
 	    }

@@ -2,7 +2,7 @@ package backend.TSP;
 
 import java.util.Map;
 
-import backend.models.Graphe;
+import backend.TSP.Graph;
 import backend.models.Node;
 import backend.models.Pair;
 
@@ -22,14 +22,14 @@ public class RunTSP {
 
 		long entrepot = 0;
 
-		Graph g = new GrapheDistances(sommets, Long.valueOf(0));
-		long tempsDebut = System.currentTimeMillis();
-		tsp.chercheSolution(60000, g);
-		System.out.print("Solution de longueur "+tsp.getCoutSolution()+" trouvee en "
-				+(System.currentTimeMillis() - tempsDebut)+"ms : ");
-		for (int i=0; i<sommets.size(); i++)
-			System.out.print(tsp.getSolution(i)+" ");
-		System.out.println();
+		// Graph g = new Graph(sommets, Long.valueOf(0));
+		// long tempsDebut = System.currentTimeMillis();
+		// tsp.chercheSolution(60000, g);
+		// System.out.print("Solution de longueur "+tsp.getCoutSolution()+" trouvee en "
+		// 		+(System.currentTimeMillis() - tempsDebut)+"ms : ");
+		// for (int i=0; i<sommets.size(); i++)
+		// 	System.out.print(tsp.getSolution(i)+" ");
+		// System.out.println();
 		
 	}
 }

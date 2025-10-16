@@ -102,13 +102,12 @@ public class Graph  {
         }
     }
 
-    // Est-ce que cette fonction est utile ? Pourquoi utiliser tour ?
-	// public boolean isEdge(Long i, Long j) {
-    //     // Returns true if there is an edge between i and j, false otherwise
-	// 	if (tour.containsKey(i) && tour.containsKey(j))
-	// 		return !i.equals(j);
-	// 	return false;
-	// }
+	public boolean isEdge(Long i, Long j) {
+        // Returns true if there is an edge between i and j, false otherwise
+		if (tour.containsKey(i) && tour.containsKey(j))
+			return !i.equals(j);
+		return false;
+	}
 
 	//=========================== AWA ======================================//
 	public Float getPathCost(Long i, Long j) {

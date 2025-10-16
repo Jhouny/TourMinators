@@ -3,7 +3,7 @@ package backend.TSP;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.models.Graph;
+import backend.TSP.Graph;
 
 public class IteratorSeq implements Iterator<Long> {
 
@@ -17,7 +17,7 @@ public class IteratorSeq implements Iterator<Long> {
 	 * @param sommetCrt
 	 * @param g
 	 */
-	public IteratorSeq(Long sommetCrt, Collection<Long> nonVus, Graph g){
+	public IteratorSeq(Long sommetCrt, Collection<Long> nonVus , Graph g){
 		this.candidats = new Long[nonVus.size()];
 		Iterator<Long> it = nonVus.iterator();
 		while (it.hasNext()){
