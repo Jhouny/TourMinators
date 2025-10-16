@@ -6,7 +6,6 @@ import org.w3c.dom.*;
 import javax.xml.parsers.*;
 import java.io.File;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class DeliveryRequestParser {
 
