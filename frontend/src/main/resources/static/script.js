@@ -31,7 +31,8 @@ var warehouseIcon = L.icon({
 var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
-
+var edges_list = []; // Liste des edges déjà chargés
+var tourPOIMap = new Map(); // POI de la tournée déjà chargés
 var edgeTourLines = [];
 
 // Génère une couleur hexadécimale aléatoire
@@ -97,6 +98,9 @@ function load_xml_map() {
         // Réinitialiser le graphe global
         nodeMap.clear();
         nodes.forEach((node) => nodeMap.set(node.id, node));
+
+        // Réinitialiser la liste des edges
+        edges_list = edges;
 
         // Variables pour calculer les bounds
         let topLeftNode = null;
@@ -259,9 +263,10 @@ function compute_tour() {
 
   // Prepare data to send to backend to compute the tour
   let formData = new FormData();
-  formData.append("firstParam", "firstValue"); // Add actual parameters as needed
-  formData.append("secondParam", "secondValue");
-  formData.append("thirdParam", "thirdValue");
+  // Add actual parameters as needed
+  formData.append("all_nodes", JSON.stringify(Object.fromEntries(nodeMap))); // all_nodes Map<Long,Node>
+  formData.append("all_edges", JSON.stringify(Array.from(edgeMap.values()))); // all_edges Edge[]
+  formData.append("tour", JSON.stringify(Object.fromEntries(tourMap))); // tour Map<Long, POI>
 
   console.log("Computing tour...");
 
