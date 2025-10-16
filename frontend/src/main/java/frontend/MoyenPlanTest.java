@@ -1,4 +1,5 @@
 package frontend;
+
 import java.util.*;
 import frontend.models.Pair;
 import java.time.LocalTime;
@@ -18,17 +19,21 @@ public class MoyenPlanTest {
         bestSolution.add(new Pair<>(1400900990L, LocalTime.of(9, 10, 0))); // Pickup 4
         bestSolution.add(new Pair<>(208769083L, LocalTime.of(9, 20, 0))); // Delivery 4
         bestSolution.add(new Pair<>(26317393L, LocalTime.of(9, 30, 0))); // Pickup 5
-        bestSolution.add(new Pair<>(60755991L, LocalTime.of(9, 40, 0))); // Delivery 
+        bestSolution.add(new Pair<>(60755991L, LocalTime.of(9, 40, 0))); // Delivery 5
 
         // Simulated tour: Map of Pair<pickupID, deliveryID> to Map<arrival, predecessor>
         Map<Pair<Long, Long>, Map<Long, Long>> tour = new HashMap<>();
+
+        // Path from Entrepôt to Pickup 1
+        Pair<Long, Long> entrepotToPickup1 = new Pair<>(4150019167L, 21992645L);
+        Map<Long, Long> pathEntrepotToPickup1 = new HashMap<>();
+        pathEntrepotToPickup1.put(21992645L, 4150019167L);
 
         // Path for Pickup 1 -> Delivery 1
         Pair<Long, Long> pickupDeliveryPair1 = new Pair<>(21992645L, 55444215L);
         Map<Long, Long> path1 = new HashMap<>();
         path1.put(55444215L, 21992645L);
         path1.put(21992645L, 4150019167L);
-        path1.put(4150019167L, null);
 
         // Path for Pickup 2 -> Delivery 2
         Pair<Long, Long> pickupDeliveryPair2 = new Pair<>(26155372L, 1036842078L);
@@ -55,6 +60,7 @@ public class MoyenPlanTest {
         path5.put(26317393L, 208769083L);
 
         // Add paths to the tour
+        tour.put(entrepotToPickup1, pathEntrepotToPickup1);
         tour.put(pickupDeliveryPair1, path1);
         tour.put(pickupDeliveryPair2, path2);
         tour.put(pickupDeliveryPair3, path3);
