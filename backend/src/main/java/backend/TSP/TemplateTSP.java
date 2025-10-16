@@ -4,31 +4,31 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.models.Graphe;
+import backend.TSP.Graph;
 
 public abstract class TemplateTSP implements TSP {
 	
 	private Long[] meilleureSolution;
-	protected Graphe g;
+	protected Graph g;
 	private double coutMeilleureSolution;
 	private int tpsLimite;
 	private long tpsDebut;
 	
-	public void chercheSolution(int tpsLimite, Graphe g){
+	public void chercheSolution(int tpsLimite, Graph g){
 		if (tpsLimite <= 0) return;
 		tpsDebut = System.currentTimeMillis();	
 		this.tpsLimite = tpsLimite;
 		this.g = g;
-		meilleureSolution = new Long[g.getNbSommets()];
+		meilleureSolution = new Long[g.getNbNodes()];
 		Collection<Long> nonVus = g.getNodesToVisit();
-		Collection<Long> vus = new ArrayList<Long>(g.getNbSommets());
+		Collection<Long> vus = new ArrayList<Long>(g.getNbNodes());
 		vus.add(g.getBeginId()); // le premier sommet visite
 		coutMeilleureSolution = Double.MAX_VALUE;
 		branchAndBound(g.getBeginId(), nonVus, vus, g.getBeginId());
 	}
 	
 	public long getSolution(int i){
-		if (g != null && i>=0 && i<g.getNbSommets())
+		if (g != null && i>=0 && i<g.getNbNodes())
 			return meilleureSolution[i];
 		return -1;
 	}
@@ -55,7 +55,7 @@ public abstract class TemplateTSP implements TSP {
 	 * @param g
 	 * @return un iterateur permettant d'iterer sur tous les sommets de <code>nonVus</code> qui sont successeurs de <code>sommetCourant</code>
 	 */
-	protected abstract Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graphe g);
+	protected abstract Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graph g);
 	
 	/**
 	 * Methode definissant le patron (template) d'une resolution par separation et evaluation (branch and bound) du TSP pour le graphe <code>g</code>.
@@ -69,13 +69,13 @@ public abstract class TemplateTSP implements TSP {
 		if (System.currentTimeMillis() - tpsDebut > tpsLimite) return;
 	    if (nonVus.size() == 0){ // tous les sommets ont ete visites
 			
-	    	if (g.estArc(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
+	    	if (g.isEdge(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
 				
 			
-	    		if (coutVus+g.getCout(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
+	    		if (coutVus+g.getCost(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
 	    			
 					vus.toArray(meilleureSolution);
-	    			coutMeilleureSolution = coutVus+g.getCout(sommetCrt,g.getBeginId());
+	    			coutMeilleureSolution = coutVus+g.getCost(sommetCrt,g.getBeginId());
 	    		}
 	    	}
 	    } else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
@@ -84,15 +84,15 @@ public abstract class TemplateTSP implements TSP {
 	        	Long prochainSommet = it.next();
 				
 	        	vus.add(prochainSommet);
-				if (g.getDelivery(prochainSommet) != null) {
-					nonVus.add(g.getDelivery(prochainSommet));
+				if (g.getAssociatedPoI(prochainSommet) != null) {
+					nonVus.add(g.getAssociatedPoI(prochainSommet));
 				}
 	            nonVus.remove(prochainSommet);
-	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCout(sommetCrt, prochainSommet));
+	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCost(sommetCrt, prochainSommet));
 	            vus.remove(prochainSommet);
 	            nonVus.add(prochainSommet);
-				if (g.getDelivery(prochainSommet) != null) {
-					nonVus.remove(g.getDelivery(prochainSommet));
+				if (g.getAssociatedPoI(prochainSommet) != null) {
+					nonVus.remove(g.getAssociatedPoI(prochainSommet));
 				}
 	        }	    
 	    }
