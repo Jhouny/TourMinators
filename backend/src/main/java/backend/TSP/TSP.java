@@ -1,18 +1,17 @@
 package backend.TSP;
 
-import backend.TSP.Graph;
 
 //import backend.models.Node;
 
 public interface TSP {
 	
 	/**
-	 * Cherche une solution au TSP pour le graphe <code>g</code> dans la limite de <code>tpsLimite</code> millisecondes
+	 * Cherche une solution au TSP pour le graphe <code>g</code> dans la limite de <code>tempsLimite</code> millisecondes
 	 * Attention : la solution calculee commence necessairement par le sommet 0
-	 * @param tpsLimite
+	 * @param tempsLimite
 	 * @param g
 	 */
-	public void chercheSolution(int tpsLimite, Graph g);
+	public void chercheSolution(int tempsLimite, Graph g);
 	
 	/**
 	 * @param i
