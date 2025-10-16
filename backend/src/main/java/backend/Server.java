@@ -12,17 +12,18 @@ import backend.TSP.TSP2;
 import backend.TSP.Graph;
 import backend.models.Node;
 import backend.models.Pair;
+import backend.models.PointOfInterest;
 
 @SpringBootApplication
 public class Server {
-    private static LocalTime startTime = LocalTime.of(8, 0); // 8:00 AM
+    private static LocalTime time = LocalTime.of(8, 0); // 8:00 AM
     public static void main(String[] args) {
         SpringApplication.run(Server.class, args);
 
         TSP tsp = new TSP2();
 
         //TODO : recuperer all_nodes, all_edges and tour from frontend
-
+        //Map<Long, PointOfInterest> all_nodes = new HashMap<>();
 		Graph g = new Graph(all_nodes, all_edges, tour);
 
 		long tempsDebut = System.currentTimeMillis();
@@ -34,11 +35,10 @@ public class Server {
         Pair<Long, LocalTime>[] bestSolution = new Pair[g.getNbPoI()+1];
         for (int i=0; i<g.getNbPoI()+1; i++) {
             long nodeId = tsp.getSolution(i);
-            LocalTime arrivalTime = ... //TODO : compute arrival time at nodeId
-
-
-
-        //TODO : retourner bestSolution (complète) ET g.getPredecesseurs()
+            time = time.plusSeconds( all_nodes.get(nodeId).getDuration());
+            bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
+        }
+        //TODO : retourner bestSolution ET g.getPredecesseurs()
 
     } 
 }
