@@ -19,8 +19,6 @@ import java.util.Collections;
 import java.util.HashMap;
 
 
-//import backend.models.Node;
-
 public class GrapheDistances implements Graph {
 	
 	List<Edge> all_edges;
@@ -38,6 +36,7 @@ public class GrapheDistances implements Graph {
 	/**
 	 * Cree un graphe complet dont les aretes ont un cout compris entre COUT_MIN et COUT_MAX
 	 * @param nbSommets
+	 * @return 
 	 */
 
 	// public GrapheDistances(Map<Long, Pair<Node, Long>> nodes, Long beginId){
@@ -47,7 +46,7 @@ public class GrapheDistances implements Graph {
 	// 	this.nbSommets = sommets.size();
 	// }
 	
-	public GraphDistances(Map<Long, Node> nodes, List<Edge> edges){
+	public void GraphDistances(Map<Long, Node> nodes, List<Edge> edges){
         this.all_nodes = nodes; 
         this.all_edges = edges;
 
