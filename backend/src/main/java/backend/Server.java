@@ -39,7 +39,7 @@ public class Server {
         TSP tsp = new TSP2();
 
         Graph g = new Graph(all_nodes, all_edges, tour);
-        LocalTime time = LocalTime.of(8, 0); // 8:00 AM - def
+        LocalTime time = LocalTime.of(8, 0); // 8:00 AM - default start time
 
         long tempsDebut = System.currentTimeMillis();
         tsp.chercheSolution(60000, g);
