@@ -34,31 +34,9 @@ class GraphStorage {
         return this.graphNodes;
     }
 }
-import org.springframework.stereotype.Component;
-
-// Singleton pour stocker le graphe en mémoire
-@Component
-class GraphStorage {
-    private Map<Long, Node> graphNodes;
-
-    public void setGraphNodes(Map<Long, Node> nodes) {
-        this.graphNodes = nodes;
-    }
-
-    public Map<Long, Node> getGraphNodes() {
-        return this.graphNodes;
-    }
-}
 
 @RestController
 public class XMLUploadController {
-
-    private final GraphStorage graphStorage;
-
-    // Injection du GraphStorage
-    public XMLUploadController(GraphStorage graphStorage) {
-        this.graphStorage = graphStorage;
-    }
 
     private final GraphStorage graphStorage;
 
