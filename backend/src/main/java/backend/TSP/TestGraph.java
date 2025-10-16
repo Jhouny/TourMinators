@@ -1,13 +1,13 @@
 package backend.TSP;
 
 import java.util.*;
+import java.time.LocalTime;
 
 import backend.models.Node;
 import backend.models.Pair;
 import backend.models.Edge;
 import backend.models.PointOfInterest;
 import backend.models.PointOfInterest.PoIEnum;
-import backend.TSP.Graph;
 
 public class TestGraph {
 
@@ -46,9 +46,9 @@ public class TestGraph {
 
         // --- Points d’intérêt (tour) ---
         Map<Long, PointOfInterest> tour = new HashMap<>();
-        tour.put(1L, new PointOfInterest(n1, PointOfInterest.PoIEnum.WAREHOUSE, null, 0));
-        tour.put(2L, new PointOfInterest(n2, PointOfInterest.PoIEnum.PICKUP, 3L, 10));
-        tour.put(6L, new PointOfInterest(n6, PointOfInterest.PoIEnum.DELIVERY, 2L, 5));
+        tour.put(1L, new PointOfInterest(n1, PoIEnum.WAREHOUSE, null, 0));
+        tour.put(2L, new PointOfInterest(n2, PoIEnum.PICKUP, 3L, 10));
+        tour.put(6L, new PointOfInterest(n6, PoIEnum.DELIVERY, 2L, 5));
 
         // --- Création du graphe ---
         Graph graph = new Graph(nodes, edges, tour);
@@ -56,7 +56,7 @@ public class TestGraph {
         // testInitialisation(graph); //validated 
         // testGetNodesToVisit(graph); //validated
         // testGetAssociatedPoI(graph, 2L); //validated
-        // //testGetAssociatedPoI(graph, 4L); //suppose to throw exception (return null), validated
+        //testGetAssociatedPoI(graph, 4L); //null, validated
         
         // testGetBeginId(graph); //validated
         // testGetNbNodes(graph); //validated
@@ -77,6 +77,11 @@ public class TestGraph {
         testAWAStar(graph, 1L,7L); //tester pour un noeud qui est dans le graph mais pas connecté
         testAWAStar(graph, 1L,8L); //tester pour un ID invalide
 
+        System.out.println("\n=== PATH COST ===");
+        System.out.println("Path cost from 1 to 2: " + graph.getPathCost(1L, 2L));
+        System.out.println("Path cost from 1 to 6: " + graph.getPathCost(1L, 6L));
+        System.out.println("Path cost from 1 to 7: " + graph.getPathCost(1L, 7L)); // should be
+        System.out.println("Path cost from 1 to 8: " + graph.getPathCost(1L, 8L)); // should be
         System.out.println();
     }
 

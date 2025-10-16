@@ -72,9 +72,7 @@ public class Graph  {
         Long associatedPoI = null;
         if (tour.containsKey(id))
             associatedPoI = tour.get(id).getAssociatedPoI();
-        if (associatedPoI == null)
-            throw new IllegalArgumentException("Node " + id + " is not a pickup or delivery node.");
-        return tour.get(id).getAssociatedPoI();
+        return associatedPoI;
 	}
 
 	public Long getBeginId() {
@@ -200,7 +198,7 @@ public class Graph  {
 
             if (visited.contains(current.getId()))
                 continue;
-            
+
             if(current.getId() == endId){
                 System.out.println("Nombre d'itérations : " + nbIter);
                 printSolution(startId, endId, costMap, cameFrom);
