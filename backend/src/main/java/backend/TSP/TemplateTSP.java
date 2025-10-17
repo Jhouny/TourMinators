@@ -24,7 +24,8 @@ public abstract class TemplateTSP implements TSP {
 		Collection<Long> vus = new ArrayList<Long>(g.getNbNodes());
 		vus.add(g.getBeginId()); // le premier sommet visite
 		coutMeilleureSolution = Double.MAX_VALUE;
-		branchAndBound(g.getBeginId(), nonVus, vus, g.getBeginId());
+		//branchAndBound(g.getBeginId(), nonVus, vus, g.getBeginId());
+		branchAndBound(g.getBeginId(), nonVus, vus, 0.0);
 	}
 	
 	public long getSolution(int i){

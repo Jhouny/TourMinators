@@ -4,9 +4,8 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-import backend.TSP.GraphAWA.NodeCost;
+//import backend.TSP.GraphAWA.NodeCost;
 import backend.models.Edge;
-import backend.models.Graph;
 import backend.models.Node;
 import backend.models.Pair;
 import backend.models.NodeWithCost;
@@ -19,7 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 
 
-public class GrapheDistances implements Graph {
+public class GrapheDistances {
 	
 	List<Edge> all_edges;
 	Map<Long, Node> all_nodes;
@@ -67,6 +66,7 @@ public class GrapheDistances implements Graph {
         }
 	}
 
+    /*
 	@Override
 	public ArrayList<Long> getNodesToVisit() {
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
@@ -114,7 +114,7 @@ public class GrapheDistances implements Graph {
 			return i != j;
 		return false;
 	}
-
+    */
 	//===========================AWA - Methodes de Vini======================================//
 	
 	public Set<Long> getNeighbors(long i) {
@@ -127,11 +127,11 @@ public class GrapheDistances implements Graph {
         Node nodeI = all_nodes.get(i);
         Node nodeJ = all_nodes.get(j);
         // Utilisation de la distance euclidienne comme heuristique
-        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLat() - nodeJ.getLat(), 2) + Math.pow(nodeI.getLong() - nodeJ.getLong(), 2)));
+        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLatitude() - nodeJ.getLatitude(), 2) + Math.pow(nodeI.getLongitude() - nodeJ.getLongitude(), 2)));
     }
 
 	private void printSolution(long startId, long endId, Map<Long, Float> costMap, Map<Long, Long> cameFrom) {
-		// TODO: Test and implement properlys
+		// TODO: Test and implement properly
 
         // Reconstruct the path from end to start using cameFrom
         List<Long> path = new ArrayList<>();
@@ -150,7 +150,7 @@ public class GrapheDistances implements Graph {
         for (int i = 0; i < path.size() - 1; i++) {
             long from = path.get(i);
             long to = path.get(i + 1);
-            totalCost += getCost(from, to); // cumulative cost along the path
+            //totalCost += getCost(from, to); // cumulative cost along the path
         }
 
         // Print path and total cost
@@ -191,7 +191,7 @@ public class GrapheDistances implements Graph {
             }
 
             for(long neighbor : getNeighbors(current.getId())){
-                float newCost = costMap.get(current.getId()) + getCost(current.getId(), neighbor);
+                float newCost = costMap.get(current.getId());// + getCost(current.getId(), neighbor);
                 float h = heuristic(neighbor, endId);
                 float f = newCost + h;
 

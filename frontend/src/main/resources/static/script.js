@@ -332,10 +332,16 @@ function compute_tour() {
   }
 
   // Prepare data to send to backend to compute the tour
-  let body = {
+  console.log("Sending data to compute tour:");
+  console.log("All Nodes:", Object.fromEntries(nodeMap));
+  console.log("All Edges:", Array.from(edges_list.values()));
+  console.log("Tour POIs:", Object.fromEntries(tourPOIMap));
+
+  // Create body of an object with all needed data
+  const requestBody = {
     allNodes: Object.fromEntries(nodeMap),
-    allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(tourPOIMap),
+    allEdges: Array.from(edges_list.values()),
+    tour: Object.fromEntries(tourPOIMap)
   };
 
   console.log("Computing tour...");
@@ -343,9 +349,9 @@ function compute_tour() {
   fetch("http://localhost:8090/runTSP", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(requestBody)
   })
     .then((response) => {
       if (!response.ok) throw new Error("HTTP error " + response.status);

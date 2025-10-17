@@ -11,9 +11,9 @@ public class PointOfInterest {
     private int duration; // in seconds, time needed to pickup/deliver, 0 if warehouse
 
     public enum PoIEnum {
-        WAREHOUSE,
-        PICKUP,
-        DELIVERY;
+        warehouse,
+        pickup,
+        delivery;
     }
 
     @JsonCreator
