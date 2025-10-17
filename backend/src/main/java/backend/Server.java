@@ -71,6 +71,12 @@ public class Server {
             bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
         }
 
+        // Log the best solution
+        System.out.println("Best Solution:");
+        for (Pair<Long, LocalTime> step : bestSolution) {
+            System.out.println("Node ID: " + step.getLeft() + ", Arrival Time: " + step.getRight());
+        }
+        /*
         // TODO : retourner bestSolution ET g.getPredecesseurs()
         bestSolution = new Pair[g.getNbPoI() + 1];
         for (int i = 0; i < g.getNbPoI() + 1; i++) {
@@ -85,6 +91,8 @@ public class Server {
                 "predecesseurs", g.getPredecesseurs());
         );
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
-        
+        */
+
+        return new ResponseEntity<>(bestSolution, HttpStatus.OK);
     }
 }

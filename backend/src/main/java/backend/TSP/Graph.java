@@ -66,7 +66,7 @@ public class Graph  {
         // Return the list of pickup nodes to visit (not deliveries, not warehouse)
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
 		for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == PointOfInterest.PoIEnum.PICKUP){
+			if (tour.get(id).getType() == PointOfInterest.PoIEnum.pickup){
 				nodesToVisit.add(id);
 			}
 		}
@@ -87,7 +87,7 @@ public class Graph  {
         // Return the id of the warehouse
         Long warehouseId = null;
         for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == PointOfInterest.PoIEnum.WAREHOUSE){
+			if (tour.get(id).getType() == PointOfInterest.PoIEnum.warehouse){
 				warehouseId = id;
                 break;
 			}
@@ -145,7 +145,7 @@ public class Graph  {
         Node nodeI = all_nodes.get(i);
         Node nodeJ = all_nodes.get(j);
         // Current heuristic : euclidian distance
-        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLat() - nodeJ.getLat(), 2) + Math.pow(nodeI.getLong() - nodeJ.getLong(), 2)));
+        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLatitude() - nodeJ.getLatitude(), 2) + Math.pow(nodeI.getLongitude() - nodeJ.getLongitude(), 2)));
     }
 
 	private void printSolution(long startId, long endId, Map<Long, Float> costMap, Map<Long, Long> cameFrom) {
