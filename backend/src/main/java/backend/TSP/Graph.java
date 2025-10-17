@@ -102,6 +102,9 @@ public class Graph  {
 
     public Float getCost(Long i, Long j) {
         //Returns the cost between 2 nodes, or throws an exception if there is no edge between them
+        if (i.equals(j)) {
+            return 0f;
+        }
         Pair<Long, Long> pair = new Pair<Long, Long>(i, j);
         if (all_costs.containsKey(pair)) {
             return all_costs.get(pair);
