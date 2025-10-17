@@ -6,6 +6,7 @@ import org.w3c.dom.*;
 import javax.xml.parsers.*;
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DeliveryRequestParser {
 
@@ -19,6 +20,7 @@ public class DeliveryRequestParser {
      * - "pickup" pour l’adresse d’enlèvement
      * - "delivery" pour l’adresse de livraison
      */
+
     public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
         Map<Long, Triple<Node, Long, Integer>> sommets = new LinkedHashMap<>();
 

@@ -1,0 +1,39 @@
+package frontend.models;
+
+public class PointOfInterest {
+
+    private Node node;
+    private PoIEnum type; // evolution : enum
+    private Long associatedPoI; // id of associated point of interest (null if type = warehouse)
+    private int duration; // in seconds, time needed to pickup/deliver, 0 if warehouse
+
+    public enum PoIEnum {
+        WAREHOUSE,
+        PICKUP,
+        DELIVERY;
+    }
+
+    public PointOfInterest(Node node, PoIEnum type, Long associatedPoI, int duration) {
+        this.node = node;
+        this.type = type;
+        this.associatedPoI = associatedPoI;
+        this.duration = duration;
+    }
+
+    public PoIEnum getType() {
+        return type;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+    public Long getAssociatedPoI() {
+        return associatedPoI;
+    }
+    public Node getNode() {
+        return node;
+    }
+    public void setAssociatedPickupId(Long associatedPoI) {
+        this.associatedPoI = associatedPoI;
+    }
+}

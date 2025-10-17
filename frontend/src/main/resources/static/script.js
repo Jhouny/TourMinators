@@ -28,6 +28,12 @@ var warehouseIcon = L.icon({
   iconAnchor: [10, 10],
 });
 
+var warehouseIcon = L.icon({
+    iconUrl: 'warehouse-icon.png', 
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+});
+
 var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
