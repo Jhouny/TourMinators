@@ -1,12 +1,11 @@
 package frontend;
 
 import frontend.models.Triple;
-import frontend.models.Triple;
+import frontend.models.PointOfInterest;
 import frontend.models.Node;
 import frontend.models.Edge;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,31 +91,13 @@ public class XMLUploadController {
                         .body(Map.of("error", "No graph loaded. Please upload a map first."));
             }
 
-            Map<Long, Triple<Node, Long, Integer>> deliveryNodes =
+            List<PointOfInterest> poiList =
                     DeliveryRequestParser.parseDeliveries(tempDeliveryFile.getAbsolutePath(), graphNodes);
 
 
-            List<Map<String, Object>> nodesList = deliveryNodes.values().stream()
-            .map(triple -> {
-                Map<String, Object> map = new HashMap<>();
-                Node node = triple.first;
-                Long deliveryId = triple.second;
-                int duration = triple.third;
-
-                map.put("id", node.getId());
-                map.put("latitude", node.getLatitude());
-                map.put("longitude", node.getLongitude());
-                map.put("deliveryId", deliveryId);
-                map.put("duration", duration);
-                map.put("type", node.getType());
-
-                return map;
-            })
-            .collect(Collectors.toList());
-
             tempDeliveryFile.delete();
 
-            return ResponseEntity.ok(Map.of("nodes", nodesList));
+            return ResponseEntity.ok(Map.of("tours", poiList));
 
         } catch (Exception e) {
             e.printStackTrace();

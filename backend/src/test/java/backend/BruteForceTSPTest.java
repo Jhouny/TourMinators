@@ -20,6 +20,7 @@ public class BruteForceTSPTest {
     // Test cases for BruteForceTSP
     @Test
     public void testFullyConnectedGraph() {
+        System.out.println("Testing fully connected graph scenario");
         Map<Long, Node> nodes = new HashMap<>();
         nodes.put(1L, new Node(1, 48.8566, 2.3522)); // Paris
         nodes.put(2L, new Node(2, 45.7640, 4.8357)); // Lyon
@@ -35,11 +36,11 @@ public class BruteForceTSPTest {
         edges.add(new Edge(2L, 3L, 593, "lyon-nantes")); // Lyon to Nantes
         edges.add(new Edge(3L, 2L, 593, "nantes-lyon")); // Nantes to Lyon
 
-        Map<Long, PointOfInterest> tour = new HashMap<>();
+        List<PointOfInterest> tour = new ArrayList<>();
         // Add PoIs to the tour as needed for testing
-        tour.put(1L, new PointOfInterest(nodes.get(1L), PointOfInterest.PoIEnum.warehouse, 0L, 0));
-        tour.put(2L, new PointOfInterest(nodes.get(2L), PointOfInterest.PoIEnum.pickup, 3L, 0)); // Pickup for delivery 3
-        tour.put(3L, new PointOfInterest(nodes.get(3L), PointOfInterest.PoIEnum.delivery, 2L, 0));
+        tour.add(new PointOfInterest(nodes.get(1L), PointOfInterest.PoIEnum.WAREHOUSE, 0L, 0));
+        tour.add(new PointOfInterest(nodes.get(2L), PointOfInterest.PoIEnum.PICKUP, 3L, 0)); // Pickup for delivery 3
+        tour.add(new PointOfInterest(nodes.get(3L), PointOfInterest.PoIEnum.DELIVERY, 2L, 0));
 
         Graph graph = new Graph(nodes, edges, tour);
         BruteForceTSP tsp = new BruteForceTSP(graph);
@@ -55,6 +56,8 @@ public class BruteForceTSPTest {
             perm.add(perm.get(0)); // Return to warehouse
         }
 
+        tsp.solve();
+
         int validCount = 0;
         for (ArrayList<Long> perm : permutations) {
             System.out.println("Testing permutation: " + perm);
@@ -64,7 +67,9 @@ public class BruteForceTSPTest {
         }
         Assert.assertEquals("Expected 1 valid permutation", 1, validCount);
 
-        tsp.solve();
+        System.out.println("solutionOrder: " + tsp.getSolutionOrder());
+        System.out.println("solutionPaths: " + tsp.getSolutionPaths());
+
         ArrayList<Long> solutionOrder = tsp.getSolutionOrder();
         ArrayList<Map<Long, Long>> solutionPaths = tsp.getSolutionPaths();
 
@@ -79,6 +84,7 @@ public class BruteForceTSPTest {
 
     @Test
     public void testDisconnectedGraph() {
+        System.out.println("Testing disconnected graph scenario");
         Map<Long, Node> nodes = new HashMap<>();
         nodes.put(1L, new Node(1, 48.8566, 2.3522)); // Paris
         nodes.put(2L, new Node(2, 45.7640, 4.8357)); // Lyon
@@ -86,11 +92,11 @@ public class BruteForceTSPTest {
 
         List<Edge> edges = new ArrayList<>();
 
-        Map<Long, PointOfInterest> tour = new HashMap<>();
+        List<PointOfInterest> tour = new ArrayList<>();
         // Add PoIs to the tour as needed for testing
-        tour.put(1L, new PointOfInterest(nodes.get(1L), PointOfInterest.PoIEnum.warehouse, 0L, 0));
-        tour.put(2L, new PointOfInterest(nodes.get(2L), PointOfInterest.PoIEnum.pickup, 3L, 0)); // Pickup for delivery 3
-        tour.put(3L, new PointOfInterest(nodes.get(3L), PointOfInterest.PoIEnum.delivery, 2L, 0));
+        tour.add(new PointOfInterest(nodes.get(1L), PointOfInterest.PoIEnum.WAREHOUSE, 0L, 0));
+        tour.add(new PointOfInterest(nodes.get(2L), PointOfInterest.PoIEnum.PICKUP, 3L, 0)); // Pickup for delivery 3
+        tour.add(new PointOfInterest(nodes.get(3L), PointOfInterest.PoIEnum.DELIVERY, 2L, 0));
 
         Graph graph = new Graph(nodes, edges, tour);
         BruteForceTSP tsp = new BruteForceTSP(graph);

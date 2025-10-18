@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,8 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import backend.TSP.Graph;
 import backend.TSP.BruteForceTSP;
+import backend.TSP.Graph;
 import backend.models.Edge;
 import backend.models.Node;
 import backend.models.PointOfInterest;
@@ -33,7 +32,14 @@ public class Server {
 
         Map<Long, Node> all_nodes = tspRequest.getAllNodes(); 
         List<Edge> all_edges = tspRequest.getAllEdges();
-        Map<Long, PointOfInterest> tour = tspRequest.getTour();
+        List<PointOfInterest> tour = tspRequest.getTour();
+
+        // Pretty print the tour
+        System.out.println("Tour Points of Interest:");
+        for (PointOfInterest poi : tour) {
+            Long poiId = poi.getNode().getId();
+            System.out.println("PoI ID: " + poiId + ", Type: " + poi.getType() + ", Associated ID: " + poi.getAssociatedPoI());
+        }
 
         Graph g = new Graph(all_nodes, all_edges, tour);
         LocalTime time = LocalTime.of(8, 0); // 8:00 AM - default start time
