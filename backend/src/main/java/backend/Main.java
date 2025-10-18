@@ -11,6 +11,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         String xmlPath = "../frontend/src/main/resources/Plan/petitPlan.xml";
         String deliveriesPath = "../frontend/src/main/resources/Demande/demandePetit1.xml";
+
         Map<Long, Node> nodes = XMLParser.parseNodes(xmlPath);
         List<Edge> edges = XMLParser.parseEdges(xmlPath);
         System.out.println("Nodes: " + nodes.size());
@@ -45,7 +46,5 @@ public class Main {
         HashMap tour = new HashMap<Long, PointOfInterest>();
 
         //Graph g = new Graph(sommets, edges, tour);
-
-
     }
 }

@@ -46,7 +46,7 @@ public class TestGraph {
         // --- Points d’intérêt (tour) ---
         Map<Long, PointOfInterest> tour = new HashMap<>();
         tour.put(1L, new PointOfInterest(n1, PoIEnum.WAREHOUSE, null, 0));
-        tour.put(2L, new PointOfInterest(n2, PoIEnum.PICKUP, 3L, 10));
+        tour.put(2L, new PointOfInterest(n2, PoIEnum.PICKUP, 6L, 10));
         tour.put(6L, new PointOfInterest(n6, PoIEnum.DELIVERY, 2L, 5));
 
         // --- Création du graphe ---
