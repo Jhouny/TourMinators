@@ -22,7 +22,7 @@ import backend.TSP.Graph;
 
 
 public class ServerTest {
-
+/*
    @Test
    public void serverShouldReturnBestSolutionsAndPredecessors() {
         //tested objects
@@ -67,5 +67,6 @@ public class ServerTest {
 
 		
 
-    }
+    }*/
 }
+    

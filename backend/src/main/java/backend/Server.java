@@ -1,6 +1,7 @@
 package backend;
 
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,8 @@ public class Server {
 
         @SuppressWarnings("unchecked")
         Pair<Long, LocalTime>[] bestSolution = (Pair<Long, LocalTime>[]) new Pair[tour.size() + 1]; // +1 for return to warehouse
+        
+        Map <Pair<Long,Long>, Map<Long, Long>> predecessors = new HashMap<>();
 
         long previousNodeId = tsp.getSolution(0);
         long nodeId = tsp.getSolution(0);
@@ -54,6 +57,8 @@ public class Server {
 
         for (int i = 1; i < tour.size() + 1; i++) {
             previousNodeId = nodeId;
+
+            //fill in bestSolution
             if (i != tour.size())
                 nodeId = tsp.getSolution(i);
             else
@@ -67,20 +72,17 @@ public class Server {
                                                                                                    // assuming 15km/h
                                                                                                    // speed
             bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
-        }
 
-        bestSolution = new Pair[g.getNbPoI() + 1];
-        for (int i = 0; i < g.getNbPoI() + 1; i++) {
-            nodeId = tsp.getSolution(i);
-            time = time.plusSeconds(tour.get(nodeId).getDuration());
-            bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
+            //fill in predecessors
+            Map<Long, Long> preds = g.AWAStar(previousNodeId, nodeId);
+            predecessors.put(new Pair<Long, Long>(previousNodeId, nodeId), preds);
         }
 
         //return bestSolution and g.getPredecesseurs()
 
         Map<String, Object> responseBody = Map.of(
                 "bestSolution", bestSolution,
-                "predecesseurs", g.getPredecessors());
+                "predecesseurs", predecessors);
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
         
     }

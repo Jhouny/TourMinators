@@ -111,14 +111,14 @@ public class Graph  {
         }
     }
 
-    public Map<Pair<Long, Long>, Map<Long, Long>> getPredecessors() {
+    // public Map<Pair<Long, Long>, Map<Long, Long>> getPredecessors() {
 
-        Map<Pair<Long, Long>, Map<Long, Long>> allPredecessors = new HashMap<>();
+    //     Map<Pair<Long, Long>, Map<Long, Long>> allPredecessors = new HashMap<>();
 
-        // TODO: implement properly
+    //     // TODO: implement properly
         
-        return allPredecessors;
-    }
+    //     return allPredecessors;
+    // }
 
 	public boolean isEdge(Long i, Long j) {
         // Returns true if there is an edge between i and j, false otherwise
