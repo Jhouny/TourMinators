@@ -1,6 +1,5 @@
 package backend.TSP;
 
-import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -74,7 +73,21 @@ public class BruteForceTSP {
         // Reconstruct solution paths based on best order
         for (int i = 0; i < bestOrder.size() - 1; i++) {
             Map<Long, Long> path = g.AWAStar(bestOrder.get(i), bestOrder.get(i + 1));
-            this.solutionPaths.add(path);
+
+            // Filter out null and non-optimal edges from the path
+            Map<Long, Long> filteredPath = new java.util.LinkedHashMap<>();
+            Long current = bestOrder.get(i);
+            
+            while (current != null && !current.equals(bestOrder.get(i + 1))) {
+                Long next = path.get(current);
+                if (next == null) {
+                    break; // No further path
+                }
+                filteredPath.put(current, next);
+                current = next;
+            }
+
+            this.solutionPaths.add(filteredPath);
         }
     }
 

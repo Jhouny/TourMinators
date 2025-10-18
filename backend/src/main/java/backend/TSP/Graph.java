@@ -198,8 +198,6 @@ public class Graph  {
         // and modifies the pathCost attribute to store the cost of the optimal path between startId and endId
         // If there is no path between startId and endId, the cost is set to null
 
-        int nbIter = 0;
-
         if(getNeighbors(startId).isEmpty() || getNeighbors(endId).isEmpty()){
             printd("No neighbors for start or end node.");
             // If either the startId or the endId have no outgoing neighbors, there is no path between them
@@ -224,17 +222,28 @@ public class Graph  {
         cameFrom.put(startId, null);
 
         while(!q.isEmpty()){
-            nbIter++;
             NodeWithCost current = q.poll();
 
             if (visited.contains(current.getId()))
                 continue;
             if(current.getId() == endId){
-                System.out.println("Nombre d'itérations : " + nbIter);
-                printSolution(startId, endId, costMap, cameFrom);
                 pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
-                printd("Path found from " + startId + " to " + endId + " with cost " + costMap.get(endId));
-                return cameFrom;
+                
+                // Reconstruct path: end -> ... -> start
+                Map<Long, Long> path = new HashMap<>();
+                Long step = endId;
+                while (step != null && cameFrom.get(step) != null) {
+                    path.put(cameFrom.get(step), step);
+                    step = cameFrom.get(step);
+                }
+
+                // Verify path contains startId
+                if (!path.containsKey(startId)) {
+                    printd("Reconstructed path does not contain startId.");
+                    pathCost.put(new Pair<Long, Long>(startId, endId), null);
+                    return null;
+                }
+                return path;
             }
 
             for(long neighbor : getNeighbors(current.getId())){

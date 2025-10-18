@@ -19,8 +19,7 @@ import backend.TSP.BruteForceTSP;
 public class BruteForceTSPTest {
     // Test cases for BruteForceTSP
     @Test
-    public void testExample() {
-        // Example test case
+    public void testFullyConnectedGraph() {
         Map<Long, Node> nodes = new HashMap<>();
         nodes.put(1L, new Node(1, 48.8566, 2.3522)); // Paris
         nodes.put(2L, new Node(2, 45.7640, 4.8357)); // Lyon
@@ -69,7 +68,58 @@ public class BruteForceTSPTest {
         ArrayList<Long> solutionOrder = tsp.getSolutionOrder();
         ArrayList<Map<Long, Long>> solutionPaths = tsp.getSolutionPaths();
 
-        Assert.assertTrue(solutionOrder.size() > 0);
         Assert.assertEquals("Expected solution paths size to be one less than order size", solutionOrder.size() - 1, solutionPaths.size());
+        Assert.assertEquals("Expected solution order to start and end with warehouse", solutionOrder.get(0), solutionOrder.get(solutionOrder.size() - 1));
+
+        System.out.println("TSP Solution Order: " + solutionOrder);
+        System.out.println("TSP Solution Paths: " + solutionPaths);
+        
+
+    }
+
+    @Test
+    public void testDisconnectedGraph() {
+        Map<Long, Node> nodes = new HashMap<>();
+        nodes.put(1L, new Node(1, 48.8566, 2.3522)); // Paris
+        nodes.put(2L, new Node(2, 45.7640, 4.8357)); // Lyon
+        nodes.put(3L, new Node(3, 47.2186, -1.5536)); // Nantes
+
+        List<Edge> edges = new ArrayList<>();
+
+        Map<Long, PointOfInterest> tour = new HashMap<>();
+        // Add PoIs to the tour as needed for testing
+        tour.put(1L, new PointOfInterest(nodes.get(1L), PointOfInterest.PoIEnum.warehouse, 0L, 0));
+        tour.put(2L, new PointOfInterest(nodes.get(2L), PointOfInterest.PoIEnum.pickup, 3L, 0)); // Pickup for delivery 3
+        tour.put(3L, new PointOfInterest(nodes.get(3L), PointOfInterest.PoIEnum.delivery, 2L, 0));
+
+        Graph graph = new Graph(nodes, edges, tour);
+        BruteForceTSP tsp = new BruteForceTSP(graph);
+
+        Set<Long> PoIs = tsp.retrievePoIs();
+        Assert.assertEquals("Expected 3 PoIs", 3, PoIs.size());
+
+        ArrayList<ArrayList<Long>> permutations = tsp.generatePermutations(new ArrayList<>(PoIs));
+        Assert.assertEquals("Expected 2 permutations for 3 PoIs (warehouse + one pickup-delivery pair)", 2, permutations.size());
+        
+        // Add warehouse return to each permutation
+        for (ArrayList<Long> perm : permutations) {
+            perm.add(perm.get(0)); // Return to warehouse
+        }
+
+        int validCount = 0;
+        for (ArrayList<Long> perm : permutations) {
+            System.out.println("Testing permutation: " + perm);
+            if (tsp.isValidSolution(perm)) {
+                validCount++;
+            }
+        }
+        Assert.assertEquals("Expected 0 valid permutations", 0, validCount);
+
+        tsp.solve();
+        ArrayList<Long> solutionOrder = tsp.getSolutionOrder();
+        ArrayList<Map<Long, Long>> solutionPaths = tsp.getSolutionPaths();
+
+        Assert.assertEquals("Expected no solution paths", 0, solutionPaths.size());
+        Assert.assertEquals("Expected no solution order", 0, solutionOrder.size());
     }
 }
