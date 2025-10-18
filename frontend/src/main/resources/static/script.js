@@ -1,6 +1,9 @@
 // Coordonnées GPS du centre de la carte (ici Lyon) à l'initialisation
 let lat = 45.764;
 let lon = 4.8357;
+let edgesVisible = false;
+let toggleEdgesBtn = null;
+let planLoaded = false;
 
 // On initialise la carte (en lui passant 'map' qui est l'ID de la DIV contenant la carte)
 let map = L.map("map", {
@@ -132,17 +135,17 @@ function load_xml_map() {
 
         // Ajouter les edges
         edges.forEach((edge) => {
-          let startNode = nodeMap.get(edge.originId);
-          let endNode = nodeMap.get(edge.destinationId);
-          if (startNode && endNode) {
-            let latlngs = [
-              [startNode.latitude, startNode.longitude],
-              [endNode.latitude, endNode.longitude],
-            ];
-            edgeLines.push(
-              L.polyline(latlngs, { color: "#50d76b" }).addTo(map)
-            );
-          }
+            let startNode = nodeMap.get(edge.originId);
+            let endNode = nodeMap.get(edge.destinationId);
+            if (startNode && endNode) {
+                let latlngs = [
+                [startNode.latitude, startNode.longitude],
+                [endNode.latitude, endNode.longitude],
+                ];
+                // On ajoute les edges mais sans les afficher pour l’instant
+                let line = L.polyline(latlngs, { color: "#50d76b" });
+                edgeLines.push(line);
+            }
         });
 
         // Ajuster le zoom pour englober tous les nodes
@@ -152,6 +155,19 @@ function load_xml_map() {
             [topLeftNode.latitude, bottomRightNode.longitude]
           );
           map.flyToBounds(bounds, { duration: 2.0 });
+          // Activer le bouton "Afficher le plan"
+            toggleEdgesBtn = document.getElementById("toggleEdgesBtn");
+            toggleEdgesBtn.style.display = "inline-block";
+            toggleEdgesBtn.textContent = "Afficher le plan";
+            edgesVisible = false;
+            planLoaded = true;
+
+            // Changer la couleur du bouton "Charger un plan"
+            const planButton = document.querySelector('.buttons button:nth-child(1)');
+            planButton.style.backgroundColor = 'var(--primary-green)';
+            planButton.style.color = 'white';
+
+
         }
       })
       .catch((error) => console.error("Error loading XML map:", error));
@@ -264,6 +280,27 @@ function load_xml_delivery() {
   };
 
   input.click();
+}
+
+function toggleEdges() {
+  if (!planLoaded) {
+    alert("Veuillez d'abord charger un plan.");
+    return;
+  }
+
+  if (edgesVisible) {
+    // Masquer les edges
+    edgeLines.forEach((l) => map.removeLayer(l));
+    toggleEdgesBtn.textContent = "Afficher le plan";
+    toggleEdgesBtn.classList.remove("active");
+  } else {
+    // Afficher les edges
+    edgeLines.forEach((l) => l.addTo(map));
+    toggleEdgesBtn.textContent = "Masquer le plan";
+    toggleEdgesBtn.classList.add("active");
+  }
+
+  edgesVisible = !edgesVisible;
 }
 
 function compute_tour() {

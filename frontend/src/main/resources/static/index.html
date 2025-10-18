@@ -24,7 +24,12 @@
                     <button onclick="compute_tour()">Calculer la tournée</button>
                 </div>
             </div>
-            <div class="map" id="map"></div>
+            <div class="map-container">
+                <div class="map-controls">
+                    <button id="toggleEdgesBtn" onclick="toggleEdges()" style="display:none;">Afficher le plan</button>
+                </div>
+                <div class="map" id="map"></div>
+            </div>
         </div>
         <script src="script.js"></script>
     </body>
