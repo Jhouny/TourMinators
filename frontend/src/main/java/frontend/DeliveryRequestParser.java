@@ -21,8 +21,8 @@ public class DeliveryRequestParser {
      * - "pickup" pour l’adresse d’enlèvement
      * - "delivery" pour l’adresse de livraison
      */
-    public static Map<Long, PointOfInterest> mapDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
-        Map<Long, Triple<Node, Long, Integer>> deliveries = parseDeliveries(filename, graphNodes);
+    public static Map<Long, PointOfInterest> mapDeliveries(Map<Long, Triple<Node, Long, Integer>> deliveries)
+            throws Exception {
 
         Map<Long, PointOfInterest> poiMap = new HashMap<Long, PointOfInterest>();
 
@@ -36,7 +36,7 @@ public class DeliveryRequestParser {
             Long associatedPickupId = null;
 
             // On garde une trace des pickup déjà vus
-            Map<Long , Long> seenPickups = new HashMap<Long , Long>(); //deliveryCounter -> pickupId
+            Map<Long, Long> seenPickups = new HashMap<Long, Long>(); // deliveryCounter -> pickupId
 
             if (deliveryCounter == -1) {
                 type = PoIEnum.WAREHOUSE;
@@ -56,7 +56,8 @@ public class DeliveryRequestParser {
         return poiMap;
     }
 
-    public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
+    public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes)
+            throws Exception {
         Map<Long, Triple<Node, Long, Integer>> sommets = new LinkedHashMap<>();
 
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File(filename));
