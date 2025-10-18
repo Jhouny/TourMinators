@@ -3,8 +3,6 @@ package backend.TSP;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.TSP.Graph;
-
 public class IteratorSeq implements Iterator<Long> {
 
 	private Long[] candidats;

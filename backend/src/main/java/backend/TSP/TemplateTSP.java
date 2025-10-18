@@ -72,10 +72,10 @@ public abstract class TemplateTSP implements TSP {
 	    	if (g.isEdge(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
 				
 			
-	    		if (coutVus+g.getCost(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
+	    		if (coutVus+g.getPathCost(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
 	    			
 					vus.toArray(meilleureSolution);
-	    			coutMeilleureSolution = coutVus+g.getCost(sommetCrt,g.getBeginId());
+	    			coutMeilleureSolution = coutVus+g.getPathCost(sommetCrt,g.getBeginId());
 	    		}
 	    	}
 	    } else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
@@ -88,7 +88,7 @@ public abstract class TemplateTSP implements TSP {
 					nonVus.add(g.getAssociatedPoI(prochainSommet));
 				}
 	            nonVus.remove(prochainSommet);
-	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCost(sommetCrt, prochainSommet));
+	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getPathCost(sommetCrt, prochainSommet));
 	            vus.remove(prochainSommet);
 	            nonVus.add(prochainSommet);
 				if (g.getAssociatedPoI(prochainSommet) != null) {

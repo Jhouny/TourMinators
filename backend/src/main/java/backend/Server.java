@@ -80,7 +80,7 @@ public class Server {
 
         Map<String, Object> responseBody = Map.of(
                 "bestSolution", bestSolution,
-                "predecesseurs", g.getAdjacency());
+                "predecesseurs", g.getPredecessors());
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
         
     }

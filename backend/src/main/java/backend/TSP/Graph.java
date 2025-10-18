@@ -13,11 +13,9 @@ import backend.models.NodeWithCost;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 
-import backend.models.PointOfInterest;
 
 public class Graph  {
 	
@@ -113,8 +111,13 @@ public class Graph  {
         }
     }
 
-    public Map<Long, Set<Long>> getAdjacency() {
-        return this.adjacency;
+    public Map<Pair<Long, Long>, Map<Long, Long>> getPredecessors() {
+
+        Map<Pair<Long, Long>, Map<Long, Long>> allPredecessors = new HashMap<>();
+
+        // TODO: implement properly
+        
+        return allPredecessors;
     }
 
 	public boolean isEdge(Long i, Long j) {
