@@ -113,6 +113,10 @@ public class Graph  {
         }
     }
 
+    public Map<Long, Set<Long>> getAdjacency() {
+        return this.adjacency;
+    }
+
 	public boolean isEdge(Long i, Long j) {
         // Returns true if there is an edge between i and j, false otherwise
 		if (tour.containsKey(i) && tour.containsKey(j))
@@ -145,7 +149,7 @@ public class Graph  {
         Node nodeI = all_nodes.get(i);
         Node nodeJ = all_nodes.get(j);
         // Current heuristic : euclidian distance
-        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLat() - nodeJ.getLat(), 2) + Math.pow(nodeI.getLong() - nodeJ.getLong(), 2)));
+        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLatitude() - nodeJ.getLatitude(), 2) + Math.pow(nodeI.getLongitude() - nodeJ.getLongitude(), 2)));
     }
 
 	private void printSolution(long startId, long endId, Map<Long, Float> costMap, Map<Long, Long> cameFrom) {
