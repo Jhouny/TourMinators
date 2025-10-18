@@ -1,6 +1,9 @@
 // Coordonnées GPS du centre de la carte (ici Lyon) à l'initialisation
 let lat = 45.764;
 let lon = 4.8357;
+let edgesVisible = false;
+let toggleEdgesBtn = null;
+let planLoaded = false;
 
 // On initialise la carte (en lui passant 'map' qui est l'ID de la DIV contenant la carte)
 let map = L.map("map", {
@@ -29,9 +32,12 @@ var warehouseIcon = L.icon({
 });
 
 var warehouseIcon = L.icon({
-    iconUrl: 'warehouse-icon.png', 
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+  iconUrl: "warehouse-icon.png",
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  iconUrl: "warehouse-icon.png",
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
 
 var nodeMarkers = [];
@@ -40,6 +46,8 @@ var nodeMap = new Map(); // Graphe déjà chargé
 var edges_list = []; // Liste des edges déjà chargés
 var tourPOIMap = new Map(); // POI de la tournée déjà chargés
 var edgeTourLines = [];
+
+var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 
 // Génère une couleur hexadécimale aléatoire
 function getRandomColor() {
@@ -139,9 +147,9 @@ function load_xml_map() {
               [startNode.latitude, startNode.longitude],
               [endNode.latitude, endNode.longitude],
             ];
-            edgeLines.push(
-              L.polyline(latlngs, { color: "#50d76b" }).addTo(map)
-            );
+            // On ajoute les edges mais sans les afficher pour l’instant
+            let line = L.polyline(latlngs, { color: "#50d76b" });
+            edgeLines.push(line);
           }
         });
 
@@ -152,6 +160,19 @@ function load_xml_map() {
             [topLeftNode.latitude, bottomRightNode.longitude]
           );
           map.flyToBounds(bounds, { duration: 2.0 });
+          // Activer le bouton "Afficher le plan"
+          toggleEdgesBtn = document.getElementById("toggleEdgesBtn");
+          toggleEdgesBtn.style.display = "inline-block";
+          toggleEdgesBtn.textContent = "Afficher le plan";
+          edgesVisible = false;
+          planLoaded = true;
+
+          // Changer la couleur du bouton "Charger un plan"
+          const planButton = document.querySelector(
+            ".buttons button:nth-child(1)"
+          );
+          planButton.style.backgroundColor = "var(--primary-green)";
+          planButton.style.color = "white";
         }
       })
       .catch((error) => console.error("Error loading XML map:", error));
@@ -193,9 +214,18 @@ function load_xml_delivery() {
           return;
         }
 
+        if (!data.poiMap) {
+          console.error("No poiMap in response:", data);
+          return;
+        }
+
         // Reset des POI de la tournée
         tourPOIMap.clear();
-        data.nodes.forEach((node) => tourPOIMap.set(node.id, node));
+        Object.entries(data.poiMap).forEach(([id, poi]) => {
+          tourPOIMap.set(Number(id), poi);
+        });
+
+        console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -241,7 +271,12 @@ function load_xml_delivery() {
             }
 
             const color = pairColors[element.deliveryId];
-            console.log(`élement du type est ${element.type} et id est ${element.deliveryId}`);
+            console.log(
+              `élement du type est ${element.type} et id est ${element.deliveryId}`
+            );
+            console.log(
+              `élement du type est ${element.type} et id est ${element.deliveryId}`
+            );
             const direction = element.type === "pickup" ? "up" : "down";
 
             const icon = createArrowIcon(color, direction);
@@ -253,6 +288,9 @@ function load_xml_delivery() {
             );
           }
         });
+
+        // Générer la liste des livraisons dans le panneau de droite
+        generateDeliveriesList(tourPOIMap.values(), getNumberOfDeliverers());
       })
 
       .catch((err) => {
@@ -266,6 +304,27 @@ function load_xml_delivery() {
   input.click();
 }
 
+function toggleEdges() {
+  if (!planLoaded) {
+    alert("Veuillez d'abord charger un plan.");
+    return;
+  }
+
+  if (edgesVisible) {
+    // Masquer les edges
+    edgeLines.forEach((l) => map.removeLayer(l));
+    toggleEdgesBtn.textContent = "Afficher le plan";
+    toggleEdgesBtn.classList.remove("active");
+  } else {
+    // Afficher les edges
+    edgeLines.forEach((l) => l.addTo(map));
+    toggleEdgesBtn.textContent = "Masquer le plan";
+    toggleEdgesBtn.classList.add("active");
+  }
+
+  edgesVisible = !edgesVisible;
+}
+
 function compute_tour() {
   if (!nodeMap || nodeMap.size === 0) {
     alert("Veuillez d'abord importer un plan avant de calculer une tournée.");
@@ -273,18 +332,20 @@ function compute_tour() {
   }
 
   // Prepare data to send to backend to compute the tour
-  let formData = new FormData();
-  // Add actual parameters as needed
-  formData.append("all_nodes", JSON.stringify(Object.fromEntries(nodeMap))); // all_nodes Map<Long,Node>
-  // formData.append("all_edges", JSON.stringify(Array.from(edges_list.values()))); // all_edges Edge[]
-  // formData.append("tourPOI", JSON.stringify(Object.fromEntries(tourPOIMap))); // tour Map<Long, POI>
+  let body = {
+    allNodes: Object.fromEntries(nodeMap),
+    allEdges: Array.from(edges_list),
+    tour: Object.fromEntries(tourPOIMap),
+  };
 
   console.log("Computing tour...");
 
-  // fetch("/runTSP", { method: "POST", body: formData }) 
-
-  fetch("/test_tour.json", {
-    method: "GET",
+  fetch("http://localhost:8090/runTSP", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   })
     .then((response) => {
       if (!response.ok) throw new Error("HTTP error " + response.status);
@@ -319,23 +380,38 @@ function compute_tour() {
         let nextId = subtour[currentId];
         console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
         while (currentId && currentId !== fromId) {
-            let startNode = nodeMap.get(parseInt(currentId));
-            let endNode = nodeMap.get(parseInt(nextId));
-            console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
-            console.log("Start Node:", startNode);
-            if (startNode && endNode) {
+          let startNode = nodeMap.get(parseInt(currentId));
+          let endNode = nodeMap.get(parseInt(nextId));
+          console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
+          console.log("Start Node:", startNode);
+          if (startNode && endNode) {
+          let startNode = nodeMap.get(parseInt(currentId));
+          let endNode = nodeMap.get(parseInt(nextId));
+          console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
+          console.log("Start Node:", startNode);
+          if (startNode && endNode) {
             console.log(`Drawing edge from ${currentId} to ${nextId}`);
-                let latlngs = [
-                    [startNode.latitude, startNode.longitude],
-                    [endNode.latitude, endNode.longitude],
-                ];
-                edgeTourLines.push(
-                    L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
-                );
-            }
+            let latlngs = [
+              [startNode.latitude, startNode.longitude],
+              [endNode.latitude, endNode.longitude],
+            ];
+            edgeTourLines.push(
+              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+            );
+          }
+            let latlngs = [
+              [startNode.latitude, startNode.longitude],
+              [endNode.latitude, endNode.longitude],
+            ];
+            edgeTourLines.push(
+              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+            );
+          }
 
-            currentId = nextId;
-            nextId = subtour[currentId];
+          currentId = nextId;
+          nextId = subtour[currentId];
+          currentId = nextId;
+          nextId = subtour[currentId];
         }
       }
     })
@@ -343,3 +419,49 @@ function compute_tour() {
       console.error("Error fetching /computeTour:", err);
     });
 }
+
+function generateDeliveriesList(deliveries, numberOfDeliverers = 1) {
+  const deliveriesListContainer = document.getElementById("deliveries-list");
+  deliveriesListContainer.innerHTML = "";
+
+  deliveries.forEach((delivery, index) => {
+    const deliveryItem = document.createElement("div");
+    deliveryItem.className = "delivery-item";
+
+    // Label de la demande
+    const label = document.createElement("span");
+    label.className = "delivery-label";
+    label.textContent = `Demande no. ${index + 1}`;
+
+    const select = document.createElement("select");
+    select.className = "delivery-select";
+    select.setAttribute("data-delivery-id", delivery.id || index);
+
+    // Ajouter les options de livreurs
+    for (let i = 1; i <= numberOfDeliverers; i++) {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = `Livreur ${i}`;
+      select.appendChild(option);
+    }
+
+    // Assembler l'élément
+    deliveryItem.appendChild(label);
+    deliveryItem.appendChild(select);
+
+    deliveriesListContainer.appendChild(deliveryItem);
+  });
+}
+
+function getNumberOfDeliverers() {
+  const input = document.getElementById("numberOfDeliverers");
+  return input ? parseInt(input.value) || 1 : 1; // Valeur par défaut: 1
+}
+
+function updateDeliverersList() {
+  const numberOfDeliverers = getNumberOfDeliverers();
+  generateDeliveriesList(tourPOIMap.values(), numberOfDeliverers);
+}
+
+const input = document.getElementById("numberOfDeliverers");
+input.addEventListener("input", updateDeliverersList);

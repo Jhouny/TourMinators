@@ -24,8 +24,30 @@
                     <button onclick="compute_tour()">Calculer la tournée</button>
                 </div>
             </div>
-            <div class="map" id="map"></div>
-        </div>
+            
+            <div class="content-wrapper">
+               
+                <div class="map-container">
+                    <div class="map-controls">
+                        <button id="toggleEdgesBtn" onclick="toggleEdges()" style="display:none;">Afficher le plan</button>
+                    </div>  
+                    <div class="map" id="map"></div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="delivery-number-people">
+                    <p>Nombre de livreurs : <input type="number" min="1" value="1" id="numberOfDeliverers"/></p>
+                    </div>
+                    <div class="deliveries-list" id="deliveries-list">
+                        <!-- La liste des Demandes := Pickup + Delivery est générée ici -->
+                    </div>
+                </div>
+            </div>
+           
+           
+          
+            
+            
         <script src="script.js"></script>
     </body>
 </html>
