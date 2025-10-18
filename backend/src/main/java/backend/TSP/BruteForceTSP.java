@@ -1,5 +1,6 @@
 package backend.TSP;
 
+import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ public class BruteForceTSP {
         PoISet = retrievePoIs();
     }
 
+    @SuppressWarnings("unlikely-arg-type")
     public void solve() {
         // Retrieve all PoIs from the graph
         ArrayList<Map<Long, Long>> allPaths = new ArrayList<>();
@@ -34,34 +36,60 @@ public class BruteForceTSP {
                     continue;
                 }
                 Map<Long, Long> path = g.AWAStar(poiId, nextPoiId);
+                System.out.println("Computed path from " + poiId + " to " + nextPoiId + ": " + path);
                 allPaths.add(path);
             }
         }
 
         // After computing all paths, iterate over all path orders to find the optimal (and valid) one
-        ArrayList<Long> currentOrder = new ArrayList<>(PoISet);
+        ArrayList<Long> currentOrder = new ArrayList<>();
         ArrayList<Long> bestOrder = null;
         float bestCost = Float.MAX_VALUE;
-        ArrayList<ArrayList<Long>> permutations = generatePermutations(currentOrder); 
-        // Add Warehouse at the end of each permutation to complete the tour
+
+        ArrayList<Long> PoIelements = new ArrayList<>(PoISet);
+        PoIelements.remove(g.getBeginId()); // Remove warehouse from elements to permute
+
+        ArrayList<ArrayList<Long>> permutations = backtrackPermutations(currentOrder, PoIelements);
+        // Add Warehouse at the start and end of each permutation to complete the tour
         for (ArrayList<Long> perm : permutations) {
-            perm.add(perm.get(0)); // Return to warehouse
+            if (!perm.get(0).equals(g.getBeginId())) {
+                perm.add(0, g.getBeginId());
+            }
+            if (!perm.get(perm.size() - 1).equals(g.getBeginId())) {
+                perm.add(g.getBeginId());
+            }
         }
 
-        for (ArrayList<Long> order : permutations) {
-            if (!isValidSolution(order)) {
-                continue;  // Skip invalid solutions
+        ArrayList<Integer> toRemove = new ArrayList<>();
+        for (ArrayList<Long> perm : permutations) {
+            if (!isValidSolution(perm)) {
+                System.out.println("Skipping invalid order: " + perm);
+                toRemove.add(permutations.indexOf(perm));
             }
+        }
+        permutations.removeAll(toRemove);
+
+        for (ArrayList<Long> order : permutations) {
+            // Log order
+            System.out.println("Valid order found: " + order);
 
             // Calculate total cost for this order
             float totalCost = 0;
             for (int i = 0; i < order.size() - 1; i++) {
+                if (g.pathCost.get(new Pair<Long, Long>(order.get(i), order.get(i + 1))) == null) {
+                    totalCost = Float.MAX_VALUE; // No path exists
+                    break;
+                }
+
                 totalCost += g.pathCost.get(new Pair<Long, Long>(order.get(i), order.get(i + 1)));
             }
             if (totalCost < bestCost) {
                 bestCost = totalCost;
                 bestOrder = order;
             }
+
+            // Log cost
+            System.out.println("Total cost for this order: " + totalCost);
         }
 
         if (bestOrder == null) {
@@ -116,35 +144,51 @@ public class BruteForceTSP {
         // 4. Must return to warehouse at the end
 
         if (!order.get(0).equals(g.getBeginId())) {
+            System.out.println("Invalid solution: Warehouse not first");
             return false;  // Warehouse not first
         }
         Set<Long> pickedUp = new HashSet<>();
         for (Long poiId : order) {
-            PointOfInterest poi = g.tour.get(poiId);
+            //PointOfInterest poi = g.tour.get(poiId);
+            PointOfInterest poi = null;
+            for (PointOfInterest p : g.tour) {
+                if (p.getNode().getId() == poiId) {
+                    poi = p;
+                    break;
+                }
+            }
+
+            if (poi == null) {
+                System.out.println("Invalid solution: PoI " + poiId + " not found in tour");
+                return false;  // PoI not found in tour
+            }
 
             // Verify that the path exists in the graph
-            if (order.indexOf(poiId) > 0 && g.all_costs.get(new Pair<Long, Long>(order.get(order.indexOf(poiId)-1), poiId)) == null) {
+            if (order.indexOf(poiId) > 0 && g.pathCost.get(new Pair<Long, Long>(order.get(order.indexOf(poiId)-1), poiId)) == null) {
+                System.out.println("Invalid solution: No path between " + order.get(order.indexOf(poiId)-1) + " and " + poiId);
                 return false;  // No path between previous and current PoI
             }
 
-            if (poi.getType() == PointOfInterest.PoIEnum.pickup) {
+            if (poi.getType() == PointOfInterest.PoIEnum.PICKUP) {
                 pickedUp.add(poiId);
-            } else if (poi.getType() == PointOfInterest.PoIEnum.delivery) {
+            } else if (poi.getType() == PointOfInterest.PoIEnum.DELIVERY) {
                 Long pickupId = poi.getAssociatedPoI();
                 if (!pickedUp.contains(pickupId)) {
+                    System.out.println("Invalid solution: Delivery " + poiId + " before its pickup " + pickupId);
                     return false;  // Delivery before pickup
                 }
             }
         }
 
         if (order.size()-1 != PoISet.size()) { // Exclude duplicate warehouse at end
+            System.out.println("Invalid solution: Not all PoIs visited");
             return false;  // Not all PoIs were visited
         }
 
         if (!order.get(order.size() - 1).equals(g.getBeginId())) {
+            System.out.println("Invalid solution: Did not return to warehouse at end");
             return false;  // Must return to warehouse at end
         }
-
         return true;
     }
 
@@ -171,5 +215,42 @@ public class BruteForceTSP {
         Long temp = items.get(i);
         items.set(i, items.get(j));
         items.set(j, temp);
+    }
+
+    private ArrayList<ArrayList<Long>> backtrackPermutations(ArrayList<Long> current, ArrayList<Long> nonUsed) {
+        // This method will use two lists to generate permutations via backtracking, one for remaining items and one for the current permutation
+        ArrayList<ArrayList<Long>> permutations = new ArrayList<>();
+        if (nonUsed.isEmpty()) {
+            permutations.add(new ArrayList<>(current));
+            return permutations;
+        }
+
+        for (int i = 0; i < nonUsed.size(); i++) {
+            Long poiId = nonUsed.get(i);
+            PointOfInterest poi = null;
+            for (PointOfInterest p : g.tour) {
+                if (p.getNode().getId() == poiId) {
+                    poi = p;
+                    break;
+                }
+            }
+            if (poi == null) {
+                continue; // Skip if PoI not found
+            }
+            
+            if (poi.getType() == PointOfInterest.PoIEnum.DELIVERY) {
+                Long pickupId = poi.getAssociatedPoI();
+                if (!current.contains(pickupId)) {
+                    continue; // Skip this delivery as its pickup hasn't been included yet
+                }
+            }
+            current.add(poiId);
+            ArrayList<Long> newNonUsed = new ArrayList<>(nonUsed);
+            newNonUsed.remove(i);
+            permutations.addAll(backtrackPermutations(current, newNonUsed));
+            current.remove(current.size() - 1); // backtrack
+        }
+        
+        return permutations;
     }
 }

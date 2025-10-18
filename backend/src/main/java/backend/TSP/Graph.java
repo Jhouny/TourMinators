@@ -7,13 +7,11 @@ import java.util.Set;
 import backend.models.Edge;
 import backend.models.Node;
 import backend.models.Pair;
-import backend.models.PointOfInterest;
 import backend.models.NodeWithCost;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 
@@ -25,12 +23,12 @@ public class Graph  {
 	Map<Long, Node> all_nodes;
 	Map<Pair<Long, Long>, Float> all_costs; // If there is no edge between i and j, there is no entry (i,j) in this map and an exception is thrown
 
-	Map<Long, PointOfInterest> tour;
+	List<PointOfInterest> tour;
 	Map<Pair<Long, Long> , Float> pathCost;
 	Map<Long, Set<Long>> adjacency; 
 	
 	
-	public Graph(Map<Long, Node> nodes, List<Edge> edges, Map<Long, PointOfInterest> tour){
+	public Graph(Map<Long, Node> nodes, List<Edge> edges, List<PointOfInterest> tour){
         // Initialize graph attributes
         this.all_nodes = nodes; 
         this.all_edges = edges;
@@ -49,11 +47,12 @@ public class Graph  {
             // Build adjacency
             // computeIfAbsent is a lambda key function to add a Set to the adjancency if it doesnt exist
             adjacency.computeIfAbsent(origin, k -> new HashSet<>()).add(destination);
-            //adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
+            adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
 
             // Store edge cost (unordered pair)
             Pair<Long, Long> pair = new Pair<Long, Long>(origin, destination);
             all_costs.put(pair, distance);
+            all_costs.put(new Pair<Long, Long>(destination, origin), distance); // undirected graph
         }
 	}
 
@@ -65,9 +64,9 @@ public class Graph  {
 	public Set<Long> getPickupNodes() {
         // Return the list of pickup nodes to visit (not deliveries, not warehouse)
 		Set<Long> pickupNodes = new HashSet<Long>();
-		for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == PointOfInterest.PoIEnum.pickup){
-				pickupNodes.add(id);
+		for (PointOfInterest poi : tour) {
+			if (poi.getType() == PointOfInterest.PoIEnum.PICKUP){
+				pickupNodes.add(poi.getNode().getId());
 			}
 		}
 		return pickupNodes;
@@ -76,9 +75,9 @@ public class Graph  {
     public Set<Long> getDeliveryNodes() {
         // Return the list of delivery nodes to visit (not pickups, not warehouse)
         Set<Long> deliveryNodes = new HashSet<Long>();
-		for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == PointOfInterest.PoIEnum.delivery){
-				deliveryNodes.add(id);
+		for (PointOfInterest poi : tour) {
+			if (poi.getType() == PointOfInterest.PoIEnum.DELIVERY){
+				deliveryNodes.add(poi.getNode().getId());
 			}
 		}
 		return deliveryNodes;
@@ -87,23 +86,26 @@ public class Graph  {
 	public Long getAssociatedPoI(Long id) {
         // Return the associated PoI of a pickup/delivery node (null if warehouse)
         Long associatedPoI = null;
-        if (tour.containsKey(id))
-            associatedPoI = tour.get(id).getAssociatedPoI();
+        for (PointOfInterest poi : tour) {
+            if (poi.getNode().getId() == id) {
+                associatedPoI = poi.getAssociatedPoI();
+                break;
+            }
+        }
         if (associatedPoI == null)
             throw new IllegalArgumentException("Node " + id + " is not a pickup or delivery node.");
-        return tour.get(id).getAssociatedPoI();
+        return associatedPoI;
 	}
 
 	public Long getBeginId() {
         // Return the id of the warehouse
         Long warehouseId = null;
-        for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == PointOfInterest.PoIEnum.warehouse){
-				warehouseId = id;
+        for (PointOfInterest poi : tour) {
+			if (poi.getType() == PointOfInterest.PoIEnum.WAREHOUSE){
+				warehouseId = poi.getNode().getId();
                 break;
 			}
 		}
-        // tester si warehouse est null
 		return warehouseId;
 	}
 
@@ -126,7 +128,8 @@ public class Graph  {
 
 	public boolean isEdge(Long i, Long j) {
         // Returns true if there is an edge between i and j, false otherwise
-		if (tour.containsKey(i) && tour.containsKey(j))
+		//if (tour.containsKey(i) && tour.containsKey(j))
+        if (all_costs.containsKey(new Pair<Long, Long>(i, j)))
 			return !i.equals(j);
 		return false;
 	}
@@ -193,26 +196,22 @@ public class Graph  {
             System.out.println(s);
     }
 
-	public Map<Long, Long> AWAStar(Long startId, Long endId) {
-        // This function returns the mapping of predecessors 
+    public Map<Long, Long> AWAStar(Long startId, Long endId) {
+        // This function returns the mapping of predecessors
         // and modifies the pathCost attribute to store the cost of the optimal path between startId and endId
         // If there is no path between startId and endId, the cost is set to null
 
-        if(getNeighbors(startId).isEmpty() || getNeighbors(endId).isEmpty()){
-            printd("No neighbors for start or end node.");
-            // If either the startId or the endId have no outgoing neighbors, there is no path between them
-            // It's important that we're able to get out of the end node as well to go back to warehouse
-
-            // If either the startId or the endId have no neighbors, there is no path between them
-            pathCost.put(new Pair<Long, Long>(startId, endId), null);
-            return null;
+        // Trivial case: start equals end
+        if (startId.equals(endId)) {
+            pathCost.put(new Pair<Long, Long>(startId, endId), 0f);
+            return Collections.singletonMap(startId, endId);
         }
 
-        Map<Long, Float> costMap  = new HashMap<>(); // cout cumulatif pour chaque noeud
-        Map<Long, Long> cameFrom = new HashMap<>(); // prédecesseur (pour reconstruire le chemin)
+        Map<Long, Float> costMap  = new HashMap<>(); // cumulative cost for each node
+        Map<Long, Long> cameFrom = new HashMap<>(); // predecessor (to reconstruct path)
         Set<Long> visited = new HashSet<>();
 
-        //File de priorite pour stocker les noeuds a visiter
+        // Priority queue to store nodes to visit (ordered by f = g + h)
         PriorityQueue<NodeWithCost> q = new PriorityQueue<>();
 
         NodeWithCost startNode = new NodeWithCost(startId, heuristic(startId, endId));
@@ -224,11 +223,20 @@ public class Graph  {
         while(!q.isEmpty()){
             NodeWithCost current = q.poll();
 
-            if (visited.contains(current.getId()))
+            if (current == null) break; // defensive
+
+            long currentId = current.getId();
+
+            if (visited.contains(currentId))
                 continue;
-            if(current.getId() == endId){
+
+            // If current has no recorded g-cost, skip (defensive: should not happen)
+            if (!costMap.containsKey(currentId))
+                continue;
+
+            if(currentId == endId){
                 pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
-                
+
                 // Reconstruct path: end -> ... -> start
                 Map<Long, Long> path = new HashMap<>();
                 Long step = endId;
@@ -246,22 +254,33 @@ public class Graph  {
                 return path;
             }
 
-            for(long neighbor : getNeighbors(current.getId())){
-                float newCost = costMap.get(current.getId()) + getCost(current.getId(), neighbor);
+            for(long neighbor : getNeighbors(currentId)){
+                float currentG = costMap.get(currentId);
+                float edgeCost;
+                try {
+                    edgeCost = getCost(currentId, neighbor);
+                } catch (IllegalArgumentException e) {
+                    // No edge between current and neighbor; skip
+                    continue;
+                }
+
+                float newCost = currentG + edgeCost;
                 float h = heuristic(neighbor, endId);
                 float f = newCost + h;
 
                 if (!costMap.containsKey(neighbor) || newCost < costMap.get(neighbor)) {
                     costMap.put(neighbor, newCost);
-                    cameFrom.put(neighbor, current.getId());
+                    cameFrom.put(neighbor, currentId);
                     q.add(new NodeWithCost(neighbor, f));
                 }
             }
 
-            visited.add(current.getId());
+            visited.add(currentId);
         }
+
+        // No path found
         pathCost.put(new Pair<Long, Long>(startId, endId), null);
         printd("No path found from " + startId + " to " + endId);
-        return cameFrom;
+        return null;
     }
 }

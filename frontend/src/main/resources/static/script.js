@@ -44,7 +44,7 @@ var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
 var edges_list = []; // Liste des edges déjà chargés
-var tourPOIMap = new Map(); // POI de la tournée déjà chargés
+var tourPOIList = []; // POI de la tournée déjà chargés
 var edgeTourLines = [];
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
@@ -209,23 +209,22 @@ function load_xml_delivery() {
       .then((data) => {
         console.log("Pickup/Delivery response:", data);
 
-        if (!data.nodes) {
-          console.error("No nodes in response:", data);
-          return;
-        }
-
         if (!data.poiMap) {
           console.error("No poiMap in response:", data);
           return;
         }
 
         // Reset des POI de la tournée
-        tourPOIMap.clear();
-        Object.entries(data.poiMap).forEach(([id, poi]) => {
-          tourPOIMap.set(Number(id), poi);
+        tourPOIList = [];
+        data.tours.forEach((poi) => {
+          let poiObject = {
+            node: poi.node,
+            type: poi.type,
+            associatedPoI: poi.associatedPoI,
+            duration: poi.duration,
+          };
+          tourPOIList.push(poiObject);
         });
-
-        console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -235,54 +234,41 @@ function load_xml_delivery() {
         const colorMap = new Map();
         let colorIndex = 0;
 
-        data.nodes.forEach((element) => {
+        tourPOIList.forEach((element) => {
           // entree de sécurité si les champs manquent
           if (
-            typeof element.latitude !== "number" ||
-            typeof element.longitude !== "number"
+            typeof element.node.latitude !== "number" ||
+            typeof element.node.longitude !== "number"
           ) {
             console.warn("Node missing coords:", element);
             return;
           }
 
-          // entrepot
-          if (element.deliveryId === -1) {
-            nodeMarkers.push(
-              L.marker([element.latitude, element.longitude], {
-                icon: warehouseIcon,
-              }).addTo(map)
-            );
-            return;
-          }
-
-          // On suppose que chaque deliveryId correspond à une paire (pickup/delivery)
-          if (element.deliveryId === -1) {
+          // entrepôt
+          // On suppose que chaque associatedPoI correspond à une paire (pickup/delivery)
+          if (element.type === "WAREHOUSE") {
             // entrepôt
             nodeMarkers.push(
-              L.marker([element.latitude, element.longitude], {
+              L.marker([element.node.latitude, element.node.longitude], {
                 icon: warehouseIcon,
               }).addTo(map)
             );
           } else {
             // Couleur associée à la paire pickup/delivery
             if (!window.pairColors) window.pairColors = {};
-            if (!pairColors[element.deliveryId]) {
-              pairColors[element.deliveryId] = getRandomColor();
+            if (!pairColors[element.node.id] && !pairColors[element.associatedPoI]) {
+              pairColors[element.associatedPoI] = getRandomColor();
+              pairColors[element.node.id] = pairColors[element.associatedPoI];
             }
 
-            const color = pairColors[element.deliveryId];
-            console.log(
-              `élement du type est ${element.type} et id est ${element.deliveryId}`
-            );
-            console.log(
-              `élement du type est ${element.type} et id est ${element.deliveryId}`
-            );
-            const direction = element.type === "pickup" ? "up" : "down";
+            const color = pairColors[element.node.id];
+            console.log(`élement du type est ${element.type} et id est ${element.node.id}`);
+            const direction = element.type === "PICKUP" ? "up" : "down";
 
             const icon = createArrowIcon(color, direction);
 
             nodeMarkers.push(
-              L.marker([element.latitude, element.longitude], { icon }).addTo(
+              L.marker([element.node.latitude, element.node.longitude], { icon }).addTo(
                 map
               )
             );
@@ -335,13 +321,13 @@ function compute_tour() {
   console.log("Sending data to compute tour:");
   console.log("All Nodes:", Object.fromEntries(nodeMap));
   console.log("All Edges:", Array.from(edges_list.values()));
-  console.log("Tour POIs:", Object.fromEntries(tourPOIMap));
+  console.log("Tour POIs:", Array.from(tourPOIList));
 
   // Create body of an object with all needed data
   const requestBody = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list.values()),
-    tour: Object.fromEntries(tourPOIMap)
+    tour: Array.from(tourPOIList)
   };
 
   console.log("Computing tour...");
@@ -359,16 +345,12 @@ function compute_tour() {
     })
     .then((data) => {
       console.log("Tour response:", data);
-      if (!data.tour || data.tour.length === 0) {
+      if (!data.solutionOrder) {
         console.error("No tour in response:", data);
         return;
       }
-      var bestSolution = data.bestSolution; // Pair<Long,LocalTime> []
-      var POIbestSolution = bestSolution.map((bs) => bs.id); //List<Long>
+      var POIbestSolution = data.solutionPaths.map((bs) => bs.id); //List<Long>
       console.log("POIbestSolution:", POIbestSolution);
-      var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
-      var tour = data.tour; //Map<Pair<Long,Long>, Map<Long,Long>>
-      console.log("Tour map:", tour);
 
       // Diplay the edges tour lines above the existing edges lines
       // Remove previous tour lines
@@ -376,6 +358,21 @@ function compute_tour() {
       edgeTourLines = [];
 
       // Draw new tour lines
+      for (const trajectory of data.solutionPaths) {
+        for (const orig of Object.keys(trajectory)) {
+          const dest = trajectory[orig];
+          console.log(`Drawing edge from ${orig} to ${dest}`);
+          let startNode = nodeMap.get(parseInt(orig));
+          let endNode = nodeMap.get(parseInt(dest));
+          if (startNode && endNode) {
+            let latlngs = [
+              [startNode.latitude, startNode.longitude],
+              [endNode.latitude, endNode.longitude],
+            ];
+            edgeTourLines.push(
+              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+            );
+          }
 
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
         let fromId = POIbestSolution[i];

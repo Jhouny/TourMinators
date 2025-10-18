@@ -11,16 +11,16 @@ public class PointOfInterest {
     private int duration; // in seconds, time needed to pickup/deliver, 0 if warehouse
 
     public enum PoIEnum {
-        warehouse,
-        pickup,
-        delivery;
+        WAREHOUSE,
+        PICKUP,
+        DELIVERY;
     }
 
     @JsonCreator
     public PointOfInterest(
-            @JsonProperty("node") Node node, 
-            @JsonProperty("type") PoIEnum type, 
-            @JsonProperty("associatedPoI") Long associatedPoI, 
+            @JsonProperty("node") Node node,
+            @JsonProperty("type") PoIEnum type,
+            @JsonProperty("associatedPoI") Long associatedPoI,
             @JsonProperty("duration") int duration) {
         this.node = node;
         this.type = type;
