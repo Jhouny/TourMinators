@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import backend.TSP.Graph;
 import backend.TSP.TSP;
@@ -21,6 +22,7 @@ import backend.models.PointOfInterest;
 import backend.models.TSPRequest;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:8080")
 public class Server {
 
     @PostMapping("/runTSP")
@@ -30,7 +32,7 @@ public class Server {
         System.out.println("All Nodes: " + tspRequest.getAllNodes());
         System.out.println("All Edges: " + tspRequest.getAllEdges());
         System.out.println("Tour: " + tspRequest.getTour());
-
+        
         Map<Long, Node> all_nodes = tspRequest.getAllNodes(); 
         List<Edge> all_edges = tspRequest.getAllEdges();
         Map<Long, PointOfInterest> tour = tspRequest.getTour();
@@ -46,8 +48,9 @@ public class Server {
         System.out.print("Solution de longueur " + tsp.getCoutSolution() + " trouvee en "
                 + (System.currentTimeMillis() - tempsDebut) + "ms : ");
 
-        @SuppressWarnings("unchecked")
-        Pair<Long, LocalTime>[] bestSolution = (Pair<Long, LocalTime>[]) new Pair[tour.size() + 1]; // +1 for return to warehouse
+                                                                                                    // 
+
+        Pai<Long, Loca lTime>[] bestSolution = (Pair<Long, LocalTime>[]) new Pair[tour.size() + 1]; // +1 for return to warehouse
         
         Map <Pair<Long,Long>, Map<Long, Long>> predecessors = new HashMap<>();
 
@@ -56,7 +59,7 @@ public class Server {
         bestSolution[0] = new Pair<Long, LocalTime>(nodeId, time);
 
         for (int i = 1; i < tour.size() + 1; i++) {
-            previousNodeId = nodeId;
+            pr eviousNodeId = nodeId;
 
             //fill in bestSolution
             if (i != tour.size())
@@ -71,18 +74,18 @@ public class Server {
                                                                                                    // and current PoI,
                                                                                                    // assuming 15km/h
                                                                                                    // speed
-            bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
+            be stSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
 
             //fill in predecessors
             Map<Long, Long> preds = g.AWAStar(previousNodeId, nodeId);
             predecessors.put(new Pair<Long, Long>(previousNodeId, nodeId), preds);
-        }
+        } 
 
         //return bestSolution and g.getPredecesseurs()
 
         Map<String, Object> responseBody = Map.of(
                 "bestSolution", bestSolution,
-                "predecesseurs", predecessors);
+
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
         
     }
