@@ -49,7 +49,7 @@ public class Graph  {
             // Build adjacency
             // computeIfAbsent is a lambda key function to add a Set to the adjancency if it doesnt exist
             adjacency.computeIfAbsent(origin, k -> new HashSet<>()).add(destination);
-            adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
+            //adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
 
             // Store edge cost (unordered pair)
             Pair<Long, Long> pair = new Pair<Long, Long>(origin, destination);
@@ -62,15 +62,26 @@ public class Graph  {
         return tour.size();
     }
 
-	public ArrayList<Long> getNodesToVisit() {
+	public Set<Long> getPickupNodes() {
         // Return the list of pickup nodes to visit (not deliveries, not warehouse)
-		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
+		Set<Long> pickupNodes = new HashSet<Long>();
 		for (Long id : tour.keySet()) {
 			if (tour.get(id).getType() == PointOfInterest.PoIEnum.pickup){
-				nodesToVisit.add(id);
+				pickupNodes.add(id);
 			}
 		}
-		return nodesToVisit;
+		return pickupNodes;
+	}
+
+    public Set<Long> getDeliveryNodes() {
+        // Return the list of delivery nodes to visit (not pickups, not warehouse)
+        Set<Long> deliveryNodes = new HashSet<Long>();
+		for (Long id : tour.keySet()) {
+			if (tour.get(id).getType() == PointOfInterest.PoIEnum.delivery){
+				deliveryNodes.add(id);
+			}
+		}
+		return deliveryNodes;
 	}
 
 	public Long getAssociatedPoI(Long id) {

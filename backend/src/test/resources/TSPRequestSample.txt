@@ -22,13 +22,13 @@
     "2": { 
         "node": { "id": 2, "latitude": 48.8584, "longitude": 2.2945 },
         "type": 1, 
-        "associatedPoI": 2, 
+        "associatedPoI": 3, 
         "duration": 2 
     },
     "3": { 
         "node": { "id": 3, "latitude": 48.8606, "longitude": 2.3376 }, 
         "type": 2, 
-        "associatedPoI": 3, 
+        "associatedPoI": 2, 
         "duration": 3 
     }
   }
