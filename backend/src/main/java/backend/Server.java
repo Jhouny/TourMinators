@@ -71,19 +71,18 @@ public class Server {
             bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
         }
 
-        // TODO : retourner bestSolution ET g.getPredecesseurs()
         bestSolution = new Pair[g.getNbPoI() + 1];
         for (int i = 0; i < g.getNbPoI() + 1; i++) {
             nodeId = tsp.getSolution(i);
-            time = time.plusSeconds(all_nodes.get(nodeId).getDuration());
+            time = time.plusSeconds(tour.get(nodeId).getDuration());
             bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
         }
-        // TODO : retourner bestSolution ET g.getPredecesseurs()
+
+        //return bestSolution and g.getPredecesseurs()
 
         Map<String, Object> responseBody = Map.of(
-                "bestSolution", bestSolution
+                "bestSolution", bestSolution,
                 "predecesseurs", g.getPredecesseurs());
-        );
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
         
     }
