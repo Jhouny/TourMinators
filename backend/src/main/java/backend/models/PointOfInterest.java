@@ -16,24 +16,17 @@ public class PointOfInterest {
         DELIVERY;
     }
 
-    public PointOfInterest(Node node, PoIEnum type, Long associatedPoI, int duration) {
+    @JsonCreator
+    public PointOfInterest(
+            @JsonProperty("node") Node node, 
+            @JsonProperty("type") PoIEnum type, 
+            @JsonProperty("associatedPoI") Long associatedPoI, 
+            @JsonProperty("duration") int duration) {
         this.node = node;
         this.type = type;
         this.associatedPoI = associatedPoI;
         this.duration = duration;
     }
-
-    // @JsonCreator
-    // public PointOfInterest(
-    //         @JsonProperty("node") Node node, 
-    //         @JsonProperty("type") PoIEnum type, 
-    //         @JsonProperty("associatedPoI") Long associatedPoI, 
-    //         @JsonProperty("duration") int duration) {
-    //     this.node = node;
-    //     this.type = type;
-    //     this.associatedPoI = associatedPoI;
-    //     this.duration = duration;
-    // }
 
     public PoIEnum getType() {
         return type;

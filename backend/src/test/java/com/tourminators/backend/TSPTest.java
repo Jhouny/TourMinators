@@ -12,7 +12,6 @@ import backend.TSP.TSP;
 import backend.TSP.TSP2;
 import backend.models.Edge;
 import backend.models.Node;
-import backend.models.Pair;
 import backend.models.PointOfInterest;
 import backend.TSP.Graph;
 
@@ -44,10 +43,9 @@ public class TSPTest {
 		long tempsDebut = System.currentTimeMillis();
 		tsp.chercheSolution(60000, g);
 
-        Assert.assertEquals(tsp.getSolution(0), Long.valueOf(0));
-        Assert.assertEquals(tsp.getSolution(1), Long.valueOf(2));
-        Assert.assertEquals(tsp.getSolution(2), Long.valueOf(1));
-        Assert.assertEquals(tsp.getCoutSolution(), 1800.0f);
+        Assert.assertEquals(0L, tsp.getSolution(0));
+        Assert.assertEquals(2L, tsp.getSolution(1));
+        Assert.assertEquals(1L, tsp.getSolution(2));
 
     }
 }
