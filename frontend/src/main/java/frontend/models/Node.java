@@ -2,26 +2,16 @@ package frontend.models;
 
 public class Node {
 
-    long id;
-    double latitude;
-    double longitude;
+    private long id;
+    private double latitude;
+    private double longitude;
+    private String type;
 
     public Node(long id, double latitude, double longitude) {
         this.id = id;
         this.latitude = latitude;
         this.longitude = longitude;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
+        this.type = null;
     }
 
     @Override
@@ -31,5 +21,25 @@ public class Node {
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
                 '}';
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+    
+    public long getId() {
+        return id;
+    }
+
+    public String getType() {
+        return type; 
+    }
+    
+    public void setType(String type) {
+        this.type = type;
     }
 }

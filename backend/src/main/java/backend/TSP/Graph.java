@@ -51,11 +51,15 @@ public class Graph  {
             adjacency.computeIfAbsent(origin, k -> new HashSet<>()).add(destination);
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
 =======
 >>>>>>> 9ddbda1 (Testing of all Graph functions except AWA Star)
+=======
+            adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
+>>>>>>> 0ac0736491c73320599be7ed03483ed43eb289e8
 
             // Store edge cost (unordered pair)
             Pair<Long, Long> pair = new Pair<Long, Long>(origin, destination);
@@ -86,6 +90,7 @@ public class Graph  {
         Long associatedPoI = null;
         if (tour.containsKey(id))
             associatedPoI = tour.get(id).getAssociatedPoI();
+<<<<<<< HEAD
         return associatedPoI;
 =======
 =======
@@ -97,6 +102,11 @@ public class Graph  {
 >>>>>>> 9ddbda1 (Testing of all Graph functions except AWA Star)
         return tour.get(id).getAssociatedPoI();
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
+=======
+        if (associatedPoI == null)
+            throw new IllegalArgumentException("Node " + id + " is not a pickup or delivery node.");
+        return tour.get(id).getAssociatedPoI();
+>>>>>>> 0ac0736491c73320599be7ed03483ed43eb289e8
 	}
 
 	public Long getBeginId() {
@@ -118,6 +128,9 @@ public class Graph  {
 
     public Float getCost(Long i, Long j) {
         //Returns the cost between 2 nodes, or throws an exception if there is no edge between them
+        if (i.equals(j)) {
+            return 0f;
+        }
         Pair<Long, Long> pair = new Pair<Long, Long>(i, j);
         if (all_costs.containsKey(pair)) {
             return all_costs.get(pair);
@@ -136,7 +149,10 @@ public class Graph  {
 
 	//=========================== AWA ======================================//
 	public Float getPathCost(Long i, Long j) {
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 0ac0736491c73320599be7ed03483ed43eb289e8
     // Est-ce que cette fonction est utile ? Pourquoi utiliser tour ?
 	// public boolean isEdge(Long i, Long j) {
     //     // Returns true if there is an edge between i and j, false otherwise
@@ -147,11 +163,14 @@ public class Graph  {
 
 	//=========================== AWA ======================================//
 <<<<<<< HEAD
+<<<<<<< HEAD
 	public float getPathCost(Long i, Long j) {
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
 =======
 	public Float getPathCost(Long i, Long j) {
 >>>>>>> 9ddbda1 (Testing of all Graph functions except AWA Star)
+=======
+>>>>>>> 0ac0736491c73320599be7ed03483ed43eb289e8
         // Returns the cost of the optimal path between i and j, or null if AWA* has not been called for this pair
         return pathCost.get(new Pair<Long, Long>(i, j));
     }
@@ -219,9 +238,13 @@ public class Graph  {
             // If either the startId or the endId have no outgoing neighbors, there is no path between them
             // It's important that we're able to get out of the end node as well to go back to warehouse
 
+<<<<<<< HEAD
 =======
             // If either the startId or the endId have no neighbors, there is no path between them
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
+=======
+            // If either the startId or the endId have no neighbors, there is no path between them
+>>>>>>> 0ac0736491c73320599be7ed03483ed43eb289e8
             pathCost.put(new Pair<Long, Long>(startId, endId), null);
             return null;
         }
@@ -246,10 +269,13 @@ public class Graph  {
             if (visited.contains(current.getId()))
                 continue;
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
             
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
+=======
+>>>>>>> 0ac0736491c73320599be7ed03483ed43eb289e8
             if(current.getId() == endId){
                 System.out.println("Nombre d'itérations : " + nbIter);
                 printSolution(startId, endId, costMap, cameFrom);
@@ -282,8 +308,4 @@ public class Graph  {
 >>>>>>> 3cea70f (Altered Graph classes and merged with Agnes' code. Compiling but not yet tested)
         return cameFrom;
     }
-
-
-
-
 }
