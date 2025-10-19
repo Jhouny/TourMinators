@@ -35,6 +35,9 @@ var warehouseIcon = L.icon({
   iconUrl: "warehouse-icon.png",
   iconSize: [20, 20],
   iconAnchor: [10, 10],
+  iconUrl: "warehouse-icon.png",
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
 
 var nodeMarkers = [];
@@ -211,9 +214,18 @@ function load_xml_delivery() {
           return;
         }
 
+        if (!data.poiMap) {
+          console.error("No poiMap in response:", data);
+          return;
+        }
+
         // Reset des POI de la tournée
         tourPOIMap.clear();
-        data.nodes.forEach((node) => tourPOIMap.set(node.id, node));
+        Object.entries(data.poiMap).forEach(([id, poi]) => {
+          tourPOIMap.set(Number(id), poi);
+        });
+
+        console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -259,6 +271,9 @@ function load_xml_delivery() {
             }
 
             const color = pairColors[element.deliveryId];
+            console.log(
+              `élement du type est ${element.type} et id est ${element.deliveryId}`
+            );
             console.log(
               `élement du type est ${element.type} et id est ${element.deliveryId}`
             );
@@ -317,18 +332,20 @@ function compute_tour() {
   }
 
   // Prepare data to send to backend to compute the tour
-  let formData = new FormData();
-  // Add actual parameters as needed
-  formData.append("all_nodes", JSON.stringify(Object.fromEntries(nodeMap))); // all_nodes Map<Long,Node>
-  // formData.append("all_edges", JSON.stringify(Array.from(edges_list.values()))); // all_edges Edge[]
-  // formData.append("tourPOI", JSON.stringify(Object.fromEntries(tourPOIMap))); // tour Map<Long, POI>
+  let body = {
+    allNodes: Object.fromEntries(nodeMap),
+    allEdges: Array.from(edges_list),
+    tour: Object.fromEntries(tourPOIMap),
+  };
 
   console.log("Computing tour...");
 
-  // fetch("/runTSP", { method: "POST", body: formData })
-
-  fetch("/test_tour.json", {
-    method: "GET",
+  fetch("http://localhost:8090/runTSP", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   })
     .then((response) => {
       if (!response.ok) throw new Error("HTTP error " + response.status);
@@ -368,6 +385,11 @@ function compute_tour() {
           console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
           console.log("Start Node:", startNode);
           if (startNode && endNode) {
+          let startNode = nodeMap.get(parseInt(currentId));
+          let endNode = nodeMap.get(parseInt(nextId));
+          console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
+          console.log("Start Node:", startNode);
+          if (startNode && endNode) {
             console.log(`Drawing edge from ${currentId} to ${nextId}`);
             let latlngs = [
               [startNode.latitude, startNode.longitude],
@@ -377,7 +399,17 @@ function compute_tour() {
               L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
             );
           }
+            let latlngs = [
+              [startNode.latitude, startNode.longitude],
+              [endNode.latitude, endNode.longitude],
+            ];
+            edgeTourLines.push(
+              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+            );
+          }
 
+          currentId = nextId;
+          nextId = subtour[currentId];
           currentId = nextId;
           nextId = subtour[currentId];
         }
