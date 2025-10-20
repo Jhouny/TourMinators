@@ -237,11 +237,11 @@ function load_xml_delivery() {
         // Reset des POIs de la tournée
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
-          poiMap.set(Number(id), poi);
+          tourPOIMap.set(Number(id), poi);
         });
 
         console.log("Updated requestMap:", requestMap);
-        console.log("Updated poiMap:", poiMap);
+        console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -351,7 +351,7 @@ function compute_tour() {
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(poiMap),
+    tour: Object.fromEntries(tourPOIMap),
   };
 
   console.log("Computing tour...");
@@ -481,3 +481,89 @@ function updateDeliverersList() {
 
 const input = document.getElementById("numberOfDeliverers");
 input.addEventListener("input", updateDeliverersList);
+
+function generateDeliverersAssignment() {
+  const numberOfDeliverers = getNumberOfDeliverers();
+
+  const assignment = {};
+  for (let i = 1; i <= numberOfDeliverers; i++) {
+    assignment[`livreur ${i}`] = {};
+  }
+
+  const selects = document.querySelectorAll(".delivery-select");
+
+  selects.forEach((select) => {
+    const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
+    const selectedDeliverer = parseInt(select.value);
+
+    // Récupérer le POI pickup correspondant dans tourPOIMap
+    const pickupPOI = tourPOIMap.get(deliveryId);
+
+    if (pickupPOI) {
+      // Trouver le POI delivery associé (même deliveryId mais type DELIVERY)
+      let deliveryPOI = null;
+      for (let [id, poi] of tourPOIMap.entries()) {
+        if (
+          poi.deliveryId === pickupPOI.deliveryId &&
+          poi.type === "DELIVERY"
+        ) {
+          deliveryPOI = poi;
+          break;
+        }
+      }
+
+      // Ajouter les POIs au livreur sélectionné
+      const delivererKey = `livreur ${selectedDeliverer}`;
+      assignment[delivererKey][deliveryId] = pickupPOI;
+
+      if (deliveryPOI) {
+        // Trouver l'ID du POI delivery dans tourPOIMap
+        for (let [id, poi] of tourPOIMap.entries()) {
+          if (poi === deliveryPOI) {
+            assignment[delivererKey][id] = deliveryPOI;
+            break;
+          }
+        }
+      }
+    }
+  });
+
+  return assignment;
+}
+
+// Fonction pour envoyer l'assignation au backend
+function sendDeliverersAssignment() {
+  if (!nodeMap || nodeMap.size === 0) {
+    alert("Veuillez d'abord importer un plan.");
+    return;
+  }
+
+  if (tourPOIMap.size === 0) {
+    alert("Veuillez d'abord charger une demande de livraison.");
+    return;
+  }
+
+  const assignment = generateDeliverersAssignment();
+
+  console.log("Assignment à envoyer:", assignment);
+
+  fetch("http://localhost:8090/assignDeliverers", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(assignment),
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("HTTP error " + response.status);
+      return response.json();
+    })
+    .then((data) => {
+      console.log("Response from backend:", data);
+      alert("Assignation des livreurs effectuée avec succès !");
+    })
+    .catch((err) => {
+      console.error("Error sending assignment:", err);
+      alert("Erreur lors de l'envoi de l'assignation.");
+    });
+}
