@@ -16,48 +16,67 @@ import backend.TSP.Graph;
 import backend.models.Edge;
 import backend.models.Node;
 import backend.models.PointOfInterest;
-import backend.models.TSPRequest;
+import backend.models.MultipleDeliverersRequest;
 
 @RestController
 public class Server {
 
     @PostMapping("/runTSP")
-    public ResponseEntity<?> runTSP(@RequestBody TSPRequest tspRequest) {
+    public ResponseEntity<?> runTSP(@RequestBody MultipleDeliverersRequest deliverersRequest) {
 
         System.out.println("Received TSP request");
-        System.out.println("Tour: " + tspRequest.getTour());
+        System.out.println("Deliverer Assignments: " + deliverersRequest.getDelivererAssignments());
 
-        Map<Long, Node> all_nodes = tspRequest.getAllNodes(); 
-        List<Edge> all_edges = tspRequest.getAllEdges();
-        List<PointOfInterest> tour = tspRequest.getTour();
+        Map<Long, Node> all_nodes = deliverersRequest.getAllNodes();
+        List<Edge> all_edges = deliverersRequest.getAllEdges();
 
-        // Pretty print the tour
-        System.out.println("Tour Points of Interest:");
-        for (PointOfInterest poi : tour) {
-            Long poiId = poi.getNode().getId();
-            System.out.println("PoI ID: " + poiId + ", Type: " + poi.getType() + ", Associated ID: " + poi.getAssociatedPoI());
+        // Deliverers are not created here automatically, need KeyDeserializer
+        Map<String, Map<Long, PointOfInterest>> delivererAssignments = deliverersRequest.getDelivererAssignments();
+
+        Map<String, Map<String, Object>> allDeliverersResults = new HashMap<>();
+
+        for (Map.Entry<String, Map<Long, PointOfInterest>> entry : delivererAssignments.entrySet()) {
+            String delivererName = entry.getKey();
+            Map<Long, PointOfInterest> tour = entry.getValue();
+
+            System.out.println("Processing " + delivererName + " with " + tour.size() + " POIs");
+
+            if (tour.isEmpty()) {
+                System.out.println(delivererName + " has no deliveries assigned");
+                continue;
+            }
+
+            // Pretty print the tour
+            System.out.println("Tour Points of Interest for " + delivererName + ":");
+            for (PointOfInterest poi : tour.values()) {
+                Long poiId = poi.getNode().getId();
+                System.out.println(
+                        "PoI ID: " + poiId +
+                                ", Type: " + poi.getType() +
+                                ", Associated ID: " + poi.getAssociatedPoI());
+            }
+
+            Graph g = new Graph(all_nodes, all_edges, tour);
+            LocalTime time = LocalTime.of(8, 0); // 8:00 AM - default start time
+
+            BruteForceTSP solver = new BruteForceTSP(g);
+            solver.solve();
+
+            // Get the solution order and paths
+            ArrayList<Long> solutionOrder = solver.getSolutionOrder();
+            ArrayList<Map<Long, Long>> solutionPaths = solver.getSolutionPaths();
+
+            // Format the response for this deliverer
+            Map<String, Object> delivererResult = new HashMap<>();
+            delivererResult.put("bestSolution", solutionOrder);
+            delivererResult.put("tour", solutionPaths);
+
+            allDeliverersResults.put(delivererName, delivererResult);
+
+            System.out.println("TSP Solution Order for " + delivererName + ": " + solutionOrder);
         }
 
-        Graph g = new Graph(all_nodes, all_edges, tour);
-        LocalTime time = LocalTime.of(8, 0); // 8:00 AM - default start time
-
-        // The brute-force approach will compute the optimal path from each PoI to every other PoI
-        //     It'll then make sure that all pickups are done before their corresponding deliveries
-        //     Then order them such that the total travel cost is minimized
-        BruteForceTSP solver = new BruteForceTSP(g);
-        solver.solve();
-
-        // Get the solution order and paths
-        ArrayList<Long> solutionOrder = solver.getSolutionOrder();
-        ArrayList<Map<Long, Long>> solutionPaths = solver.getSolutionPaths();
-
-        // Log the solution
-        System.out.println("TSP Solution Order: " + solutionOrder);
-
-        // Return the solution in the response
-        Map<String, Object> response = new HashMap<>();
-        response.put("solutionOrder", solutionOrder);
-        response.put("solutionPaths", solutionPaths);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        // Return all deliverers solutions
+        return new ResponseEntity<>(allDeliverersResults, HttpStatus.OK);
     }
 }
