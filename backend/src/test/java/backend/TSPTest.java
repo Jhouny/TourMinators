@@ -51,10 +51,8 @@ public class TSPTest {
 
         LinkedList<Long> expectedOrder = new LinkedList<>();
         expectedOrder.add(0L);
-        expectedOrder.add(1L);
         expectedOrder.add(2L);
         expectedOrder.add(1L);
-        expectedOrder.add(2L);
         expectedOrder.add(0L);
 
         Assert.assertEquals(expectedOrder, tsp.getSolutionOrder());

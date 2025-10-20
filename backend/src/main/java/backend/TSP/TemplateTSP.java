@@ -59,9 +59,11 @@ public abstract class TemplateTSP implements TSP {
 
 		Collection<Long> nonVus = g.getPickupPoIs();
 		ArrayList<Long> vus = new ArrayList<Long>(g.getNbNodes());
+		ArrayList<Long> order = new ArrayList<Long>(g.getNbNodes());
 		vus.add(g.getBeginId()); // le premier sommet visite
+		order.add(g.getBeginId());
 		coutMeilleureSolution = Double.MAX_VALUE;
-		branchAndBound(g.getBeginId(), nonVus, vus, 0.0);
+		branchAndBound(g.getBeginId(), nonVus, vus, order, 0.0);
 
 		// Calculate the nodes to return to the warehouse at the end if not already present
 		if (solutionOrder.size() > 0 && solutionOrder.getLast() != g.getBeginId()) {
@@ -78,14 +80,8 @@ public abstract class TemplateTSP implements TSP {
 			}
 			
 			// Remove the first node as it is the last node of the current solution
-			pathToWarehouse.removeFirst();
-			previous = last;
-			for (Long nodeId : pathToWarehouse) {
-				solutionOrder.add(nodeId);
-				// Update weight
-				coutMeilleureSolution += g.getPathCost(previous, nodeId);
-				previous = nodeId;
-			}
+			solutionOrder.add(g.getBeginId());
+			coutMeilleureSolution += g.getPathCost(last, g.getBeginId());
 
 			Map<Pair<Long, Long>, LinkedList<Long>> pathMap = Map.of(new Pair<>(last, g.getBeginId()), pathToWarehouse);
 			solutionPath.add(pathMap);
@@ -207,7 +203,7 @@ public abstract class TemplateTSP implements TSP {
 	 *         itself (this is considered an invalid input)
 	 * @throws NullPointerException when the Graph or required PoI data is missing
 	 */
-	private void branchAndBound(Long sommetCrt, Collection<Long> nonVus, ArrayList<Long> vus, double coutVus) {
+	private void branchAndBound(Long sommetCrt, Collection<Long> nonVus, ArrayList<Long> vus, ArrayList<Long> order, double coutVus) {
 		//if ( System.currentTimeMillis() - startTime > timeLimit )
 			//return;
 
@@ -218,11 +214,12 @@ public abstract class TemplateTSP implements TSP {
 				if ( coutVus < coutMeilleureSolution ) {
 					coutMeilleureSolution = coutVus;
 					solutionOrder.clear();
-					for (Long l : vus) {
+					for (Long l : order) {
 						solutionOrder.add(l);
 					}
 					
 					solutionPath.clear();
+					Long origPoI = null, destPoI = null;
 					Long previous = null;
 					Map<Pair<Long, Long>, LinkedList<Long>> pathMap = null;
 					for (Long l : vus) {
@@ -238,7 +235,16 @@ public abstract class TemplateTSP implements TSP {
 
 								path.addFirst(key);
 							}
-							pathMap = Map.of(new Pair<>(previous, l), path);
+
+							for ( Long poiId : order ) {
+								if ( poiId.equals(previous) )
+									origPoI = poiId;
+
+								if ( poiId.equals(l) && order.indexOf(l) == order.indexOf(previous)+1 )
+									destPoI = poiId;
+							}
+
+							pathMap = Map.of(new Pair<>(origPoI, destPoI), path);
 							solutionPath.add(pathMap);
 						}
 						previous = l;
@@ -259,12 +265,16 @@ public abstract class TemplateTSP implements TSP {
 						nonVus.add(assoc);
 				}
 
+				if ( wasInNonVus )
+					order.add(prochainSommet);
 
 				nonVus.remove(prochainSommet);
-				branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getPathCost(sommetCrt, prochainSommet));
+				branchAndBound(prochainSommet, nonVus, vus, order, coutVus+g.getPathCost(sommetCrt, prochainSommet));
 				vus.remove(vus.lastIndexOf(prochainSommet));
-				if ( wasInNonVus )
+				if ( wasInNonVus ) {
 					nonVus.add(prochainSommet);
+					order.remove(order.lastIndexOf(prochainSommet));
+				}
 
 				// Remove associated delivery if we just backtracked from a pickup
 				if ( assoc != null) 
