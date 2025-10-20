@@ -59,6 +59,9 @@ public class Graph  {
 			if (tour.get(id).getType() == PointOfInterest.PoIEnum.PICKUP){
 				nodesToVisit.add(id);
 			}
+            if (tour.get(id).getType() == PointOfInterest.PoIEnum.DELIVERY){
+                nodesToVisit.add(id);
+            }
 		}
 		return nodesToVisit;
 	}
@@ -107,10 +110,10 @@ public class Graph  {
 
 	//=========================== AWA ======================================//
 	public Float getPathCost(Long i, Long j) {
+        System.out.println("getPathCost() called for: " + i + " and " + j);
         // Returns the cost of the optimal path between i and j, or null if AWA* has not been called for this pair
         if(pathCost.get(new Pair<Long, Long>(i, j)) == null){
             AWAStar(i, j);
-            System.out.println("Path cost between " + i + " and " + j + " computed using getPathCost().");
         }
         Float cost = pathCost.get(new Pair<Long, Long>(i, j));
         if(cost == null){
@@ -173,7 +176,7 @@ public class Graph  {
 
         int nbIter = 0;
         if (startId.equals(endId)){
-            printd("Start and end nodes are the same.");
+            printd("Start and end nodes are the same: " + startId + "\n");
             pathCost.put(new Pair<Long, Long>(startId, endId), 0f);
             return null;
         }
@@ -208,10 +211,9 @@ public class Graph  {
                 continue;
 
             if(current.getId() == endId){
-                System.out.println("Nombre d'itérations : " + nbIter);
                 printSolution(startId, endId, costMap, cameFrom);
                 pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
-                printd("Path found from " + startId + " to " + endId + " with cost " + costMap.get(endId));
+                printd("AWA got called and finished. in "+ nbIter + " iterations. Path found from " + startId + " to " + endId + " with cost " + costMap.get(endId)+"\n");
                 return cameFrom;
             }
 

@@ -24,7 +24,11 @@ public abstract class TemplateTSP implements TSP {
 		Collection<Long> vus = new ArrayList<Long>(g.getNbNodes());
 		vus.add(g.getBeginId()); // le premier sommet visite
 		coutMeilleureSolution = Double.MAX_VALUE;
-		branchAndBound(g.getBeginId(), nonVus, vus, g.getBeginId());
+		System.out.println("\n================================\n");
+		System.out.println(nonVus);
+		System.out.println("\n================================\n");
+		branchAndBound(g.getBeginId(), nonVus, vus, 0.0); 
+		// Bug: C'etait g.getBeginId() pour le cout au lieu de 0.0
 	}
 	
 	public long getSolution(int i){
@@ -65,32 +69,44 @@ public abstract class TemplateTSP implements TSP {
 	 * @param coutVus la somme des couts des arcs du chemin passant par tous les sommets de vus dans l'ordre ou ils ont ete visites
 	 */	
 	private void branchAndBound(long sommetCrt, Collection<Long> nonVus, Collection<Long> vus, double coutVus){
-
 		if (System.currentTimeMillis() - tpsDebut > tpsLimite) return;
-	    if (nonVus.size() == 0){ // tous les sommets ont ete visites
-			
+		System.out.println("branchAndBound called with sommetCrt: "+sommetCrt+", nonVus: "+nonVus+", vus: "+vus+", coutVus: "+coutVus+", coutMeilleureSolution: "+coutMeilleureSolution);
+	    if (nonVus.isEmpty()){ // tous les sommets ont ete visites
 	    	if (g.isEdge(sommetCrt,g.getBeginId())){ // on peut retourner au sommet de depart
-				
-			
-	    		if (coutVus+g.getCost(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
-	    			
+	    		if (coutVus+g.getPathCost(sommetCrt,g.getBeginId()) < coutMeilleureSolution){ // on a trouve une solution meilleure que meilleureSolution
 					vus.toArray(meilleureSolution);
-	    			coutMeilleureSolution = coutVus+g.getCost(sommetCrt,g.getBeginId());
+	    			coutMeilleureSolution = coutVus+g.getPathCost(sommetCrt,g.getBeginId());
 	    		}
 	    	}
-	    } else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
+	    } 
+		else if (coutVus+bound(sommetCrt,nonVus) < coutMeilleureSolution){
 	        Iterator<Long> it = iterator(sommetCrt, nonVus, g);
 	        while (it.hasNext()){
 	        	Long prochainSommet = it.next();
 				
 	        	vus.add(prochainSommet);
-				if (g.getAssociatedPoI(prochainSommet) != null) {
-					nonVus.add(g.getAssociatedPoI(prochainSommet));
+				
+				Long assoc = g.getAssociatedPoI(prochainSommet);
+				if (assoc != null) {
+					if (assoc.equals(prochainSommet)){
+						System.out.println("Error: PoI associated to itself: " + prochainSommet);
+						throw new IllegalArgumentException("PoI associated to itself: " + prochainSommet);
+					}
+					System.out.println(assoc+" "+ prochainSommet);
+
+					if (!vus.contains(assoc) && !nonVus.contains(assoc)) {
+					nonVus.add(assoc);
+        			}
 				}
+
 	            nonVus.remove(prochainSommet);
-	            branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getCost(sommetCrt, prochainSommet));
+				branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getPathCost(sommetCrt, prochainSommet));
 	            vus.remove(prochainSommet);
 	            nonVus.add(prochainSommet);
+				if (g.getAssociatedPoI(prochainSommet).equals(prochainSommet)){
+					System.out.println("Error: PoI associated to itself: " + prochainSommet);
+					throw new IllegalArgumentException("PoI associated to itself: " + prochainSommet);
+				}
 				if (g.getAssociatedPoI(prochainSommet) != null) {
 					nonVus.remove(g.getAssociatedPoI(prochainSommet));
 				}
