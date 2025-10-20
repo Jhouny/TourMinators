@@ -15,9 +15,14 @@ public class DeliveryRequestParser {
      * Parse un fichier de livraisons XML et retourne :
      * Map<nodeId, Triple<Node, deliveryId, duration>>
      * deliveryId = -1 pour entrepôt, identifiant unique pour chaque livraison.
+     * 
+     * Chaque Node se voit aussi attribuer un attribut "type" dans ses métadonnées :
+     * - "warehouse" pour l'entrepôt
+     * - "pickup" pour l’adresse d’enlèvement
+     * - "delivery" pour l’adresse de livraison
      */
-    public static Map<Long, PointOfInterest> mapDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
-        Map<Long, Triple<Node, Long, Integer>> deliveries = parseDeliveries(filename, graphNodes);
+    public static Map<Long, PointOfInterest> mapDeliveries(Map<Long, Triple<Node, Long, Integer>> deliveries)
+            throws Exception {
 
         Map<Long, PointOfInterest> poiMap = new HashMap<Long, PointOfInterest>();
 
@@ -31,39 +36,46 @@ public class DeliveryRequestParser {
             Long associatedPickupId = null;
 
             // On garde une trace des pickup déjà vus
-            Map<Long , Long> seenPickups = new HashMap<Long , Long>(); //deliveryCounter -> pickupId
+            Map<Long, Long> seenPickups = new HashMap<Long, Long>(); // deliveryCounter -> pickupId
 
             if (deliveryCounter == -1) {
                 type = PoIEnum.WAREHOUSE;
             } else if (!seenPickups.containsKey(deliveryCounter)) {
                 type = PoIEnum.PICKUP;
                 seenPickups.put(deliveryCounter, nodeId);
+                
+               
             } else {
                 type = PoIEnum.DELIVERY;
                 associatedPickupId = seenPickups.get(deliveryCounter);
 
                 poiMap.get(associatedPickupId).setAssociatedPickupId(nodeId);
             }
-
-            poiMap.put(nodeId, new PointOfInterest(node, type, associatedPickupId, duration));
+            
+            poiMap.put(nodeId, new PointOfInterest(node, type, associatedPickupId, duration));  
 
         }
         return poiMap;
     }
 
-    public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
+    public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes)
+            throws Exception {
         Map<Long, Triple<Node, Long, Integer>> sommets = new LinkedHashMap<>();
 
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File(filename));
         doc.getDocumentElement().normalize();
 
+        // --- Entrepôt ---
         Element entrepotElement = (Element) doc.getElementsByTagName("entrepot").item(0);
         long entrepotId = Long.parseLong(entrepotElement.getAttribute("adresse"));
         Node entrepotNode = graphNodes.get(entrepotId);
         if (entrepotNode != null) {
+            // on marque le type dans un champ annexe
+            entrepotNode.setType("warehouse");
             sommets.put(entrepotId, new Triple<>(entrepotNode, -1L, 0));
         }
 
+        // --- Livraisons ---
         NodeList livraisonList = doc.getElementsByTagName("livraison");
         long deliveryCounter = 1;
 
@@ -78,10 +90,13 @@ public class DeliveryRequestParser {
             Node pickupNode = graphNodes.get(idPickup);
             Node deliveryNode = graphNodes.get(idDelivery);
 
+            // Marquer les types pour chaque noeud
             if (pickupNode != null) {
+                pickupNode.setType("pickup");
                 sommets.put(idPickup, new Triple<>(pickupNode, deliveryCounter, dureePickup));
             }
             if (deliveryNode != null) {
+                deliveryNode.setType("delivery");
                 sommets.put(idDelivery, new Triple<>(deliveryNode, deliveryCounter, dureeDelivery));
             }
 
