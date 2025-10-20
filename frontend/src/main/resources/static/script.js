@@ -4,6 +4,7 @@ let lon = 4.8357;
 let edgesVisible = false;
 let toggleEdgesBtn = null;
 let planLoaded = false;
+let pairColors = {};
 
 // On initialise la carte (en lui passant 'map' qui est l'ID de la DIV contenant la carte)
 let map = L.map("map", {
@@ -183,9 +184,7 @@ function load_xml_map() {
 
 function load_xml_delivery() {
   if (!nodeMap || nodeMap.size === 0) {
-    alert(
-      "Veuillez d'abord importer un plan avant de charger une demande de livraison."
-    );
+    alert("Veuillez d'abord importer un plan avant de charger une demande de livraison.");
     return;
   }
 
@@ -209,10 +208,15 @@ function load_xml_delivery() {
       .then((data) => {
         console.log("Pickup/Delivery response:", data);
 
-        // Reset des POI de la tournée
+        // --- Réinitialisation ---
         tourPOIList = [];
+        nodeMarkers.forEach((m) => map.removeLayer(m));
+        nodeMarkers = [];
+        if (!window.pairColors) window.pairColors = {};
+
+        // --- Chargement des POIs ---
         data.tours.forEach((poi) => {
-          let poiObject = {
+          const poiObject = {
             node: poi.node,
             type: poi.type,
             associatedPoI: poi.associatedPoI,
@@ -221,64 +225,41 @@ function load_xml_delivery() {
           tourPOIList.push(poiObject);
         });
 
-        // Supprime les anciens marqueurs (on veut rafraîchir)
-        nodeMarkers.forEach((m) => map.removeLayer(m));
-        nodeMarkers = [];
-
-        // map deliveryId -> couleur (persistant pour cette réponse)
-        const colorMap = new Map();
-        let colorIndex = 0;
-
-        tourPOIList.forEach((element) => {
-          // entree de sécurité si les champs manquent
-          if (
-            typeof element.node.latitude !== "number" ||
-            typeof element.node.longitude !== "number"
-          ) {
-            console.warn("Node missing coords:", element);
-            return;
-          }
-
-          // entrepôt
-          // On suppose que chaque associatedPoI correspond à une paire (pickup/delivery)
-          if (element.type === "WAREHOUSE") {
-            // entrepôt
+        // --- Génération cohérente des couleurs par paire ---
+        tourPOIList.forEach((poi) => {
+          // Si c'est un entrepôt
+          if (poi.type === "WAREHOUSE") {
             nodeMarkers.push(
-              L.marker([element.node.latitude, element.node.longitude], {
+              L.marker([poi.node.latitude, poi.node.longitude], {
                 icon: warehouseIcon,
               }).addTo(map)
             );
-          } else {
-            // Couleur associée à la paire pickup/delivery
-            if (!window.pairColors) window.pairColors = {};
-            if (!pairColors[element.node.id] && !pairColors[element.associatedPoI]) {
-              pairColors[element.associatedPoI] = getRandomColor();
-              pairColors[element.node.id] = pairColors[element.associatedPoI];
-            }
-
-            const color = pairColors[element.node.id];
-            console.log(`élement du type est ${element.type} et id est ${element.node.id}`);
-            const direction = element.type === "PICKUP" ? "up" : "down";
-
-            const icon = createArrowIcon(color, direction);
-
-            nodeMarkers.push(
-              L.marker([element.node.latitude, element.node.longitude], { icon }).addTo(
-                map
-              )
-            );
+            return;
           }
+
+          // Déterminer la clé de la paire (pickup -> son id, delivery -> son pickup associé)
+          const pairKey = poi.type === "PICKUP" ? poi.node.id : poi.associatedPoI;
+
+          // Si pas encore de couleur pour cette paire : on en crée une
+          if (!pairColors[pairKey]) {
+            pairColors[pairKey] = getRandomColor();
+          }
+
+          const color = pairColors[pairKey];
+          const direction = poi.type === "PICKUP" ? "up" : "down";
+          const icon = createArrowIcon(color, direction);
+
+          nodeMarkers.push(
+            L.marker([poi.node.latitude, poi.node.longitude], { icon }).addTo(map)
+          );
         });
 
-        // Générer la liste des livraisons dans le panneau de droite
-        generateDeliveriesList(tourPOIList.values(), getNumberOfDeliverers());
+        // --- Génération de la liste à droite ---
+        generateDeliveriesList(tourPOIList, getNumberOfDeliverers(), pairColors);
       })
-
       .catch((err) => {
         console.error("Error fetching /uploadDeliveries:", err);
-        alert(
-          "Erreur lors du chargement de la demande de livraison (voir console)."
-        );
+        alert("Erreur lors du chargement de la demande de livraison (voir console).");
       });
   };
 
@@ -327,7 +308,7 @@ function compute_tour() {
 
   console.log("Computing tour...");
 
-  fetch("http://localhost:8090/runTSP", {
+  fetch("http://localhost:8070/runTSP", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -376,24 +357,42 @@ function compute_tour() {
     });
 }
 
-function generateDeliveriesList(deliveries, numberOfDeliverers = 1) {
+function generateDeliveriesList(deliveries, numberOfDeliverers = 1, pairColors = {}) {
   const deliveriesListContainer = document.getElementById("deliveries-list");
   deliveriesListContainer.innerHTML = "";
 
-  deliveries.forEach((delivery, index) => {
+  // Regrouper les POIs par deliveryId (pickup + delivery)
+  const pairsMap = new Map();
+  deliveries.forEach((poi) => {
+    if (poi.type === "WAREHOUSE") return; // <- Ignorer les entrepôts
+    const deliveryId = poi.type === "PICKUP" ? poi.node.id : poi.associatedPoI;
+    if (!pairsMap.has(deliveryId)) pairsMap.set(deliveryId, { pickup: null, delivery: null });
+    const pair = pairsMap.get(deliveryId);
+    if (poi.type === "PICKUP") pair.pickup = poi;
+    else if (poi.type === "DELIVERY") pair.delivery = poi;
+  });
+
+  let index = 1;
+  pairsMap.forEach((pair, deliveryId) => {
     const deliveryItem = document.createElement("div");
     deliveryItem.className = "delivery-item";
 
-    // Label de la demande
+    // Couleur de la paire
+    if (!pairColors[deliveryId]) pairColors[deliveryId] = getRandomColor();
+    const color = pairColors[deliveryId];
+
+    const colorDot = document.createElement("span");
+    colorDot.className = "color-dot";
+    colorDot.style.backgroundColor = color;
+
     const label = document.createElement("span");
     label.className = "delivery-label";
-    label.textContent = `Demande no. ${index + 1}`;
+    label.textContent = `Demande no. ${index}`;
 
     const select = document.createElement("select");
     select.className = "delivery-select";
-    select.setAttribute("data-delivery-id", delivery.id || index);
+    select.setAttribute("data-delivery-id", deliveryId);
 
-    // Ajouter les options de livreurs
     for (let i = 1; i <= numberOfDeliverers; i++) {
       const option = document.createElement("option");
       option.value = i;
@@ -401,11 +400,12 @@ function generateDeliveriesList(deliveries, numberOfDeliverers = 1) {
       select.appendChild(option);
     }
 
-    // Assembler l'élément
+    deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
 
     deliveriesListContainer.appendChild(deliveryItem);
+    index++;
   });
 }
 
@@ -416,7 +416,7 @@ function getNumberOfDeliverers() {
 
 function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
-  generateDeliveriesList(tourPOIList.values(), numberOfDeliverers);
+  generateDeliveriesList(tourPOIList.values(), numberOfDeliverers,pairColors);
 }
 
 const input = document.getElementById("numberOfDeliverers");
