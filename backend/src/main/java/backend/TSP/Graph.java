@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -33,7 +34,8 @@ public class Graph  {
 	Map<Long, Node> all_nodes;
 	Map<Pair<Long, Long>, Float> all_costs; // If there is no edge between i and j, there is no entry (i,j) in this map and an exception is thrown
 
-	List<PointOfInterest> tour;
+	Map<Long, PointOfInterest> tourOrig;
+    List<PointOfInterest> tour;
 	Map<Pair<Long, Long> , Float> pathCost;
 	Map<Long, Set<Long>> adjacency; 
 	
@@ -48,11 +50,13 @@ public class Graph  {
      * All parameters are stored by reference. Null parameters will cause a
      * {@link NullPointerException} during construction.
      */
-    public Graph(Map<Long, Node> nodes, List<Edge> edges, List<PointOfInterest> tour){
+    public Graph(Map<Long, Node> nodes, List<Edge> edges, Map<Long, PointOfInterest> tour){
         // Initialize graph attributes
         this.all_nodes = nodes; 
         this.all_edges = edges;
-        this.tour = tour;
+        this.tourOrig = tour;
+
+        this.tour = new ArrayList<>(tour.values());
 
         this.pathCost = new HashMap<Pair<Long, Long> , Float>(); // Empty - to be filled when WA* called
         this.adjacency = new HashMap<Long, Set<Long>>();
@@ -88,7 +92,7 @@ public class Graph  {
             }
         }
 
-        throw new IllegalArgumentException("Node " + id + " is not in the tour."); 
+        return null;
     }
 
     /**
@@ -130,8 +134,8 @@ public class Graph  {
      * Retrieve all the Pickup PoI in the tour
      * @return a list of Pickup PoI
      */
-    public Collection<Long> getPickupPoIs() {
-        List<Long> pickups = new ArrayList<>();
+    public LinkedHashSet<Long> getPickupPoIs() {
+        LinkedHashSet<Long> pickups = new LinkedHashSet<>();
         for (PointOfInterest poi : tour) {
             if (poi.getType() == PointOfInterest.PoIEnum.PICKUP) {
                 pickups.add(poi.getId());
@@ -221,12 +225,22 @@ public class Graph  {
      * @throws NullPointerException when parameters or internal maps are null
      */
     public Float getPathCost(Long i, Long j) {
+        Map<Long, Long> cameFrom = null;
         if(pathCost.get(new Pair<Long, Long>(i, j)) == null)
-            AWAStar(i, j);
+            cameFrom = AWAStar(i, j);
 
         Float cost = pathCost.get(new Pair<Long, Long>(i, j));
         if(cost == null){
-            throw new IllegalArgumentException("No path between " + i + " and " + j);
+            String msg = "No path between " + i + " and " + j + ".";
+            if (cameFrom != null) {
+                StringBuilder pathStr = new StringBuilder();
+                Long current = j;
+                while (current != null) {
+                    pathStr.insert(0, current + " ");
+                    current = cameFrom.get(current);
+                }
+                msg += " Computed path: " + pathStr.toString().trim();}
+            throw new IllegalArgumentException(msg);
         }
         return cost;
     }
@@ -324,8 +338,14 @@ public class Graph  {
 
             visited.add(current.getId());
         }
-        pathCost.put(new Pair<Long, Long>(startId, endId), null);
-        printd("No path found from " + startId + " to " + endId);
+
+        // Check if we reached the end node
+        if (visited.contains(endId)) {
+            pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
+        } else {
+            pathCost.put(new Pair<Long, Long>(startId, endId), null);
+            printd("No path found from " + startId + " to " + endId);
+        }
         return cameFrom;
     }
 

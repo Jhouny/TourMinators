@@ -356,6 +356,9 @@ function compute_tour() {
 
   console.log("Computing tour...");
 
+  // Log the body being sent
+  console.log("Request body for /runTSP:", body);
+
   fetch("http://localhost:8080/runTSP", {
     method: "POST",
     headers: {
@@ -432,7 +435,7 @@ function compute_tour() {
       }
     })
     .catch((err) => {
-      console.error("Error fetching /computeTour:", err);
+      console.error("Error fetching /runTSP:", err);
     });
 }
 

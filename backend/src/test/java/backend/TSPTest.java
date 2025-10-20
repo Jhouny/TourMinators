@@ -36,10 +36,10 @@ public class TSPTest {
         edges.add(new Edge(2L, 0L, 350.0f, "edge_2_0"));
 
 
-        List<PointOfInterest> tour = new ArrayList<>();
-        tour.add(new PointOfInterest(nodes.get(0L), PointOfInterest.PoIEnum.WAREHOUSE, null, 0));
-        tour.add(new PointOfInterest(nodes.get(1L), PointOfInterest.PoIEnum.DELIVERY, 2L, 200));
-        tour.add(new PointOfInterest(nodes.get(2L), PointOfInterest.PoIEnum.PICKUP, 1L, 300));
+        Map<Long, PointOfInterest> tour = new HashMap<>();
+        tour.put(0L, new PointOfInterest(nodes.get(0L), PointOfInterest.PoIEnum.WAREHOUSE, null, 0));
+        tour.put(1L, new PointOfInterest(nodes.get(1L), PointOfInterest.PoIEnum.DELIVERY, 2L, 200));
+        tour.put(2L, new PointOfInterest(nodes.get(2L), PointOfInterest.PoIEnum.PICKUP, 1L, 300));
 
         // Order is: warehouse (0) -> pickup (2) -> delivery (1) -> warehouse (0)
         // Full path: 0 -> 1 -> 2 -> 1 -> 2 -> 0
@@ -77,5 +77,11 @@ public class TSPTest {
         expectedPath.add(Map.of(new Pair<>(1L, 0L), path1to0));
 
         Assert.assertEquals(expectedPath, tsp.getSolutionPath());
+    }
+
+    @Test
+    public void testTSPWithPetitPlan() {
+        
+
     }
 }

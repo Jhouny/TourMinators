@@ -10,14 +10,14 @@ public class TSPRequest {
 
     private Map<Long, Node> allNodes;
     private List<Edge> allEdges;
-    private List<PointOfInterest> tour;
+    private Map<Long, PointOfInterest> tour;
 
 
     @JsonCreator
     public TSPRequest(
         @JsonProperty("allNodes") Map<Long, Node> allNodes, 
         @JsonProperty("allEdges") List<Edge> allEdges, 
-        @JsonProperty("tour") List<PointOfInterest> tour) {
+        @JsonProperty("tour") Map<Long, PointOfInterest> tour) {
         this.allNodes = allNodes;
         this.allEdges = allEdges;
         this.tour = tour;
@@ -40,7 +40,7 @@ public class TSPRequest {
         return allEdges;
     }
 
-    public List<PointOfInterest> getTour() {
+    public Map<Long, PointOfInterest> getTour() {
         return tour;
     }
 }

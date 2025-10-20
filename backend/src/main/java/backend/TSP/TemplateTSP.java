@@ -57,13 +57,13 @@ public abstract class TemplateTSP implements TSP {
 		if (timeLimit <= 0) return;
 		this.startTime = System.currentTimeMillis();
 
-		Collection<Long> nonVus = g.getPickupPoIs();
+		LinkedHashSet<Long> nonVus = g.getPickupPoIs();
 		ArrayList<Long> vus = new ArrayList<Long>(g.getNbNodes());
 		ArrayList<Long> order = new ArrayList<Long>(g.getNbNodes());
 		vus.add(g.getBeginId()); // le premier sommet visite
 		order.add(g.getBeginId());
 		coutMeilleureSolution = Double.MAX_VALUE;
-		branchAndBound(g.getBeginId(), nonVus, vus, order, 0.0);
+		branchAndBound(g.getBeginId(), nonVus, vus, order, 0.0, 0);
 
 		// Reconstruct full path map from solutionOrder
 		LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> fullPathMap = new LinkedHashSet<>();
@@ -220,9 +220,10 @@ public abstract class TemplateTSP implements TSP {
 	 *         itself (this is considered an invalid input)
 	 * @throws NullPointerException when the Graph or required PoI data is missing
 	 */
-	private void branchAndBound(Long sommetCrt, Collection<Long> nonVus, ArrayList<Long> vus, ArrayList<Long> order, double coutVus) {
-		if ( System.currentTimeMillis() - startTime > timeLimit )
-			return;
+	private void branchAndBound(Long sommetCrt, LinkedHashSet<Long> nonVus, ArrayList<Long> vus, ArrayList<Long> order, double coutVus, int nbRecursions) {
+		nbRecursions++;
+		//if ( System.currentTimeMillis() - startTime > timeLimit )
+			//return;
 
 		// If all nodes have been visited, check if we can return to start
 		if ( nonVus.isEmpty() ) {
@@ -243,17 +244,16 @@ public abstract class TemplateTSP implements TSP {
 				vus.add(prochainSommet);
                 
 				Long assoc = g.getAssociatedPoI(prochainSommet);
-				if ( g.getTypePoI(prochainSommet) == PointOfInterest.PoIEnum.PICKUP ) {
+				if ( g.getTypePoI(prochainSommet) == PointOfInterest.PoIEnum.PICKUP && assoc != null && !nonVus.contains(assoc) && !order.contains(assoc)) {
 					// Pickup is being visited, add associated delivery to nonVus
-					if (!nonVus.contains(assoc))
-						nonVus.add(assoc);
+					nonVus.add(assoc);
 				}
 
 				if ( wasInNonVus )
 					order.add(prochainSommet);
 
 				nonVus.remove(prochainSommet);
-				branchAndBound(prochainSommet, nonVus, vus, order, coutVus+g.getPathCost(sommetCrt, prochainSommet));
+				branchAndBound(prochainSommet, nonVus, vus, order, coutVus+g.getPathCost(sommetCrt, prochainSommet), nbRecursions);
 				vus.remove(vus.lastIndexOf(prochainSommet));
 				if ( wasInNonVus ) {
 					nonVus.add(prochainSommet);
@@ -263,6 +263,7 @@ public abstract class TemplateTSP implements TSP {
 				// Remove associated delivery if we just backtracked from a pickup
 				if ( assoc != null) 
 					nonVus.remove(assoc);
+
 			}        
 		}
 	}

@@ -33,11 +33,11 @@ public class Server {
 
         Map<Long, Node> all_nodes = tspRequest.getAllNodes(); 
         List<Edge> all_edges = tspRequest.getAllEdges();
-        List<PointOfInterest> tour = tspRequest.getTour();
+        Map<Long, PointOfInterest> tour = tspRequest.getTour();
 
         // Pretty print the tour
         System.out.println("Tour Points of Interest:");
-        for (PointOfInterest poi : tour) {
+        for (PointOfInterest poi : tour.values()) {
             Long poiId = poi.getNode().getId();
             System.out.println("PoI ID: " + poiId + ", Type: " + poi.getType() + ", Associated ID: " + poi.getAssociatedPoI());
         }
@@ -57,6 +57,7 @@ public class Server {
 
         // Log the solution
         System.out.println("TSP Solution Order: " + solutionOrder);
+        System.out.println("TSP Solution Paths: " + solutionPaths);
 
         // Return the solution in the response
         Map<String, Object> response = new HashMap<>();
