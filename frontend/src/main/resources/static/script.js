@@ -42,6 +42,7 @@ var warehouseIcon = L.icon({
 
 var nodeMarkers = [];
 var edgeLines = [];
+var pairColors = {};
 var nodeMap = new Map(); // Graphe déjà chargé
 var edges_list = []; // Liste des edges déjà chargés
 var requestMap = new Map(); // Requests de la tournée déjà chargés
@@ -306,7 +307,11 @@ function load_xml_delivery() {
         });
 
         // Générer la liste des livraisons dans le panneau de droite
-        generateDeliveriesList(requestMap.values(), getNumberOfDeliverers());
+        generateDeliveriesList(
+          requestMap.values(),
+          getNumberOfDeliverers(),
+          pairColors
+        );
       })
 
       .catch((err) => {
@@ -438,24 +443,47 @@ function compute_tour() {
     });
 }
 
-function generateDeliveriesList(deliveries, numberOfDeliverers = 1) {
+function generateDeliveriesList(
+  deliveries,
+  numberOfDeliverers = 1,
+  pairColors = {}
+) {
   const deliveriesListContainer = document.getElementById("deliveries-list");
   deliveriesListContainer.innerHTML = "";
 
-  deliveries.forEach((delivery, index) => {
+  // Comme deliveries est un Map.values(), on le transforme en tableau
+  const deliveriesArray = Array.from(deliveries);
+
+  deliveriesArray.forEach((delivery, index) => {
     const deliveryItem = document.createElement("div");
     deliveryItem.className = "delivery-item";
 
-    // Label de la demande
+    // 🔹 Récupérer la couleur associée au deliveryId
+    const deliveryId = delivery.deliveryId ?? delivery.node?.id ?? index;
+    const color =
+      pairColors[delivery.associatedPoI] || pairColors[deliveryId] || "#999";
+
+    console.log(
+      `Delivery ID: ${deliveryId}, Color: ${
+        pairColors[delivery.associatedPoI] || pairColors[deliveryId]
+      }`
+    );
+
+    // 🔹 Créer la pastille colorée
+    const colorDot = document.createElement("span");
+    colorDot.className = "color-dot";
+    colorDot.style.backgroundColor = color;
+
+    // 🔹 Label de la demande
     const label = document.createElement("span");
     label.className = "delivery-label";
     label.textContent = `Demande no. ${index + 1}`;
 
+    // 🔹 Sélecteur de livreur
     const select = document.createElement("select");
     select.className = "delivery-select";
     select.setAttribute("data-delivery-id", delivery.node.id);
 
-    // Ajouter les options de livreurs
     for (let i = 1; i <= numberOfDeliverers; i++) {
       const option = document.createElement("option");
       option.value = i;
@@ -463,7 +491,8 @@ function generateDeliveriesList(deliveries, numberOfDeliverers = 1) {
       select.appendChild(option);
     }
 
-    // Assembler l'élément
+    // Assembler les éléments
+    deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
 
