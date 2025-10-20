@@ -32,7 +32,7 @@ public abstract class TemplateTSP implements TSP {
 	private int timeLimit;
 	private long startTime;
 	private LinkedList<Long> solutionOrder;  // Solution is an ordered set of node ids representing the order of visit
-	private LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> solutionPath; // Solution is an ordered set of paths (Pair from node to node) with an ordered list of nodes representing the full path between them
+	private LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> solutionPath; // Solution is an ordered set of paths (Pair from PoI node to PoI node) with an ordered list of nodes representing the full path between them
 	
 	public TemplateTSP(int timeLimit, Graph g) {
 		this.timeLimit = timeLimit;
@@ -62,6 +62,34 @@ public abstract class TemplateTSP implements TSP {
 		vus.add(g.getBeginId()); // le premier sommet visite
 		coutMeilleureSolution = Double.MAX_VALUE;
 		branchAndBound(g.getBeginId(), nonVus, vus, 0.0);
+
+		// Calculate the nodes to return to the warehouse at the end if not already present
+		if (solutionOrder.size() > 0 && solutionOrder.getLast() != g.getBeginId()) {
+			Long previous = solutionOrder.getLast();
+			Long last = previous;
+
+			Map<Long, Long> cameFrom = g.AWAStar(solutionOrder.getLast(), g.getBeginId());
+			Long current = g.getBeginId();
+			LinkedList<Long> pathToWarehouse = new LinkedList<>();
+			while (current != null) {
+				pathToWarehouse.addFirst(current);
+				previous = current;
+				current = cameFrom.get(current);
+			}
+			
+			// Remove the first node as it is the last node of the current solution
+			pathToWarehouse.removeFirst();
+			previous = last;
+			for (Long nodeId : pathToWarehouse) {
+				solutionOrder.add(nodeId);
+				// Update weight
+				coutMeilleureSolution += g.getPathCost(previous, nodeId);
+				previous = nodeId;
+			}
+
+			Map<Pair<Long, Long>, LinkedList<Long>> pathMap = Map.of(new Pair<>(last, g.getBeginId()), pathToWarehouse);
+			solutionPath.add(pathMap);
+		}
 
 	}
 	
@@ -187,24 +215,8 @@ public abstract class TemplateTSP implements TSP {
 		if ( nonVus.isEmpty() ) {
 			if ( g.pathCost.containsKey(new Pair<>(sommetCrt, g.getBeginId())) || sommetCrt == g.getBeginId() ) {
 				// Check if this solution is better than the best one so far
-				if ( coutVus + g.getPathCost(sommetCrt, g.getBeginId()) < coutMeilleureSolution ) {
-
-					// Calculate and Add to vus the entire path to return to start
-					LinkedList<Long> path1 = new LinkedList<>();
-					path1.add(sommetCrt);
-					Map<Long, Long> cameFrom1 = g.AWAStar(sommetCrt, g.getBeginId());
-					Long current = sommetCrt;
-					for (Long key : cameFrom1.keySet()) {
-						if (cameFrom1.get(key) == current) {
-							vus.add(key);
-							current = key;
-						}
-						if (current == g.getBeginId()) {
-							break;
-						}
-					}
-
-					coutMeilleureSolution = coutVus + g.getPathCost(sommetCrt, g.getBeginId());
+				if ( coutVus < coutMeilleureSolution ) {
+					coutMeilleureSolution = coutVus;
 					solutionOrder.clear();
 					for (Long l : vus) {
 						solutionOrder.add(l);
@@ -218,7 +230,7 @@ public abstract class TemplateTSP implements TSP {
 							LinkedList<Long> path = new LinkedList<>();
 							path.add(previous);
 							Map<Long, Long> cameFrom = g.AWAStar(previous, l);
-							current = l;
+							Long current = l;
 							for (Long key : cameFrom.keySet()) {
 								if (cameFrom.get(key) == null) {
 									continue;
