@@ -208,3 +208,13 @@ body, html {
     outline: none;
     border-color: var(--primary-green);
 }
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 10px;
+  border: 2px solid #ddd;
+  flex-shrink: 0;
+}
