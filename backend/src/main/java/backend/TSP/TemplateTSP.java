@@ -65,6 +65,23 @@ public abstract class TemplateTSP implements TSP {
 		coutMeilleureSolution = Double.MAX_VALUE;
 		branchAndBound(g.getBeginId(), nonVus, vus, order, 0.0);
 
+		// Reconstruct full path map from solutionOrder
+		LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> fullPathMap = new LinkedHashSet<>();
+		for (int i = 0; i < solutionOrder.size() - 1; i++) {
+			Long from = solutionOrder.get(i);
+			Long to = solutionOrder.get(i + 1);
+			Map<Long, Long> path = g.AWAStar(from, to);
+			LinkedList<Long> pathList = new LinkedList<>();
+			Long current = to;
+			while (current != null) {
+				pathList.addFirst(current);
+				current = path.get(current);
+			}
+			Map<Pair<Long, Long>, LinkedList<Long>> pathMap = Map.of(new Pair<>(from, to), pathList);
+			fullPathMap.add(pathMap);
+		}
+		solutionPath = fullPathMap;
+
 		// Calculate the nodes to return to the warehouse at the end if not already present
 		if (solutionOrder.size() > 0 && solutionOrder.getLast() != g.getBeginId()) {
 			Long previous = solutionOrder.getLast();
@@ -204,8 +221,8 @@ public abstract class TemplateTSP implements TSP {
 	 * @throws NullPointerException when the Graph or required PoI data is missing
 	 */
 	private void branchAndBound(Long sommetCrt, Collection<Long> nonVus, ArrayList<Long> vus, ArrayList<Long> order, double coutVus) {
-		//if ( System.currentTimeMillis() - startTime > timeLimit )
-			//return;
+		if ( System.currentTimeMillis() - startTime > timeLimit )
+			return;
 
 		// If all nodes have been visited, check if we can return to start
 		if ( nonVus.isEmpty() ) {
@@ -214,41 +231,8 @@ public abstract class TemplateTSP implements TSP {
 				if ( coutVus < coutMeilleureSolution ) {
 					coutMeilleureSolution = coutVus;
 					solutionOrder.clear();
-					for (Long l : order) {
+					for (Long l : order)
 						solutionOrder.add(l);
-					}
-					
-					solutionPath.clear();
-					Long origPoI = null, destPoI = null;
-					Long previous = null;
-					Map<Pair<Long, Long>, LinkedList<Long>> pathMap = null;
-					for (Long l : vus) {
-						if (previous != null) {
-							LinkedList<Long> path = new LinkedList<>();
-							path.add(previous);
-							Map<Long, Long> cameFrom = g.AWAStar(previous, l);
-							Long current = l;
-							for (Long key : cameFrom.keySet()) {
-								if (cameFrom.get(key) == null) {
-									continue;
-								}
-
-								path.addFirst(key);
-							}
-
-							for ( Long poiId : order ) {
-								if ( poiId.equals(previous) )
-									origPoI = poiId;
-
-								if ( poiId.equals(l) && order.indexOf(l) == order.indexOf(previous)+1 )
-									destPoI = poiId;
-							}
-
-							pathMap = Map.of(new Pair<>(origPoI, destPoI), path);
-							solutionPath.add(pathMap);
-						}
-						previous = l;
-					}
 				}
 			}
 		} else if ( coutVus + bound(sommetCrt, nonVus) < coutMeilleureSolution ) { // If there is potential for a better solution
