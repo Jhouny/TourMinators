@@ -15,6 +15,11 @@ public abstract class TemplateTSP implements TSP {
 	private int tpsLimite;
 	private long tpsDebut;
 	
+	/**
+	 * computes best tour solution in graph g within the time limit tpsLimite
+	 * @param tpsLimite time limit in milliseconds
+	 * @param g the graph representing the data of problem
+     */
 	public void chercheSolution(int tpsLimite, Graph g){
 		if (tpsLimite <= 0) return;
 		tpsDebut = System.currentTimeMillis();	
@@ -32,12 +37,19 @@ public abstract class TemplateTSP implements TSP {
 		// Bug: C'etait g.getBeginId() pour le cout au lieu de 0.0
 	}
 	
+	/**
+	 * @param i indice du sommet dans la meilleure solution trouvee
+	 * @return id du i-eme sommet de la meilleure solution trouvee, ou -1 si i est invalide
+	 */
 	public long getSolution(int i){
 		if (g != null && i>=0 && i<g.getNbNodes())
 			return meilleureSolution[i];
 		return -1;
 	}
 	
+	/**
+	 * @return le cout de la meilleure solution trouvee, ou -1 si aucune solution n'a ete calculee
+	 */
 	public double getCoutSolution(){
 		if (g != null)
 			return coutMeilleureSolution;
