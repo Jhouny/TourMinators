@@ -50,16 +50,16 @@ public class Server {
 
                                                                                                     // 
 
-        Pai<Long, Loca lTime>[] bestSolution = (Pair<Long, LocalTime>[]) new Pair[tour.size() + 1]; // +1 for return to warehouse
-        
-        Map <Pair<Long,Long>, Map<Long, Long>> predecessors = new HashMap<>();
+        Pair<Long, LocalTime>[] bestSolution = (Pair<Long, LocalTime>[]) new Pair[tour.size() + 1]; // +1 for return to warehouse
+
+        Map<Pair<Long, Long>, Map<Long, Long>> predecessors = new HashMap<>();
 
         long previousNodeId = tsp.getSolution(0);
         long nodeId = tsp.getSolution(0);
         bestSolution[0] = new Pair<Long, LocalTime>(nodeId, time);
 
         for (int i = 1; i < tour.size() + 1; i++) {
-            pr eviousNodeId = nodeId;
+            previousNodeId = nodeId;
 
             //fill in bestSolution
             if (i != tour.size())
@@ -70,11 +70,11 @@ public class Server {
             if (i != 1)
                 time = time.plusSeconds(tour.get(previousNodeId).getDuration());// add duration of previous PoI
             time = time.plusSeconds((long) (g.getPathCost(previousNodeId, nodeId) * 3600 / 15000));// add travel time
-                                                                                                   // between previous
-                                                                                                   // and current PoI,
-                                                                                                   // assuming 15km/h
-                                                                                                   // speed
-            be stSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
+                // between previous
+                // and current PoI,
+                // assuming 15km/h
+                // speed
+            bestSolution[i] = new Pair<Long, LocalTime>(nodeId, time);
 
             //fill in predecessors
             Map<Long, Long> preds = g.AWAStar(previousNodeId, nodeId);
@@ -85,6 +85,8 @@ public class Server {
 
         Map<String, Object> responseBody = Map.of(
                 "bestSolution", bestSolution,
+                "predecessors", predecessors
+        );
 
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
         
