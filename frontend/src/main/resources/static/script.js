@@ -358,7 +358,7 @@ function compute_tour() {
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(assignement),
+    delivererAssignments: Object.fromEntries(assignement),
   };
 
   console.log("Computing tour...");
@@ -380,6 +380,9 @@ function compute_tour() {
         console.error("No tour in response:", data);
         return;
       }
+
+      // TODO: Need to modify the response type: data.all_bestSolutions & data.all_POIbestSolutions
+
       var bestSolution = data.bestSolution; // Pair<Long,LocalTime> []
       var POIbestSolution = bestSolution.map((bs) => bs.id); //List<Long>
       console.log("POIbestSolution:", POIbestSolution);
