@@ -49,10 +49,12 @@ public class TSPTest {
         TSP2 tsp = new TSP2(60000, g); // 60 seconds time limit
 		tsp.chercheSolution();
 
-        LinkedHashSet<Long> expectedOrder = new LinkedHashSet<>();
+        LinkedList<Long> expectedOrder = new LinkedList<>();
         expectedOrder.add(0L);
+        expectedOrder.add(1L);
         expectedOrder.add(2L);
         expectedOrder.add(1L);
+        expectedOrder.add(2L);
         expectedOrder.add(0L);
 
         Assert.assertEquals(expectedOrder, tsp.getSolutionOrder());

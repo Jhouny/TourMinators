@@ -31,14 +31,14 @@ public abstract class TemplateTSP implements TSP {
 	private double coutMeilleureSolution;
 	private int timeLimit;
 	private long startTime;
-	private LinkedHashSet<Long> solutionOrder;  // Solution is an ordered set of node ids representing the order of visit
+	private LinkedList<Long> solutionOrder;  // Solution is an ordered set of node ids representing the order of visit
 	private LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> solutionPath; // Solution is an ordered set of paths (Pair from node to node) with an ordered list of nodes representing the full path between them
 	
 	public TemplateTSP(int timeLimit, Graph g) {
 		this.timeLimit = timeLimit;
 		this.startTime = 0;
 		this.g = g;
-		this.solutionOrder = new LinkedHashSet<Long>();
+		this.solutionOrder = new LinkedList<Long>();
 		this.solutionPath = new LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>>();
 	}
 
@@ -58,27 +58,10 @@ public abstract class TemplateTSP implements TSP {
 		this.startTime = System.currentTimeMillis();
 
 		Collection<Long> nonVus = g.getPickupPoIs();
-		List<Long> vus = new ArrayList<Long>(g.getNbNodes());
+		ArrayList<Long> vus = new ArrayList<Long>(g.getNbNodes());
 		vus.add(g.getBeginId()); // le premier sommet visite
 		coutMeilleureSolution = Double.MAX_VALUE;
 		branchAndBound(g.getBeginId(), nonVus, vus, 0.0);
-
-		// Add return to start to complete the tour
-		if (!solutionOrder.isEmpty()) {
-			solutionOrder.add(g.getBeginId());
-
-			// Add the path from the last visited node back to the start
-			Long lastVisited = solutionOrder.stream().skip(solutionOrder.size() - 2).findFirst().orElse(null);
-			LinkedList<Long> path = new LinkedList<>();
-			path.add(lastVisited);
-			Map<Long, Long> cameFrom = g.AWAStar(lastVisited, g.getBeginId());
-			Long current = g.getBeginId();
-			while (cameFrom.get(current) != null) {
-				current = cameFrom.get(current);
-				path.addFirst(current);
-			}
-			solutionPath.add(Map.of(new Pair<>(lastVisited, g.getBeginId()), path));
-		}
 
 	}
 	
@@ -87,7 +70,7 @@ public abstract class TemplateTSP implements TSP {
 	 * 
 	 * @return the solution ordered as a LinkedHashSet of node ids 
 	 */
-	public LinkedHashSet<Long> getSolutionOrder() {
+	public LinkedList<Long> getSolutionOrder() {
 		return solutionOrder;
 	}
 	
@@ -196,15 +179,31 @@ public abstract class TemplateTSP implements TSP {
 	 *         itself (this is considered an invalid input)
 	 * @throws NullPointerException when the Graph or required PoI data is missing
 	 */
-	private void branchAndBound(Long sommetCrt, Collection<Long> nonVus, List<Long> vus, double coutVus) {
+	private void branchAndBound(Long sommetCrt, Collection<Long> nonVus, ArrayList<Long> vus, double coutVus) {
 		//if ( System.currentTimeMillis() - startTime > timeLimit )
 			//return;
 
 		// If all nodes have been visited, check if we can return to start
 		if ( nonVus.isEmpty() ) {
-			if ( g.isEdge(sommetCrt, g.getBeginId()) || sommetCrt == g.getBeginId() ) {
+			if ( g.pathCost.containsKey(new Pair<>(sommetCrt, g.getBeginId())) || sommetCrt == g.getBeginId() ) {
 				// Check if this solution is better than the best one so far
 				if ( coutVus + g.getPathCost(sommetCrt, g.getBeginId()) < coutMeilleureSolution ) {
+
+					// Calculate and Add to vus the entire path to return to start
+					LinkedList<Long> path1 = new LinkedList<>();
+					path1.add(sommetCrt);
+					Map<Long, Long> cameFrom1 = g.AWAStar(sommetCrt, g.getBeginId());
+					Long current = sommetCrt;
+					for (Long key : cameFrom1.keySet()) {
+						if (cameFrom1.get(key) == current) {
+							vus.add(key);
+							current = key;
+						}
+						if (current == g.getBeginId()) {
+							break;
+						}
+					}
+
 					coutMeilleureSolution = coutVus + g.getPathCost(sommetCrt, g.getBeginId());
 					solutionOrder.clear();
 					for (Long l : vus) {
@@ -219,10 +218,13 @@ public abstract class TemplateTSP implements TSP {
 							LinkedList<Long> path = new LinkedList<>();
 							path.add(previous);
 							Map<Long, Long> cameFrom = g.AWAStar(previous, l);
-							Long current = l;
-							while (cameFrom.get(current) != null) {
-								current = cameFrom.get(current);
-								path.addFirst(current);
+							current = l;
+							for (Long key : cameFrom.keySet()) {
+								if (cameFrom.get(key) == null) {
+									continue;
+								}
+
+								path.addFirst(key);
 							}
 							pathMap = Map.of(new Pair<>(previous, l), path);
 							solutionPath.add(pathMap);
@@ -234,6 +236,7 @@ public abstract class TemplateTSP implements TSP {
 		} else if ( coutVus + bound(sommetCrt, nonVus) < coutMeilleureSolution ) { // If there is potential for a better solution
 			for ( Long neighbour : g.getNeighbors(sommetCrt) ) {
 				Long prochainSommet = neighbour;
+				boolean wasInNonVus = nonVus.contains(prochainSommet);
 
 				vus.add(prochainSommet);
                 
@@ -244,10 +247,12 @@ public abstract class TemplateTSP implements TSP {
 						nonVus.add(assoc);
 				}
 
+
 				nonVus.remove(prochainSommet);
 				branchAndBound(prochainSommet, nonVus, vus, coutVus+g.getPathCost(sommetCrt, prochainSommet));
-				vus.remove(prochainSommet);
-				nonVus.add(prochainSommet);
+				vus.remove(vus.lastIndexOf(prochainSommet));
+				if ( wasInNonVus )
+					nonVus.add(prochainSommet);
 
 				// Remove associated delivery if we just backtracked from a pickup
 				if ( assoc != null) 
