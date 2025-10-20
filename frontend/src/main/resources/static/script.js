@@ -209,11 +209,6 @@ function load_xml_delivery() {
       .then((data) => {
         console.log("Pickup/Delivery response:", data);
 
-        if (!data.poiMap) {
-          console.error("No poiMap in response:", data);
-          return;
-        }
-
         // Reset des POI de la tournée
         tourPOIList = [];
         data.tours.forEach((poi) => {
@@ -276,7 +271,7 @@ function load_xml_delivery() {
         });
 
         // Générer la liste des livraisons dans le panneau de droite
-        generateDeliveriesList(tourPOIMap.values(), getNumberOfDeliverers());
+        generateDeliveriesList(tourPOIList.values(), getNumberOfDeliverers());
       })
 
       .catch((err) => {
@@ -375,50 +370,6 @@ function compute_tour() {
           }
         }
       }
-
-      for (let i = 0; i < POIbestSolution.length - 1; i++) {
-        let fromId = POIbestSolution[i];
-        let toId = POIbestSolution[i + 1];
-        console.log(`Drawing tour segment from ${fromId} to ${toId}`);
-        let subtour = tour[`(${fromId},${toId})`];
-        let currentId = toId;
-        let nextId = subtour[currentId];
-        console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
-        while (currentId && currentId !== fromId) {
-          let startNode = nodeMap.get(parseInt(currentId));
-          let endNode = nodeMap.get(parseInt(nextId));
-          console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
-          console.log("Start Node:", startNode);
-          if (startNode && endNode) {
-          let startNode = nodeMap.get(parseInt(currentId));
-          let endNode = nodeMap.get(parseInt(nextId));
-          console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
-          console.log("Start Node:", startNode);
-          if (startNode && endNode) {
-            console.log(`Drawing edge from ${currentId} to ${nextId}`);
-            let latlngs = [
-              [startNode.latitude, startNode.longitude],
-              [endNode.latitude, endNode.longitude],
-            ];
-            edgeTourLines.push(
-              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
-            );
-          }
-            let latlngs = [
-              [startNode.latitude, startNode.longitude],
-              [endNode.latitude, endNode.longitude],
-            ];
-            edgeTourLines.push(
-              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
-            );
-          }
-
-          currentId = nextId;
-          nextId = subtour[currentId];
-          currentId = nextId;
-          nextId = subtour[currentId];
-        }
-      }
     })
     .catch((err) => {
       console.error("Error fetching /computeTour:", err);
@@ -465,7 +416,7 @@ function getNumberOfDeliverers() {
 
 function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
-  generateDeliveriesList(tourPOIMap.values(), numberOfDeliverers);
+  generateDeliveriesList(tourPOIList.values(), numberOfDeliverers);
 }
 
 const input = document.getElementById("numberOfDeliverers");
