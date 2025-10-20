@@ -37,17 +37,47 @@ public class TestGraph {
         //Solution : 1->2->5->6->5->4->3->1 cout total = 5+3+4+4+7+4+1=28
         List<Edge> edges = new ArrayList<>();
 
-        edges.add(new Edge(1L, 2L, 3.0f, "1-2")); // distance euclidienne
-        edges.add(new Edge(2L, 5L, 3.0f, "2-5"));
-        edges.add(new Edge(5L, 6L, 3.0f, "5-6"));
-        edges.add(new Edge(6L, 1L, 6.0f, "6-1")); // retour au dépôt
+        // edges.add(new Edge(1L, 2L, 3.0f, "1-2")); // distance euclidienne
+        // edges.add(new Edge(2L, 5L, 3.0f, "2-5"));
+        // edges.add(new Edge(5L, 6L, 3.0f, "5-6"));
+        // edges.add(new Edge(6L, 1L, 6.0f, "6-1")); // retour au dépôt
 
 
-        // --- Points d’intérêt (tour) ---
+        // // --- Points d’intérêt (tour) ---
+        // Map<Long, PointOfInterest> tour = new HashMap<>();
+        // tour.put(1L, new PointOfInterest(n1, PoIEnum.WAREHOUSE, null, 0));
+        // tour.put(2L, new PointOfInterest(n2, PoIEnum.PICKUP, 6L, 10));
+        // tour.put(6L, new PointOfInterest(n6, PoIEnum.DELIVERY, 2L, 5));
+
+        // edges.add(new Edge(1L, 2L, 5.0f, "node1-node2"));
+        // edges.add(new Edge(2L, 3L, 2.0f, "node2-node3"));
+        // edges.add(new Edge(1L, 3L, 1.0f, "node1-node3"));
+        // edges.add(new Edge(3L, 2L, 1.0f, "node3-node4"));
+        // edges.add(new Edge(3L, 4L, 4.0f, "node3-node4"));
+        // edges.add(new Edge(2L, 5L, 3.0f, "node2-node5"));
+        // edges.add(new Edge(5L, 4L, 7.0f, "node5-node4"));
+        // edges.add(new Edge(4L, 6L, 2.0f, "node4-node6"));
+        // edges.add(new Edge(5L, 6L, 4.0f, "node5-node6"));
+        // edges.add(new Edge(6L, 5L, 4.0f, "node6-node5"));
+        // edges.add(new Edge(4L, 1L, 5.0f, "node2-node1"));
+
+        // // --- Points d’intérêt (tour) ---
+        // Map<Long, PointOfInterest> tour = new HashMap<>();
+        // tour.put(1L, new PointOfInterest(n1, PoIEnum.WAREHOUSE, null, 0));
+        // tour.put(2L, new PointOfInterest(n2, PoIEnum.PICKUP, 6L, 10));
+        // tour.put(6L, new PointOfInterest(n6, PoIEnum.DELIVERY, 2L, 5));
+
+        edges.add(new Edge(Long.valueOf(1), Long.valueOf(2), 250.0f, "edge_0_1"));
+        edges.add(new Edge(Long.valueOf(2), Long.valueOf(3), 300.0f, "edge_1_2"));
+        edges.add(new Edge(Long.valueOf(3), Long.valueOf(1), 350.0f, "edge_2_0"));
+
+
         Map<Long, PointOfInterest> tour = new HashMap<>();
-        tour.put(1L, new PointOfInterest(n1, PoIEnum.WAREHOUSE, null, 0));
-        tour.put(2L, new PointOfInterest(n6, PoIEnum.PICKUP, 6L, 10));
-        tour.put(6L, new PointOfInterest(n2, PoIEnum.DELIVERY, 2L, 5));
+        tour.put(Long.valueOf(1), new PointOfInterest(nodes.get(Long.valueOf(1)), PointOfInterest.PoIEnum.WAREHOUSE, null, 0));
+        tour.put(Long.valueOf(2), new PointOfInterest(nodes.get(Long.valueOf(2)), PointOfInterest.PoIEnum.DELIVERY, Long.valueOf(3), 200));
+        tour.put(Long.valueOf(3), new PointOfInterest(nodes.get(Long.valueOf(3)), PointOfInterest.PoIEnum.PICKUP, Long.valueOf(2), 300));
+
+
 
         // --- Création du graphe ---
         Graph graph = new Graph(nodes, edges, tour);

@@ -59,12 +59,16 @@ public class Graph  {
 			if (tour.get(id).getType() == PointOfInterest.PoIEnum.PICKUP){
 				nodesToVisit.add(id);
 			}
-            if (tour.get(id).getType() == PointOfInterest.PoIEnum.DELIVERY){
-                nodesToVisit.add(id);
-            }
 		}
 		return nodesToVisit;
 	}
+    public PointOfInterest.PoIEnum getTypePoI(Long id) {
+        // Return the type of the PoI (warehouse, pickup, delivery)
+        if (tour.containsKey(id))
+            return tour.get(id).getType();
+        else
+            throw new IllegalArgumentException("Node " + id + " is not in the tour."); 
+    }
 
 	public Long getAssociatedPoI(Long id) {
         // Return the associated PoI of a pickup/delivery node (null if warehouse)

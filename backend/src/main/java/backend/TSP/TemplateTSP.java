@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import backend.TSP.Graph;
+import backend.models.PointOfInterest;
 
 public abstract class TemplateTSP implements TSP {
 	
@@ -87,7 +88,7 @@ public abstract class TemplateTSP implements TSP {
 	        	vus.add(prochainSommet);
 				
 				Long assoc = g.getAssociatedPoI(prochainSommet);
-				if (assoc != null) {
+				if (g.getTypePoI(prochainSommet) == PointOfInterest.PoIEnum.PICKUP) {
 					if (assoc.equals(prochainSommet)){
 						System.out.println("Error: PoI associated to itself: " + prochainSommet);
 						throw new IllegalArgumentException("PoI associated to itself: " + prochainSommet);
