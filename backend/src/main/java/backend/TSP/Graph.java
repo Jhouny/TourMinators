@@ -1,6 +1,7 @@
 package backend.TSP;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +33,7 @@ public class Graph  {
 	Map<Long, Node> all_nodes;
 	Map<Pair<Long, Long>, Float> all_costs; // If there is no edge between i and j, there is no entry (i,j) in this map and an exception is thrown
 
-	Map<Long, PointOfInterest> tour;
+	List<PointOfInterest> tour;
 	Map<Pair<Long, Long> , Float> pathCost;
 	Map<Long, Set<Long>> adjacency; 
 	
@@ -42,12 +43,12 @@ public class Graph  {
      *
      * @param nodes  map of node id -> {@link Node}; must not be null
      * @param edges  list of graph edges; must not be null
-     * @param tour   map of point-of-interest id -> {@link PointOfInterest}; must not be null
+     * @param tour   list of point-of-interest; must not be null
      *
      * All parameters are stored by reference. Null parameters will cause a
      * {@link NullPointerException} during construction.
      */
-    public Graph(Map<Long, Node> nodes, List<Edge> edges, Map<Long, PointOfInterest> tour){
+    public Graph(Map<Long, Node> nodes, List<Edge> edges, List<PointOfInterest> tour){
         // Initialize graph attributes
         this.all_nodes = nodes; 
         this.all_edges = edges;
@@ -74,20 +75,6 @@ public class Graph  {
 	}
 
     /**
-     * Return the ids of pickup points of interest.
-     *
-     * @return non-null ArrayList of ids for PoIs with type PICKUP; may be empty.
-     */
-    public ArrayList<Long> getNodesToVisit() {
-		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
-		for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == PointOfInterest.PoIEnum.PICKUP){
-				nodesToVisit.add(id);
-			}
-		}
-		return nodesToVisit;
-	}
-    /**
      * Return the PoI type for the given id.
      *
      * @param id id of the PoI
@@ -95,10 +82,13 @@ public class Graph  {
      * @throws IllegalArgumentException if the id is not present in the tour map
      */
     public PointOfInterest.PoIEnum getTypePoI(Long id) {
-        if (tour.containsKey(id))
-            return tour.get(id).getType();
-        else
-            throw new IllegalArgumentException("Node " + id + " is not in the tour."); 
+        for (PointOfInterest poi : tour) {
+            if (poi.getId().equals(id)) {
+                return poi.getType();
+            }
+        }
+
+        throw new IllegalArgumentException("Node " + id + " is not in the tour."); 
     }
 
     /**
@@ -108,10 +98,12 @@ public class Graph  {
      * @return associated PoI id, or null when the PoI is a warehouse or id is unknown
      */
     public Long getAssociatedPoI(Long id) {
-        Long associatedPoI = null;
-        if (tour.containsKey(id))
-            associatedPoI = tour.get(id).getAssociatedPoI();
-        return associatedPoI;
+        for (PointOfInterest poi : tour) {
+            if (poi.getId().equals(id)) {
+                return poi.getAssociatedPoI();
+            }
+        }
+        return null;
 	}
 
     /**
@@ -121,15 +113,32 @@ public class Graph  {
      */
     public Long getBeginId() {
         Long warehouseId = null;
-        for (Long id : tour.keySet()) {
-			if (tour.get(id).getType() == PointOfInterest.PoIEnum.WAREHOUSE){
-				warehouseId = id;
+        for (PointOfInterest poi : tour) {
+			if (poi.getType() == PointOfInterest.PoIEnum.WAREHOUSE){
+				warehouseId = poi.getId();
                 break;
 			}
 		}
-        // tester si warehouse est null
+  
+        if (warehouseId == null) {
+            throw new IllegalArgumentException("No warehouse found in the tour.");
+        }
 		return warehouseId;
 	}
+
+    /**
+     * Retrieve all the Pickup PoI in the tour
+     * @return a list of Pickup PoI
+     */
+    public Collection<Long> getPickupPoIs() {
+        List<Long> pickups = new ArrayList<>();
+        for (PointOfInterest poi : tour) {
+            if (poi.getType() == PointOfInterest.PoIEnum.PICKUP) {
+                pickups.add(poi.getId());
+            }
+        }
+        return pickups;
+    }
 
     /**
      * Return the number of nodes held by this graph.
@@ -140,6 +149,14 @@ public class Graph  {
     public int getNbNodes() {
         return this.all_nodes.size();
     }
+
+
+    /**
+     * Validate 
+     * @param i
+     * @param j
+     * @return
+     */
 
     /**
      * Return the direct edge cost from {@code i} to {@code j} stored in this
@@ -182,7 +199,7 @@ public class Graph  {
      *         otherwise {@code false}
      */
     public boolean isEdge(Long i, Long j) {
-        if (tour.containsKey(i) && tour.containsKey(j))
+        if ( all_costs.containsKey(new Pair<Long, Long>(i, j)) )
             return !i.equals(j);
         return false;
     }
@@ -204,10 +221,9 @@ public class Graph  {
      * @throws NullPointerException when parameters or internal maps are null
      */
     public Float getPathCost(Long i, Long j) {
-        System.out.println("getPathCost() called for: " + i + " and " + j);
-        if(pathCost.get(new Pair<Long, Long>(i, j)) == null){
+        if(pathCost.get(new Pair<Long, Long>(i, j)) == null)
             AWAStar(i, j);
-        }
+
         Float cost = pathCost.get(new Pair<Long, Long>(i, j));
         if(cost == null){
             throw new IllegalArgumentException("No path between " + i + " and " + j);
@@ -224,7 +240,7 @@ public class Graph  {
      * Note: the returned set is the actual set stored in the adjacency map and
      * modifying it will change this Graph's adjacency. Treat it as read-only.
      */
-    public Set<Long> getNeighbors(long i) {
+    public Set<Long> getNeighbors(Long i) {
         return adjacency.getOrDefault(i, Collections.emptySet());
     }
 
@@ -234,32 +250,6 @@ public class Graph  {
         Node nodeJ = all_nodes.get(j);
         // Current heuristic : euclidian distance
         return weight * ((int) Math.sqrt(Math.pow(nodeI.getLatitude() - nodeJ.getLatitude(), 2) + Math.pow(nodeI.getLongitude() - nodeJ.getLongitude(), 2)));
-    }
-
-	private void printSolution(long startId, long endId, Map<Long, Float> costMap, Map<Long, Long> cameFrom) {
-        // Reconstruct the path from end to start using cameFrom
-        List<Long> path = new ArrayList<>();
-        Long current = endId;
-
-        while (current != null) {
-            path.add(current);
-            current = cameFrom.get(current); // move to predecessor
-        }
-
-        // Reverse the path so it goes from start to end
-        Collections.reverse(path);
-
-        // Compute total cost
-        float totalCost = 0f;
-        for (int i = 0; i < path.size() - 1; i++) {
-            long from = path.get(i);
-            long to = path.get(i + 1);
-            totalCost += getCost(from, to); // cumulative cost along the path
-        }
-
-        // Print path and total cost
-        System.out.println("Optimal path: " + path);
-        System.out.println("Total path cost: " + totalCost);
     }
 
     private void printd(String s) {
@@ -285,18 +275,13 @@ public class Graph  {
      */
     public Map<Long, Long> AWAStar(Long startId, Long endId) {
 
-        int nbIter = 0;
         if (startId.equals(endId)){
-            printd("Start and end nodes are the same: " + startId + "\n");
             pathCost.put(new Pair<Long, Long>(startId, endId), 0f);
             return null;
         }
 
         if(getNeighbors(startId).isEmpty() || getNeighbors(endId).isEmpty()){
-            printd("No neighbors for start or end node.");
-            // If either the startId or the endId have no outgoing neighbors, there is no path between them
             // It's important that we're able to get out of the end node as well to go back to warehouse
-
             pathCost.put(new Pair<Long, Long>(startId, endId), null);
             return null;
         }
@@ -315,16 +300,13 @@ public class Graph  {
         cameFrom.put(startId, null);
 
         while(!q.isEmpty()){
-            nbIter++;
             NodeWithCost current = q.poll();
 
             if (visited.contains(current.getId()))
                 continue;
 
             if(current.getId() == endId){
-                printSolution(startId, endId, costMap, cameFrom);
                 pathCost.put(new Pair<Long, Long>(startId, endId), costMap.get(endId));
-                printd("AWA got called and finished. in "+ nbIter + " iterations. Path found from " + startId + " to " + endId + " with cost " + costMap.get(endId)+"\n");
                 return cameFrom;
             }
 
@@ -355,7 +337,7 @@ public class Graph  {
         /** @return map of direct edge costs (pair -> cost); entries absent when no direct edge */
         public Map<Pair<Long, Long>, Float> getAllCosts() { return all_costs; }
         /** @return tour map of PoIs (id -> PointOfInterest) */
-        public Map<Long, PointOfInterest> getTour() { return tour; }
+        public List<PointOfInterest> getTour() { return tour; }
         /** @return cached path costs computed by AWAStar */
         public Map<Pair<Long, Long>, Float> getPathCostMap() { return pathCost; }
         /** @return adjacency map (id -> set of neighbor ids) */

@@ -41,4 +41,27 @@ public class PointOfInterest {
     public Node getNode() {
         return node;
     }
+
+    @Override
+    public String toString() {
+        return "PointOfInterest{" +
+                "node=" + node +
+                ", type=" + type +
+                ", associatedPoI=" + associatedPoI +
+                ", duration=" + duration +
+                '}';
+    }
+
+    public Long getId() {
+        return node.getId();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+
+        PointOfInterest that = (PointOfInterest) obj;
+        return this.getId().equals(that.getId());
+    }
 }

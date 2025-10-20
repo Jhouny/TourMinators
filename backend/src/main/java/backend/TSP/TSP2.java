@@ -3,10 +3,11 @@ package backend.TSP;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.TSP.Graph;
-
 public class TSP2 extends TemplateTSP {
 
+	public TSP2(int timeLimit, Graph g) {
+		super(timeLimit, g);
+	}
 
 	@Override
 	protected double bound(Long sommetCourant, Collection<Long> nonVus) {
@@ -14,15 +15,17 @@ public class TSP2 extends TemplateTSP {
 		Float cost = g.getPathCost(sommetCourant, g.getBeginId());
 
 		 // il n'y a plus de sommets a visiter : on prend la longeur pour arriver au sommet de depart
-		if (nonVus.size() == 0) return cost;
+		if ( nonVus.size() == 0 )
+			return cost;
 		else {
 			// on prend la longeur pour arriver au sommet 0 en passant par le sommet le plus loin des sommets restants
-			double max = Double.MIN_VALUE;
-			for (Long i : nonVus){
-				if (g.getPathCost(sommetCourant,i) + g.getPathCost(i,g.getBeginId()) > max)
-					max = g.getPathCost(sommetCourant,i) + g.getPathCost(i,g.getBeginId());
+			double min = Double.MAX_VALUE;
+			for (Long i : nonVus) {
+				double val = g.getPathCost(sommetCourant, i) + g.getPathCost(i, g.getBeginId());
+				if (val < min)
+					min = val;
 			}
-			return max;
+			return min;
 		}
 	}
 
@@ -30,5 +33,4 @@ public class TSP2 extends TemplateTSP {
 	protected Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graph g) {
 		return new IteratorSeq(sommetCrt, nonVus , g);
 	}
-
 }
