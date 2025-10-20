@@ -288,23 +288,53 @@ public class Graph  {
     }
 
     //=========================== Getters ==================================
-        public List<Edge> getAllEdges() {
-            return all_edges;
-        }
-        public Map<Long, Node> getAllNodes() {
-            return all_nodes;
-        }
-        public Map<Pair<Long, Long>, Float> getAllCosts() {
-            return all_costs;
-        }
-        public Map<Long, PointOfInterest> getTour() {
-            return tour;
-        }
-        public Map<Pair<Long, Long>, Float> getPathCostMap() {
-            return pathCost;
-        }
-        public Map<Long, Set<Long>> getAdjacency() {
-            return adjacency;
-        }
+
+    /**
+     * gives all edges of the graph
+     * @return list of all edges
+     */
+    public List<Edge> getAllEdges() {
+        return all_edges;
+    }
+
+    /**
+     * gives all nodes of the graph
+     * @return map of all nodes
+     */
+    public Map<Long, Node> getAllNodes() {
+        return all_nodes;
+    }
+
+    /**
+     * gives all costs between adjacent nodes
+     * @return map of all costs, keyed by node id pairs
+     */
+    public Map<Pair<Long, Long>, Float> getAllCosts() {
+        return all_costs;
+    }
+
+    /**
+     * gives the tour
+     * @return map of the tour's points of interest
+     */
+    public Map<Long, PointOfInterest> getTour() {
+        return tour;
+    }
+
+    /**
+     * gives the paths costs 
+     * @return map of path costs keyed by node pairs
+     */
+    public Map<Pair<Long, Long>, Float> getPathCostMap() {
+        return pathCost;
+    }
+
+    /**
+     * gives the adjacency map for the current path in the graph
+     * @return map of adjacency
+     */
+    public Map<Long, Set<Long>> getAdjacency() {
+        return adjacency;
+    }
 
 }
