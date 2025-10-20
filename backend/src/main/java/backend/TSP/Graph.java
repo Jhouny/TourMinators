@@ -47,12 +47,12 @@ public class Graph  {
             // Build adjacency
             // computeIfAbsent is a lambda key function to add a Set to the adjancency if it doesnt exist
             adjacency.computeIfAbsent(origin, k -> new HashSet<>()).add(destination);
-            adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
+            //adjacency.computeIfAbsent(destination, k -> new HashSet<>()).add(origin);
 
             // Store edge cost (unordered pair)
             Pair<Long, Long> pair = new Pair<Long, Long>(origin, destination);
             all_costs.put(pair, distance);
-            all_costs.put(new Pair<Long, Long>(destination, origin), distance); // undirected graph
+            //all_costs.put(new Pair<Long, Long>(destination, origin), distance); // undirected graph
         }
 	}
 
