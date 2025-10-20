@@ -223,8 +223,10 @@ function load_xml_delivery() {
         tourPOIMap.clear();
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
+          console.log("POI:", poi.type);
           if (poi.type === "PICKUP") {
-          tourPOIMap.set(Number(id), poi);
+            console.log("Adding pickup POI:", poi.type);
+            tourPOIMap.set(Number(id), poi);
           }
         });
 
@@ -388,20 +390,20 @@ function compute_tour() {
           console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
           console.log("Start Node:", startNode);
           if (startNode && endNode) {
-          let startNode = nodeMap.get(parseInt(currentId));
-          let endNode = nodeMap.get(parseInt(nextId));
-          console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
-          console.log("Start Node:", startNode);
-          if (startNode && endNode) {
-            console.log(`Drawing edge from ${currentId} to ${nextId}`);
-            let latlngs = [
-              [startNode.latitude, startNode.longitude],
-              [endNode.latitude, endNode.longitude],
-            ];
-            edgeTourLines.push(
-              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
-            );
-          }
+            let startNode = nodeMap.get(parseInt(currentId));
+            let endNode = nodeMap.get(parseInt(nextId));
+            console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
+            console.log("Start Node:", startNode);
+            if (startNode && endNode) {
+              console.log(`Drawing edge from ${currentId} to ${nextId}`);
+              let latlngs = [
+                [startNode.latitude, startNode.longitude],
+                [endNode.latitude, endNode.longitude],
+              ];
+              edgeTourLines.push(
+                L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+              );
+            }
             let latlngs = [
               [startNode.latitude, startNode.longitude],
               [endNode.latitude, endNode.longitude],
