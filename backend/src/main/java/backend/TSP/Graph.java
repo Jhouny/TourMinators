@@ -52,6 +52,10 @@ public class Graph  {
         }
 	}
 
+    /**
+	 * Fills and returns the list of nodes to visit in the TSP (pickups only)
+	 * @return list of nodes to visit
+     */
 	public ArrayList<Long> getNodesToVisit() {
         // Return the list of pickup nodes to visit (not deliveries, not warehouse)
 		ArrayList<Long> nodesToVisit = new ArrayList<Long>();
@@ -70,6 +74,11 @@ public class Graph  {
             throw new IllegalArgumentException("Node " + id + " is not in the tour."); 
     }
 
+    /**
+	 * Finds the associated PoI of a given PoI
+	 * @param id PoI id
+     * @return associated PoI id (null if warehouse, id of delivery if param is pickup, id of pickup if param is delivery)
+	 */
 	public Long getAssociatedPoI(Long id) {
         // Return the associated PoI of a pickup/delivery node (null if warehouse)
         Long associatedPoI = null;
@@ -78,6 +87,10 @@ public class Graph  {
         return associatedPoI;
 	}
 
+    /**
+	 * Gives the id of the warehouse (starting node)
+	 * @return warehouse id
+     */
 	public Long getBeginId() {
         // Return the id of the warehouse
         Long warehouseId = null;
@@ -91,10 +104,13 @@ public class Graph  {
 		return warehouseId;
 	}
 
-	public int getNbNodes() {
-		return this.all_nodes.size();
-	}
-
+    /**
+	 * gives the cost of the path of 2 adjacent nodes
+     * Careful : the egde must exist, otherwise an exception is thrown
+	 * @param i first node id
+     * @param j second node id
+     * @return the cost of the edge from i to j
+     */
     public Float getCost(Long i, Long j) {
         //Returns the cost between 2 nodes, or throws an exception if there is no edge between them
         Pair<Long, Long> pair = new Pair<Long, Long>(i, j);
@@ -113,6 +129,13 @@ public class Graph  {
 	}
 
 	//=========================== AWA ======================================//
+
+    /**
+	 * gives the cost of the path between 2 nodes, potentially not directly adjacent
+	 * @param i first node id
+     * @param j second node id
+     * @return the cost of the path from i to j
+     */
 	public Float getPathCost(Long i, Long j) {
         System.out.println("getPathCost() called for: " + i + " and " + j);
         // Returns the cost of the optimal path between i and j, or null if AWA* has not been called for this pair
@@ -126,19 +149,37 @@ public class Graph  {
         return cost;
     }
 
+    /**
+	 * gives the neighbors of a given node
+	 * @param i node id
+     * @return the set of neighbors of i
+     */
 	public Set<Long> getNeighbors(long i) {
         //GetOrDefault returns either adjacency.get(i) if not null, either an empty Set if i is null
         return adjacency.getOrDefault(i, Collections.emptySet());
     }
 
+    /**
+	 * gives the heuristic cost between 2 nodes
+	 * @param i first node id
+     * @param j second node id
+     * @return the heuristic cost between i and j
+     */
     private float heuristic(Long i, Long j) {
         int weight = 1;
         Node nodeI = all_nodes.get(i);
         Node nodeJ = all_nodes.get(j);
         // Current heuristic : euclidian distance
-        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLat() - nodeJ.getLat(), 2) + Math.pow(nodeI.getLong() - nodeJ.getLong(), 2)));
+        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLatitude() - nodeJ.getLatitude(), 2) + Math.pow(nodeI.getLongitude() - nodeJ.getLongitude(), 2)));
     }
 
+    /**
+	 * prints the solution path from startId to endId using cameFrom map
+	 * @param startId first node id
+     * @param endId last node id
+	 * @param costMap memoization of costs
+     * @param cameFrom predecessor map
+     */
 	private void printSolution(long startId, long endId, Map<Long, Float> costMap, Map<Long, Long> cameFrom) {
 		// TODO: Test and implement properly
 
@@ -173,6 +214,12 @@ public class Graph  {
             System.out.println(s);
     }
 
+    /**
+	 * computes the AWA* algorithm between 2 nodes
+	 * @param startId first node id
+     * @param endId last node id
+     * @return map of predecessors for the optimal path
+     */
 	public Map<Long, Long> AWAStar(Long startId, Long endId) {
         // This function returns the mapping of predecessors 
         // and modifies the pathCost attribute to store the cost of the optimal path between startId and endId
