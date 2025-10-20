@@ -44,8 +44,12 @@ var nodeMarkers = [];
 var edgeLines = [];
 var nodeMap = new Map(); // Graphe déjà chargé
 var edges_list = []; // Liste des edges déjà chargés
-var tourPOIMap = new Map(); // POI de la tournée déjà chargés
+var requestMap = new Map(); // Requests de la tournée déjà chargés
 var edgeTourLines = [];
+var tourPOIMap = new Map(); // POI de la tournée déjà chargés
+
+var requestList = []; // Liste des demandes de livraison
+var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 
@@ -219,18 +223,25 @@ function load_xml_delivery() {
           return;
         }
 
-        // Reset des POI de la tournée
-        tourPOIMap.clear();
+        // Reset des Requests de la tournée
+        requestMap.clear();
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           console.log("POI:", poi.type);
           if (poi.type === "PICKUP") {
             console.log("Adding pickup POI:", poi.type);
-            tourPOIMap.set(Number(id), poi);
+            requestMap.set(Number(id), poi);
           }
         });
 
-        console.log("Updated tourPOIMap:", tourPOIMap);
+        // Reset des POIs de la tournée
+
+        Object.entries(data.poiMap).forEach(([id, poi]) => {
+          poiMap.set(Number(id), poi);
+        });
+
+        console.log("Updated requestMap:", requestMap);
+        console.log("Updated poiMap:", poiMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -295,7 +306,7 @@ function load_xml_delivery() {
         });
 
         // Générer la liste des livraisons dans le panneau de droite
-        generateDeliveriesList(tourPOIMap.values(), getNumberOfDeliverers());
+        generateDeliveriesList(requestMap.values(), getNumberOfDeliverers());
       })
 
       .catch((err) => {
@@ -340,7 +351,7 @@ function compute_tour() {
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(tourPOIMap),
+    tour: Object.fromEntries(poiMap),
   };
 
   console.log("Computing tour...");
@@ -465,7 +476,7 @@ function getNumberOfDeliverers() {
 
 function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
-  generateDeliveriesList(tourPOIMap.values(), numberOfDeliverers);
+  generateDeliveriesList(requestMap.values(), numberOfDeliverers);
 }
 
 const input = document.getElementById("numberOfDeliverers");
