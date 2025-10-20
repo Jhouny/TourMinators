@@ -36,7 +36,7 @@ public class BruteForceTSP {
                     continue;
                 }
                 Map<Long, Long> path = g.AWAStar(poiId, nextPoiId);
-                System.out.println("Computed path from " + poiId + " to " + nextPoiId + ": " + path);
+                //System.out.println("Computed path from " + poiId + " to " + nextPoiId + ": " + path);
                 allPaths.add(path);
             }
         }
@@ -63,7 +63,7 @@ public class BruteForceTSP {
         ArrayList<Integer> toRemove = new ArrayList<>();
         for (ArrayList<Long> perm : permutations) {
             if (!isValidSolution(perm)) {
-                System.out.println("Skipping invalid order: " + perm);
+                //System.out.println("Skipping invalid order: " + perm);
                 toRemove.add(permutations.indexOf(perm));
             }
         }
@@ -71,7 +71,7 @@ public class BruteForceTSP {
 
         for (ArrayList<Long> order : permutations) {
             // Log order
-            System.out.println("Valid order found: " + order);
+            //System.out.println("Valid order found: " + order);
 
             // Calculate total cost for this order
             float totalCost = 0;
@@ -89,11 +89,11 @@ public class BruteForceTSP {
             }
 
             // Log cost
-            System.out.println("Total cost for this order: " + totalCost);
+            //System.out.println("Total cost for this order: " + totalCost);
         }
 
         if (bestOrder == null) {
-            System.out.println("No valid solution found.");
+            //System.out.println("No valid solution found.");
             return;
         }
 
@@ -144,7 +144,7 @@ public class BruteForceTSP {
         // 4. Must return to warehouse at the end
 
         if (!order.get(0).equals(g.getBeginId())) {
-            System.out.println("Invalid solution: Warehouse not first");
+            //System.out.println("Invalid solution: Warehouse not first");
             return false;  // Warehouse not first
         }
         Set<Long> pickedUp = new HashSet<>();
@@ -159,13 +159,13 @@ public class BruteForceTSP {
             }
 
             if (poi == null) {
-                System.out.println("Invalid solution: PoI " + poiId + " not found in tour");
+                //System.out.println("Invalid solution: PoI " + poiId + " not found in tour");
                 return false;  // PoI not found in tour
             }
 
             // Verify that the path exists in the graph
             if (order.indexOf(poiId) > 0 && g.pathCost.get(new Pair<Long, Long>(order.get(order.indexOf(poiId)-1), poiId)) == null) {
-                System.out.println("Invalid solution: No path between " + order.get(order.indexOf(poiId)-1) + " and " + poiId);
+                //System.out.println("Invalid solution: No path between " + order.get(order.indexOf(poiId)-1) + " and " + poiId);
                 return false;  // No path between previous and current PoI
             }
 
@@ -174,19 +174,19 @@ public class BruteForceTSP {
             } else if (poi.getType() == PointOfInterest.PoIEnum.DELIVERY) {
                 Long pickupId = poi.getAssociatedPoI();
                 if (!pickedUp.contains(pickupId)) {
-                    System.out.println("Invalid solution: Delivery " + poiId + " before its pickup " + pickupId);
+                    //System.out.println("Invalid solution: Delivery " + poiId + " before its pickup " + pickupId);
                     return false;  // Delivery before pickup
                 }
             }
         }
 
         if (order.size()-1 != PoISet.size()) { // Exclude duplicate warehouse at end
-            System.out.println("Invalid solution: Not all PoIs visited");
+            //System.out.println("Invalid solution: Not all PoIs visited");
             return false;  // Not all PoIs were visited
         }
 
         if (!order.get(order.size() - 1).equals(g.getBeginId())) {
-            System.out.println("Invalid solution: Did not return to warehouse at end");
+            //System.out.println("Invalid solution: Did not return to warehouse at end");
             return false;  // Must return to warehouse at end
         }
         return true;
