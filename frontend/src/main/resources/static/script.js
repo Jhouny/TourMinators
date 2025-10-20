@@ -221,8 +221,11 @@ function load_xml_delivery() {
 
         // Reset des POI de la tournée
         tourPOIMap.clear();
+
         Object.entries(data.poiMap).forEach(([id, poi]) => {
+          if (poi.type === "PICKUP") {
           tourPOIMap.set(Number(id), poi);
+          }
         });
 
         console.log("Updated tourPOIMap:", tourPOIMap);

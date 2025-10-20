@@ -43,14 +43,16 @@ public class DeliveryRequestParser {
             } else if (!seenPickups.containsKey(deliveryCounter)) {
                 type = PoIEnum.PICKUP;
                 seenPickups.put(deliveryCounter, nodeId);
+                
+               
             } else {
                 type = PoIEnum.DELIVERY;
                 associatedPickupId = seenPickups.get(deliveryCounter);
 
                 poiMap.get(associatedPickupId).setAssociatedPickupId(nodeId);
             }
-
-            poiMap.put(nodeId, new PointOfInterest(node, type, associatedPickupId, duration));
+            
+            poiMap.put(nodeId, new PointOfInterest(node, type, associatedPickupId, duration));  
 
         }
         return poiMap;
