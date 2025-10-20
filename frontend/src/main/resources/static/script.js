@@ -237,11 +237,11 @@ function load_xml_delivery() {
         // Reset des POIs de la tournée
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
-          poiMap.set(Number(id), poi);
+          tourPOIMap.set(Number(id), poi);
         });
 
         console.log("Updated requestMap:", requestMap);
-        console.log("Updated poiMap:", poiMap);
+        console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -351,12 +351,12 @@ function compute_tour() {
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(poiMap),
+    tour: Object.fromEntries(tourPOIMap),
   };
 
   console.log("Computing tour...");
 
-  fetch("http://localhost:8090/runTSP", {
+  fetch("http://localhost:8080/runTSP", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
