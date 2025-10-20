@@ -105,6 +105,14 @@ public class Graph  {
 	}
 
     /**
+     * gives the number of nodes in the graph
+     * @return number of nodes
+     */
+    public int getNbNodes() {
+		return this.all_nodes.size();
+	}
+
+    /**
 	 * gives the cost of the path of 2 adjacent nodes
      * Careful : the egde must exist, otherwise an exception is thrown
 	 * @param i first node id
