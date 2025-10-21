@@ -31,15 +31,6 @@ var warehouseIcon = L.icon({
   iconAnchor: [10, 10],
 });
 
-var warehouseIcon = L.icon({
-  iconUrl: "warehouse-icon.png",
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-  iconUrl: "warehouse-icon.png",
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
-
 var nodeMarkers = [];
 var edgeLines = [];
 var pairColors = {};
@@ -48,38 +39,59 @@ var edges_list = []; // Liste des edges déjà chargés
 var requestMap = new Map(); // Requests de la tournée déjà chargés
 var edgeTourLines = [];
 var tourPOIMap = new Map(); // POI de la tournée déjà chargés
+var deliveryIdToMarkers = {}; // Map deliveryId -> [markers]
 
 var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 
-// Génère une couleur hexadécimale aléatoire
+// Génère une couleur hexadécimale aléatoire (évite les verts)
 function getRandomColor() {
-  const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
+  let color;
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  do {
+    const letters = "0123456789ABCDEF";
+    color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    attempts++;
+  } while (isGreenish(color) && attempts < maxAttempts);
+  
   return color;
 }
 
+// Vérifie si une couleur est trop proche du vert
+function isGreenish(hexColor) {
+  // Convertir hex en RGB
+  const r = parseInt(hexColor.substr(1, 2), 16);
+  const g = parseInt(hexColor.substr(3, 2), 16);
+  const b = parseInt(hexColor.substr(5, 2), 16);
+  
+  // Éviter les couleurs où le vert domine (G > R et G > B)
+  // et où le vert est assez fort (G > 100)
+  return g > r && g > b && g > 100;
+}
+
 // Génère une icône de flèche colorée (orientée selon le type)
-function createArrowIcon(color, direction) {
+function createArrowIcon(color, direction, size = 32) {
   const rotation =
     direction === "down" ? "rotate(180 12 12)" : "rotate(0 12 12)";
   return L.divIcon({
     className: "",
     html: `
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" 
                  viewBox="0 0 24 24">
                 <g transform="${rotation}">
                     <path fill="${color}" d="M12 2L5 9h4v9h6V9h4z"/>
                 </g>
             </svg>
         `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -152,7 +164,7 @@ function load_xml_map() {
               [startNode.latitude, startNode.longitude],
               [endNode.latitude, endNode.longitude],
             ];
-            // On ajoute les edges mais sans les afficher pour l’instant
+            // On ajoute les edges mais sans les afficher pour l'instant
             let line = L.polyline(latlngs, { color: "#50d76b" });
             edgeLines.push(line);
           }
@@ -264,6 +276,7 @@ function load_xml_delivery() {
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
         nodeMarkers = [];
+        deliveryIdToMarkers = {}; // Reset la map des markers par deliveryId
 
         // map deliveryId -> couleur (persistant pour cette réponse)
         const colorMap = new Map();
@@ -303,11 +316,20 @@ function load_xml_delivery() {
 
           const icon = createArrowIcon(color, direction);
 
-          nodeMarkers.push(
-            L.marker([element.latitude, element.longitude], { icon }).addTo(
-              map
-            )
-          );
+          const marker = L.marker([element.latitude, element.longitude], { icon }).addTo(map);
+          
+          // Stocker les informations du marker pour le hover
+          marker.deliveryId = element.deliveryId;
+          marker.color = color;
+          marker.direction = direction;
+          
+          nodeMarkers.push(marker);
+          
+          // Grouper les markers par deliveryId
+          if (!deliveryIdToMarkers[element.deliveryId]) {
+            deliveryIdToMarkers[element.deliveryId] = [];
+          }
+          deliveryIdToMarkers[element.deliveryId].push(marker);
         });
 
         // Générer la liste des livraisons dans le panneau de droite
@@ -506,12 +528,34 @@ function generateDeliveriesList(
       select.appendChild(option);
     }
 
+    // 🔹 Ajouter les événements hover
+    deliveryItem.addEventListener("mouseenter", () => {
+      highlightMarkers(deliveryId, true);
+    });
+    
+    deliveryItem.addEventListener("mouseleave", () => {
+      highlightMarkers(deliveryId, false);
+    });
+
     // Assembler les éléments
     deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
 
     deliveriesListContainer.appendChild(deliveryItem);
+  });
+}
+
+// Fonction pour agrandir/réduire les markers d'un deliveryId
+function highlightMarkers(deliveryId, highlight) {
+  const markers = deliveryIdToMarkers[deliveryId];
+  if (!markers) return;
+  
+  const size = highlight ? 48 : 32; // Taille agrandie ou normale
+  
+  markers.forEach(marker => {
+    const newIcon = createArrowIcon(marker.color, marker.direction, size);
+    marker.setIcon(newIcon);
   });
 }
 
