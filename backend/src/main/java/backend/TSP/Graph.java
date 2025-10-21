@@ -260,11 +260,11 @@ public class Graph  {
     }
 
     private float heuristic(Long i, Long j) {
-        int weight = 1;
+        double weight = 20.0;
         Node nodeI = all_nodes.get(i);
         Node nodeJ = all_nodes.get(j);
         // Current heuristic : euclidian distance
-        return weight * ((int) Math.sqrt(Math.pow(nodeI.getLatitude() - nodeJ.getLatitude(), 2) + Math.pow(nodeI.getLongitude() - nodeJ.getLongitude(), 2)));
+        return (float) (weight * Math.sqrt(Math.pow(nodeI.getLatitude() - nodeJ.getLatitude(), 2) + Math.pow(nodeI.getLongitude() - nodeJ.getLongitude(), 2)));
     }
 
     private void printd(String s) {
@@ -289,9 +289,6 @@ public class Graph  {
      *         because a node has no neighbors
      */
     public Map<Long, Long> AWAStar(Long startId, Long endId) {
-
-        // Update total time spent on AWAStar
-        long startTime = System.currentTimeMillis();
 
         if (startId.equals(endId)){
             pathCost.put(new Pair<Long, Long>(startId, endId), 0f);

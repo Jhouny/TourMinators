@@ -48,7 +48,7 @@ public class Server {
         // The brute-force approach will compute the optimal path from each PoI to every other PoI
         //     It'll then make sure that all pickups are done before their corresponding deliveries
         //     Then order them such that the total travel cost is minimized
-        TSP2 solver = new TSP2(60000, g);
+        TSP2 solver = new TSP2(3000, g);
         solver.chercheSolution();
 
         // Get the solution order and paths
