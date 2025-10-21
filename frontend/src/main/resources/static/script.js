@@ -522,7 +522,7 @@ function getNumberOfDeliverers() {
 
 function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
-  generateDeliveriesList(requestMap.values(), numberOfDeliverers);
+  generateDeliveriesList(requestMap.values(), numberOfDeliverers, pairColors);
 }
 
 const input = document.getElementById("numberOfDeliverers");
