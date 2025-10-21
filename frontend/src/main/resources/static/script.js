@@ -224,24 +224,41 @@ function load_xml_delivery() {
           return;
         }
 
+        // Créer une map pour retrouver le deliveryId à partir de l'id du node
+        const nodeIdToDeliveryId = new Map();
+        data.nodes.forEach((node) => {
+          nodeIdToDeliveryId.set(node.id, node.deliveryId);
+        });
+
+        console.log("nodeIdToDeliveryId Map:", nodeIdToDeliveryId);
+
         // Reset des Requests de la tournée
         requestMap.clear();
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
-          console.log("POI:", poi.type);
-          if (poi.type === "PICKUP") {
-            console.log("Adding pickup POI:", poi.type);
-            requestMap.set(Number(id), poi);
+          // Ajouter le deliveryId au node dans le POI
+          const nodeId = Number(id);
+          const deliveryId = nodeIdToDeliveryId.get(nodeId);
+          
+          console.log(`Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`);
+          
+          if (poi.node) {
+            poi.node.deliveryId = deliveryId;
+          }
+
+          console.log("POI type:", poi.type, "deliveryId:", deliveryId);
+          if (poi.type === "PICKUP" && deliveryId !== -1) {
+            console.log("Adding pickup POI with deliveryId:", deliveryId);
+            requestMap.set(nodeId, poi);
           }
         });
 
         // Reset des POIs de la tournée
-
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           tourPOIMap.set(Number(id), poi);
         });
 
-        console.log("Updated requestMap:", requestMap);
+        console.log("Final requestMap:", requestMap);
         console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
@@ -272,38 +289,25 @@ function load_xml_delivery() {
             return;
           }
 
-          // On suppose que chaque deliveryId correspond à une paire (pickup/delivery)
-          if (element.deliveryId === -1) {
-            // entrepôt
-            nodeMarkers.push(
-              L.marker([element.latitude, element.longitude], {
-                icon: warehouseIcon,
-              }).addTo(map)
-            );
-          } else {
-            // Couleur associée à la paire pickup/delivery
-            if (!window.pairColors) window.pairColors = {};
-            if (!pairColors[element.deliveryId]) {
-              pairColors[element.deliveryId] = getRandomColor();
-            }
-
-            const color = pairColors[element.deliveryId];
-            console.log(
-              `élement du type est ${element.type} et id est ${element.deliveryId}`
-            );
-            console.log(
-              `élement du type est ${element.type} et id est ${element.deliveryId}`
-            );
-            const direction = element.type === "pickup" ? "up" : "down";
-
-            const icon = createArrowIcon(color, direction);
-
-            nodeMarkers.push(
-              L.marker([element.latitude, element.longitude], { icon }).addTo(
-                map
-              )
-            );
+          // Couleur associée à la paire pickup/delivery
+          if (!window.pairColors) window.pairColors = {};
+          if (!pairColors[element.deliveryId]) {
+            pairColors[element.deliveryId] = getRandomColor();
           }
+
+          const color = pairColors[element.deliveryId];
+          console.log(
+            `élément du type est ${element.type} et id est ${element.deliveryId}`
+          );
+          const direction = element.type === "pickup" ? "up" : "down";
+
+          const icon = createArrowIcon(color, direction);
+
+          nodeMarkers.push(
+            L.marker([element.latitude, element.longitude], { icon }).addTo(
+              map
+            )
+          );
         });
 
         // Générer la liste des livraisons dans le panneau de droite
@@ -457,19 +461,27 @@ function generateDeliveriesList(
   // Comme deliveries est un Map.values(), on le transforme en tableau
   const deliveriesArray = Array.from(deliveries);
 
-  deliveriesArray.forEach((delivery, index) => {
+  // Filtrer pour exclure le warehouse (deliveryId === -1)
+  const filteredDeliveries = deliveriesArray.filter(
+    (delivery) => delivery.node?.deliveryId !== -1
+  );
+
+  filteredDeliveries.forEach((delivery, index) => {
     const deliveryItem = document.createElement("div");
     deliveryItem.className = "delivery-item";
 
-    // 🔹 Récupérer la couleur associée au deliveryId
-    const deliveryId = delivery.deliveryId ?? delivery.node?.id ?? index;
-    const color =
-      pairColors[delivery.associatedPoI] || pairColors[deliveryId] || "#999";
+    // 🔹 Debug: afficher la structure complète
+    console.log("Delivery object:", delivery);
+    console.log("Node:", delivery.node);
+    console.log("Node deliveryId:", delivery.node?.deliveryId);
+
+    // 🔹 Récupérer la couleur associée - utiliser le deliveryId du node
+    const deliveryId = delivery.node?.deliveryId ?? index;
+    const color = pairColors[deliveryId] || "#999";
 
     console.log(
-      `Delivery ID: ${deliveryId}, Color: ${
-        pairColors[delivery.associatedPoI] || pairColors[deliveryId]
-      }`
+      `Delivery ID: ${deliveryId}, Color: ${pairColors[deliveryId]}, Available colors:`,
+      pairColors
     );
 
     // 🔹 Créer la pastille colorée
