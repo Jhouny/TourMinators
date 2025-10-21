@@ -203,6 +203,8 @@ public abstract class TemplateTSP implements TSP {
 	 * @param vus la liste des sommets deja visites (y compris sommetCrt)
 	 * @param coutVus la somme des couts des arcs du chemin passant par tous les sommets de vus dans l'ordre ou ils ont ete visites
 	 */	
+
+
 	/**
 	 * Core branch-and-bound recursive procedure.
 	 *
@@ -222,8 +224,9 @@ public abstract class TemplateTSP implements TSP {
 	 */
 	private void branchAndBound(Long sommetCrt, LinkedHashSet<Long> nonVus, ArrayList<Long> vus, ArrayList<Long> order, double coutVus, int nbRecursions) {
 		nbRecursions++;
-		//if ( System.currentTimeMillis() - startTime > timeLimit )
-			//return;
+
+		if ( System.currentTimeMillis() - startTime > timeLimit )
+			return;
 
 		// If all nodes have been visited, check if we can return to start
 		if ( nonVus.isEmpty() ) {
@@ -237,8 +240,9 @@ public abstract class TemplateTSP implements TSP {
 				}
 			}
 		} else if ( coutVus + bound(sommetCrt, nonVus) < coutMeilleureSolution ) { // If there is potential for a better solution
-			for ( Long neighbour : g.getNeighbors(sommetCrt) ) {
-				Long prochainSommet = neighbour;
+			Iterator<Long> it = iterator(sommetCrt, nonVus, g);
+			while ( it.hasNext() ) {
+				Long prochainSommet = it.next();
 				boolean wasInNonVus = nonVus.contains(prochainSommet);
 
 				vus.add(prochainSommet);

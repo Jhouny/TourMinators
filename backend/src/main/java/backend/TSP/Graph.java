@@ -29,7 +29,7 @@ import backend.models.PointOfInterest;
  * when the id is not present in the tour map.
  */
 public class Graph  {
-	
+
 	List<Edge> all_edges;
 	Map<Long, Node> all_nodes;
 	Map<Pair<Long, Long>, Float> all_costs; // If there is no edge between i and j, there is no entry (i,j) in this map and an exception is thrown
@@ -226,10 +226,11 @@ public class Graph  {
      */
     public Float getPathCost(Long i, Long j) {
         Map<Long, Long> cameFrom = null;
-        if(pathCost.get(new Pair<Long, Long>(i, j)) == null)
+        Pair<Long, Long> pair = new Pair<Long, Long>(i, j);
+        if(pathCost.get(pair) == null)
             cameFrom = AWAStar(i, j);
 
-        Float cost = pathCost.get(new Pair<Long, Long>(i, j));
+        Float cost = pathCost.get(pair);
         if(cost == null){
             String msg = "No path between " + i + " and " + j + ".";
             if (cameFrom != null) {
@@ -288,6 +289,9 @@ public class Graph  {
      *         because a node has no neighbors
      */
     public Map<Long, Long> AWAStar(Long startId, Long endId) {
+
+        // Update total time spent on AWAStar
+        long startTime = System.currentTimeMillis();
 
         if (startId.equals(endId)){
             pathCost.put(new Pair<Long, Long>(startId, endId), 0f);
@@ -350,17 +354,37 @@ public class Graph  {
     }
 
     //=========================== Getters ==================================
-        /** @return list of all edges (may be null if not set) */
-        public List<Edge> getAllEdges() { return all_edges; }
-        /** @return map of node id -> Node (may be null if not set) */
-        public Map<Long, Node> getAllNodes() { return all_nodes; }
-        /** @return map of direct edge costs (pair -> cost); entries absent when no direct edge */
-        public Map<Pair<Long, Long>, Float> getAllCosts() { return all_costs; }
-        /** @return tour map of PoIs (id -> PointOfInterest) */
-        public List<PointOfInterest> getTour() { return tour; }
-        /** @return cached path costs computed by AWAStar */
-        public Map<Pair<Long, Long>, Float> getPathCostMap() { return pathCost; }
-        /** @return adjacency map (id -> set of neighbor ids) */
-        public Map<Long, Set<Long>> getAdjacency() { return adjacency; }
+    /** @return list of all edges (may be null if not set) */
+    public List<Edge> getAllEdges() {
+        return all_edges;
+    }
+
+    /** @return map of node id -> Node (may be null if not set) */
+    public Map<Long, Node> getAllNodes() {
+        return all_nodes;
+    }
+
+    /**
+     * @return map of direct edge costs (pair -> cost); entries absent when no
+     *         direct edge
+     */
+    public Map<Pair<Long, Long>, Float> getAllCosts() {
+        return all_costs;
+    }
+
+    /** @return tour map of PoIs (id -> PointOfInterest) */
+    public List<PointOfInterest> getTour() {
+        return tour;
+    }
+
+    /** @return cached path costs computed by AWAStar */
+    public Map<Pair<Long, Long>, Float> getPathCostMap() {
+        return pathCost;
+    }
+
+    /** @return adjacency map (id -> set of neighbor ids) */
+    public Map<Long, Set<Long>> getAdjacency() {
+        return adjacency;
+    }
 
 }
