@@ -97,23 +97,18 @@ function createArrowIcon(color, direction, size = 32) {
   });
 }
 
-// Génère une map de couleurs pour les livreurs
+// Generate the colors for each deliverer
+// Colors are fixed for each deliverer during the session
 function generateDelivererColors(numberOfDeliverers) {
-  delivererColors.clear(); // Réinitialiser la map
-  
   for (let i = 1; i <= numberOfDeliverers; i++) {
-    // Si la couleur existe déjà, on la garde, sinon on en génère une nouvelle
     if (!delivererColors.has(i)) {
       delivererColors.set(i, getRandomColor());
     }
   }
-  
-  console.log("Deliverer colors map:", delivererColors);
-  return delivererColors;
 }
 
 // Créer ou mettre à jour la légende des livreurs
-function updateDelivererLegend() {
+function updateDelivererLegend(numberOfDeliverers) {
   // Supprimer l'ancienne légende si elle existe
   const oldLegend = document.querySelector('.deliverer-legend');
   if (oldLegend) {
@@ -121,7 +116,7 @@ function updateDelivererLegend() {
   }
   
   // Si pas de livreurs, ne rien afficher
-  if (delivererColors.size === 0) {
+  if (numberOfDeliverers === 0) {
     return;
   }
   
@@ -135,6 +130,7 @@ function updateDelivererLegend() {
   
   // Ajouter chaque livreur avec sa couleur
   delivererColors.forEach((color, delivererId) => {
+    if (delivererId > numberOfDeliverers) return; // Ne pas afficher les livreurs non utilisés
     const item = document.createElement('div');
     item.className = 'deliverer-legend-item';
     
@@ -442,13 +438,31 @@ function compute_tour() {
   }
 
   let assignement = generateDeliverersAssignment();
+  console.log("Deliverers assignment:", assignement);
 
+  // Diplay the edges tour lines above the existing edges lines
+  // Remove previous tour lines
+  edgeTourLines.forEach((l) => map.removeLayer(l));
+  edgeTourLines = [];
+
+  // Make separate requests for each deliverer
+  for (const [deliverer, poiMap] of Object.entries(assignement)) {
+    computeSingleTour(deliverer, poiMap);
+  }
+}
+
+// Compute the tour for a single deliverer and draw it on the map
+function computeSingleTour(deliverer, poiMap) {
+
+  console.log(`Computing tour for ${deliverer} with POIs:`, poiMap);
   // Prepare data to send to backend to compute the tour
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(tourPOIMap),  // Map<Long, POI>
+    tour: poiMap,  // Map<Long, POI>
   };
+
+  console.log("Request body for tour computation:", body);
 
   console.log("Computing tour...");
 
@@ -476,10 +490,8 @@ function compute_tour() {
       var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
-      // Diplay the edges tour lines above the existing edges lines
-      // Remove previous tour lines
-      edgeTourLines.forEach((l) => map.removeLayer(l));
-      edgeTourLines = [];
+      const delivererColor = delivererColors.get(parseInt(deliverer)) || "#000000";
+      console.log(`Drawing tour for deliverer ${deliverer} with color ${delivererColor}`);
 
       // Draw new tour lines
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
@@ -514,7 +526,7 @@ function compute_tour() {
                 [endNode.latitude, endNode.longitude],
               ];
               edgeTourLines.push(
-                L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+                L.polyline(latlngs, { color: delivererColor }).addTo(map)
               );
             }
             let latlngs = [
@@ -522,7 +534,7 @@ function compute_tour() {
               [endNode.latitude, endNode.longitude],
             ];
             edgeTourLines.push(
-              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+              L.polyline(latlngs, { color: delivererColor }).addTo(map)
             );
           }
 
@@ -634,7 +646,7 @@ function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
   generateDelivererColors(numberOfDeliverers);
   // Mettre à jour la légende
-  updateDelivererLegend();
+  updateDelivererLegend(numberOfDeliverers);
   generateDeliveriesList(requestMap.values(), numberOfDeliverers, pairColors);
 }
 
@@ -646,10 +658,18 @@ function generateDeliverersAssignment() {
 
   const assignment = {};
   for (let i = 1; i <= numberOfDeliverers; i++) {
-    assignment[`livreur ${i}`] = {};
+    assignment[i] = {};
   }
 
   const selects = document.querySelectorAll(".delivery-select");
+
+  // Add the warehouse POI to each deliverer
+  const warehousePOI = Array.from(tourPOIMap.values()).find(
+    (poi) => poi.type === "WAREHOUSE"
+  );
+  for (let i = 1; i <= numberOfDeliverers; i++) {
+    assignment[i][warehousePOI.node.id] = warehousePOI;
+  }
 
   selects.forEach((select) => {
     const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
@@ -666,11 +686,9 @@ function generateDeliverersAssignment() {
     });
 
     // Ajouter les POIs au livreur sélectionné
-    const delivererKey = `livreur ${selectedDeliverer}`;
-    assignment[delivererKey][deliveryId] = pickupPOI;
-    assignment[delivererKey][deliveryPOI.node.id] = deliveryPOI;
+    assignment[selectedDeliverer][deliveryId] = pickupPOI;
+    assignment[selectedDeliverer][deliveryPOI.node.id] = deliveryPOI;
   });
-  console.log("Generated assignment:", assignment);
 
   return assignment;
 }
