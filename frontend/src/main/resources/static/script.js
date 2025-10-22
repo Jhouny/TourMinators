@@ -674,3 +674,79 @@ function generateDeliverersAssignment() {
 
   return assignment;
 }
+
+async function getCoordinatesFromAddress(address) {
+  if (!address || !address.trim()) return null;
+  const encoded = encodeURIComponent(address.trim());
+  // Add an email param for the public Nominatim service (replace with your email or app contact)
+  const email = encodeURIComponent("your-email@example.com");
+  const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&email=${email}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        // Can't set User-Agent from browsers. Email param above helps.
+        "Accept": "application/json"
+      }
+    });
+    if (!res.ok) {
+      console.warn("Nominatim returned HTTP", res.status);
+      return null;
+    }
+    const json = await res.json();
+    if (!Array.isArray(json) || json.length === 0) return null;
+    const best = json[0];
+    return { lat: parseFloat(best.lat), lon: parseFloat(best.lon), displayName: best.display_name };
+  } catch (err) {
+    console.error("Geocoding error", err);
+    return null;
+  }
+}
+
+async function getNodeIdsByNames(pickupName, deliveryName) {
+  let pickupId = null;
+  let deliveryId = null;
+
+  const coords1 = await getCoordinatesFromAddress(pickupName);     // {lat, lon} or null
+  const coords2 = await getCoordinatesFromAddress(deliveryName);
+
+  if (!coords1 || !coords2) {
+    // handle not found (return nulls, throw, or inform UI)
+    return [pickupId, deliveryId];
+  }
+
+  // tolerance in degrees (~0.0001 ≈ 11m), tune as needed
+  const tol = 0.00015;
+
+  nodeMap.forEach((node, id) => {
+    if (pickupId === null && Math.abs(node.latitude - coords1.lat) <= tol && Math.abs(node.longitude - coords1.lon) <= tol) {
+      pickupId = id;
+    }
+    if (deliveryId === null && Math.abs(node.latitude - coords2.lat) <= tol && Math.abs(node.longitude - coords2.lon) <= tol) {
+      deliveryId = id;
+    }
+  });
+
+  return [pickupId, deliveryId];
+}
+
+async function addPOI() {
+  pickupName = document.getElementById("inputPickup").value;
+  pickupDelivery = document.getElementById("inputDelivery").value;
+  
+  const [pickupId, deliveryId] = await getNodeIdsByNames(pickupName, deliveryName);
+
+  if (!pickupId || !deliveryId) {
+    console.warn("Could not find node(s) for addresses", pickupName, deliveryName, pickupId, deliveryId);
+    // Optionally create a new ephemeral node in nodeMap if coords exist
+    return false;
+  }
+
+  const pickupNode = nodeMap.get(pickupId);
+  const deliveryNode = nodeMap.get(deliveryId);
+
+  tourPOIMap.set(pickupId, { type: "PICKUP", node: pickupNode });
+  tourPOIMap.set(deliveryId, { type: "DELIVERY", node: deliveryNode, associatedPoI: pickupId });
+  return true;
+}
