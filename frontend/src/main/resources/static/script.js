@@ -166,6 +166,12 @@ function load_xml_map() {
 
   input.onchange = (e) => {
     let file = e.target.files[0];
+
+    if (!file) {
+      alert("Veuillez ajouter un fichier XML");
+      return;
+    }
+
     let formData = new FormData();
     formData.append("file", file);
 
@@ -256,6 +262,10 @@ function load_xml_map() {
       .catch((error) => console.error("Error loading XML map:", error));
   };
 
+  input.oncancel = () => {
+    alert("Veuillez ajouter un fichier XML");
+  };
+
   input.click();
 }
 
@@ -273,6 +283,12 @@ function load_xml_delivery() {
 
   input.onchange = (e) => {
     let deliveryFile = e.target.files[0];
+
+    if (!deliveryFile) {
+      alert("Veuillez ajouter un fichier XML");
+      return;
+    }
+
     let formData = new FormData();
     formData.append("file", deliveryFile);
 
@@ -409,6 +425,10 @@ function load_xml_delivery() {
           "Erreur lors du chargement de la demande de livraison (voir console)."
         );
       });
+  };
+
+  input.oncancel = () => {
+    alert("Veuillez ajouter un fichier XML");
   };
 
   input.click();
