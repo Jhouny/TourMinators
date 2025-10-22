@@ -238,6 +238,9 @@ body, html {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   min-width: 80px;
+  max-height: 60vh;
+  overflow-y: auto; 
+  overflow-x: hidden; 
 }
 
 .deliverer-legend h4 {
