@@ -102,7 +102,8 @@ function createArrowIcon(color, direction, size = 32) {
 function generateDelivererColors(numberOfDeliverers) {
   for (let i = 1; i <= numberOfDeliverers; i++) {
     if (!delivererColors.has(i)) {
-      delivererColors.set(i, getRandomColor());
+      const hue = Math.floor((360 * i) / numberOfDeliverers);
+      delivererColors.set(i, `hsl(${hue}, 80%, 50%)`);
     }
   }
 }
@@ -462,8 +463,6 @@ function computeSingleTour(deliverer, poiMap) {
     tour: poiMap,  // Map<Long, POI>
   };
 
-  console.log("Request body for tour computation:", body);
-
   console.log("Computing tour...");
 
   fetch("http://localhost:8080/runTSP", {
@@ -478,7 +477,6 @@ function computeSingleTour(deliverer, poiMap) {
       return response.json();
     })
     .then((data) => {
-      console.log("Tour response:", data);
       if (!data.solutionOrder) {
         console.error("No tour in response:", data);
         return;
@@ -486,12 +484,10 @@ function computeSingleTour(deliverer, poiMap) {
 
       var bestSolution = data.solutionOrder;
       var POIbestSolution = bestSolution;
-      console.log("POIbestSolution:", POIbestSolution);
       var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
       const delivererColor = delivererColors.get(parseInt(deliverer)) || "#000000";
-      console.log(`Drawing tour for deliverer ${deliverer} with color ${delivererColor}`);
 
       // Draw new tour lines
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
