@@ -402,7 +402,7 @@ function compute_tour() {
     })
     .then((data) => {
       console.log("Tour response:", data);
-      if (!data.tour || data.tour.length === 0) {
+      if (!data.solutionOrder) {
         console.error("No tour in response:", data);
         return;
       }
@@ -412,9 +412,8 @@ function compute_tour() {
       var bestSolution = data.bestSolution; // Pair<Long,LocalTime> []
       var POIbestSolution = bestSolution.map((bs) => bs.id); //List<Long>
       console.log("POIbestSolution:", POIbestSolution);
-      var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
-      var tour = data.tour; //Map<Pair<Long,Long>, Map<Long,Long>>
-      console.log("Tour map:", tour);
+      var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
+      //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
       // Diplay the edges tour lines above the existing edges lines
       // Remove previous tour lines
@@ -427,9 +426,14 @@ function compute_tour() {
         let fromId = POIbestSolution[i];
         let toId = POIbestSolution[i + 1];
         console.log(`Drawing tour segment from ${fromId} to ${toId}`);
-        let subtour = tour[`(${fromId},${toId})`];
-        let currentId = toId;
-        let nextId = subtour[currentId];
+        let subtour = null;
+        let key = `(${fromId}, ${toId})`;
+        for (el in tour) {
+          console.log("Tour element:", el, "  Tour[el]:", tour[el], " Searching for key:", key);
+          if (key in tour[el]) {
+            subtour = tour[el][key];
+          }
+        }
         console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
         while (currentId && currentId !== fromId) {
           let startNode = nodeMap.get(parseInt(currentId));
@@ -468,7 +472,7 @@ function compute_tour() {
       }
     })
     .catch((err) => {
-      console.error("Error fetching /computeTour:", err);
+      console.error("Error fetching /runTSP:", err);
     });
 }
 
