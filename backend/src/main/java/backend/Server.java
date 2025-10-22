@@ -1,7 +1,6 @@
 package backend;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -10,6 +9,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +22,7 @@ import backend.models.Pair;
 import backend.models.PointOfInterest;
 import backend.models.TSPRequest;
 
+@CrossOrigin
 @RestController
 public class Server {
 
