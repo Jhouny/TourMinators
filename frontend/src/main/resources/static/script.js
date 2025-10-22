@@ -447,12 +447,12 @@ function compute_tour() {
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    delivererAssignments: Object.fromEntries(assignement),
+    tour: Object.fromEntries(tourPOIMap),  // Map<Long, POI>
   };
 
   console.log("Computing tour...");
 
-  fetch("http://localhost:8090/runTSP", {
+  fetch("http://localhost:8080/runTSP", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -470,10 +470,8 @@ function compute_tour() {
         return;
       }
 
-      // TODO: Need to modify the response type: data.all_bestSolutions & data.all_POIbestSolutions
-
-      var bestSolution = data.bestSolution; // Pair<Long,LocalTime> []
-      var POIbestSolution = bestSolution.map((bs) => bs.id); //List<Long>
+      var bestSolution = data.solutionOrder;
+      var POIbestSolution = bestSolution;
       console.log("POIbestSolution:", POIbestSolution);
       var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
@@ -484,7 +482,6 @@ function compute_tour() {
       edgeTourLines = [];
 
       // Draw new tour lines
-
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
         let fromId = POIbestSolution[i];
         let toId = POIbestSolution[i + 1];
@@ -498,7 +495,9 @@ function compute_tour() {
           }
         }
         console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
-        while (currentId && currentId !== fromId) {
+        for (let j = 0; j < Object.keys(subtour).length - 1; j++) {
+          let currentId = subtour[j];
+          let nextId = subtour[j + 1];
           let startNode = nodeMap.get(parseInt(currentId));
           let endNode = nodeMap.get(parseInt(nextId));
           console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
