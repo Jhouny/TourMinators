@@ -178,7 +178,7 @@ body, html {
     overflow-y: auto;
 }
 
- .delivery-item {
+.delivery-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -187,6 +187,15 @@ body, html {
     border-radius: 8px;
     border: 2px solid #E0E0E0;
     margin: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.delivery-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    background-color: #FFFFFF;
+    border-color: var(--primary-green);
 }
 
 .delivery-label {
@@ -207,4 +216,14 @@ body, html {
 .delivery-select:focus {
     outline: none;
     border-color: var(--primary-green);
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 10px;
+  border: 2px solid #ddd;
+  flex-shrink: 0;
 }

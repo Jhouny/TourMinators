@@ -31,54 +31,67 @@ var warehouseIcon = L.icon({
   iconAnchor: [10, 10],
 });
 
-var warehouseIcon = L.icon({
-  iconUrl: "warehouse-icon.png",
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-  iconUrl: "warehouse-icon.png",
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
-
 var nodeMarkers = [];
 var edgeLines = [];
+var pairColors = {};
 var nodeMap = new Map(); // Graphe déjà chargé
 var edges_list = []; // Liste des edges déjà chargés
 var requestMap = new Map(); // Requests de la tournée déjà chargés
 var edgeTourLines = [];
 var tourPOIMap = new Map(); // POI de la tournée déjà chargés
+var deliveryIdToMarkers = {}; // Map deliveryId -> [markers]
 
 var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 
-// Génère une couleur hexadécimale aléatoire
+// Génère une couleur hexadécimale aléatoire (évite les verts)
 function getRandomColor() {
-  const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
+  let color;
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  do {
+    const letters = "0123456789ABCDEF";
+    color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    attempts++;
+  } while (isGreenish(color) && attempts < maxAttempts);
+  
   return color;
 }
 
+// Vérifie si une couleur est trop proche du vert
+function isGreenish(hexColor) {
+  // Convertir hex en RGB
+  const r = parseInt(hexColor.substr(1, 2), 16);
+  const g = parseInt(hexColor.substr(3, 2), 16);
+  const b = parseInt(hexColor.substr(5, 2), 16);
+  
+  // Éviter les couleurs où le vert domine (G > R et G > B)
+  // et où le vert est assez fort (G > 100)
+  return g > r && g > b && g > 100;
+}
+
 // Génère une icône de flèche colorée (orientée selon le type)
-function createArrowIcon(color, direction) {
+function createArrowIcon(color, direction, size = 32) {
   const rotation =
     direction === "down" ? "rotate(180 12 12)" : "rotate(0 12 12)";
   return L.divIcon({
     className: "",
     html: `
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" 
                  viewBox="0 0 24 24">
                 <g transform="${rotation}">
                     <path fill="${color}" d="M12 2L5 9h4v9h6V9h4z"/>
                 </g>
             </svg>
         `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -151,7 +164,7 @@ function load_xml_map() {
               [startNode.latitude, startNode.longitude],
               [endNode.latitude, endNode.longitude],
             ];
-            // On ajoute les edges mais sans les afficher pour l’instant
+            // On ajoute les edges mais sans les afficher pour l'instant
             let line = L.polyline(latlngs, { color: "#50d76b" });
             edgeLines.push(line);
           }
@@ -223,29 +236,47 @@ function load_xml_delivery() {
           return;
         }
 
+        // Créer une map pour retrouver le deliveryId à partir de l'id du node
+        const nodeIdToDeliveryId = new Map();
+        data.nodes.forEach((node) => {
+          nodeIdToDeliveryId.set(node.id, node.deliveryId);
+        });
+
+        console.log("nodeIdToDeliveryId Map:", nodeIdToDeliveryId);
+
         // Reset des Requests de la tournée
         requestMap.clear();
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
-          console.log("POI:", poi.type);
-          if (poi.type === "PICKUP") {
-            console.log("Adding pickup POI:", poi.type);
-            requestMap.set(Number(id), poi);
+          // Ajouter le deliveryId au node dans le POI
+          const nodeId = Number(id);
+          const deliveryId = nodeIdToDeliveryId.get(nodeId);
+          
+          console.log(`Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`);
+          
+          if (poi.node) {
+            poi.node.deliveryId = deliveryId;
+          }
+
+          console.log("POI type:", poi.type, "deliveryId:", deliveryId);
+          if (poi.type === "PICKUP" && deliveryId !== -1) {
+            console.log("Adding pickup POI with deliveryId:", deliveryId);
+            requestMap.set(nodeId, poi);
           }
         });
 
         // Reset des POIs de la tournée
-
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           tourPOIMap.set(Number(id), poi);
         });
 
-        console.log("Updated requestMap:", requestMap);
+        console.log("Final requestMap:", requestMap);
         console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
         nodeMarkers = [];
+        deliveryIdToMarkers = {}; // Reset la map des markers par deliveryId
 
         // map deliveryId -> couleur (persistant pour cette réponse)
         const colorMap = new Map();
@@ -271,42 +302,42 @@ function load_xml_delivery() {
             return;
           }
 
-          // On suppose que chaque deliveryId correspond à une paire (pickup/delivery)
-          if (element.deliveryId === -1) {
-            // entrepôt
-            nodeMarkers.push(
-              L.marker([element.latitude, element.longitude], {
-                icon: warehouseIcon,
-              }).addTo(map)
-            );
-          } else {
-            // Couleur associée à la paire pickup/delivery
-            if (!window.pairColors) window.pairColors = {};
-            if (!pairColors[element.deliveryId]) {
-              pairColors[element.deliveryId] = getRandomColor();
-            }
-
-            const color = pairColors[element.deliveryId];
-            console.log(
-              `élement du type est ${element.type} et id est ${element.deliveryId}`
-            );
-            console.log(
-              `élement du type est ${element.type} et id est ${element.deliveryId}`
-            );
-            const direction = element.type === "pickup" ? "up" : "down";
-
-            const icon = createArrowIcon(color, direction);
-
-            nodeMarkers.push(
-              L.marker([element.latitude, element.longitude], { icon }).addTo(
-                map
-              )
-            );
+          // Couleur associée à la paire pickup/delivery
+          if (!window.pairColors) window.pairColors = {};
+          if (!pairColors[element.deliveryId]) {
+            pairColors[element.deliveryId] = getRandomColor();
           }
+
+          const color = pairColors[element.deliveryId];
+          console.log(
+            `élément du type est ${element.type} et id est ${element.deliveryId}`
+          );
+          const direction = element.type === "pickup" ? "up" : "down";
+
+          const icon = createArrowIcon(color, direction);
+
+          const marker = L.marker([element.latitude, element.longitude], { icon }).addTo(map);
+          
+          // Stocker les informations du marker pour le hover
+          marker.deliveryId = element.deliveryId;
+          marker.color = color;
+          marker.direction = direction;
+          
+          nodeMarkers.push(marker);
+          
+          // Grouper les markers par deliveryId
+          if (!deliveryIdToMarkers[element.deliveryId]) {
+            deliveryIdToMarkers[element.deliveryId] = [];
+          }
+          deliveryIdToMarkers[element.deliveryId].push(marker);
         });
 
         // Générer la liste des livraisons dans le panneau de droite
-        generateDeliveriesList(requestMap.values(), getNumberOfDeliverers());
+        generateDeliveriesList(
+          requestMap.values(),
+          getNumberOfDeliverers(),
+          pairColors
+        );
       })
 
       .catch((err) => {
@@ -347,19 +378,18 @@ function compute_tour() {
     return;
   }
 
+  let assignement = generateDeliverersAssignment();
+
   // Prepare data to send to backend to compute the tour
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(tourPOIMap),
+    delivererAssignments: Object.fromEntries(assignement),
   };
 
   console.log("Computing tour...");
 
-  // Log the body being sent
-  console.log("Request body for /runTSP:", body);
-
-  fetch("http://localhost:8080/runTSP", {
+  fetch("http://localhost:8090/runTSP", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -376,8 +406,11 @@ function compute_tour() {
         console.error("No tour in response:", data);
         return;
       }
-      var bestSolution = data.solutionOrder; // Pair<Long,LocalTime> []
-      var POIbestSolution = bestSolution; //List<Long>
+
+      // TODO: Need to modify the response type: data.all_bestSolutions & data.all_POIbestSolutions
+
+      var bestSolution = data.bestSolution; // Pair<Long,LocalTime> []
+      var POIbestSolution = bestSolution.map((bs) => bs.id); //List<Long>
       console.log("POIbestSolution:", POIbestSolution);
       var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
@@ -402,9 +435,7 @@ function compute_tour() {
           }
         }
         console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
-        for (let j = 0; j < Object.keys(subtour).length - 1; j++) {
-          let currentId = subtour[j];
-          let nextId = subtour[j + 1];
+        while (currentId && currentId !== fromId) {
           let startNode = nodeMap.get(parseInt(currentId));
           let endNode = nodeMap.get(parseInt(nextId));
           console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
@@ -445,24 +476,55 @@ function compute_tour() {
     });
 }
 
-function generateDeliveriesList(deliveries, numberOfDeliverers = 1) {
+function generateDeliveriesList(
+  deliveries,
+  numberOfDeliverers = 1,
+  pairColors = {}
+) {
   const deliveriesListContainer = document.getElementById("deliveries-list");
   deliveriesListContainer.innerHTML = "";
 
-  deliveries.forEach((delivery, index) => {
+  // Comme deliveries est un Map.values(), on le transforme en tableau
+  const deliveriesArray = Array.from(deliveries);
+
+  // Filtrer pour exclure le warehouse (deliveryId === -1)
+  const filteredDeliveries = deliveriesArray.filter(
+    (delivery) => delivery.node?.deliveryId !== -1
+  );
+
+  filteredDeliveries.forEach((delivery, index) => {
     const deliveryItem = document.createElement("div");
     deliveryItem.className = "delivery-item";
 
-    // Label de la demande
+    // 🔹 Debug: afficher la structure complète
+    console.log("Delivery object:", delivery);
+    console.log("Node:", delivery.node);
+    console.log("Node deliveryId:", delivery.node?.deliveryId);
+
+    // 🔹 Récupérer la couleur associée - utiliser le deliveryId du node
+    const deliveryId = delivery.node?.deliveryId ?? index;
+    const color = pairColors[deliveryId] || "#999";
+
+    console.log(
+      `Delivery ID: ${deliveryId}, Color: ${pairColors[deliveryId]}, Available colors:`,
+      pairColors
+    );
+
+    // 🔹 Créer la pastille colorée
+    const colorDot = document.createElement("span");
+    colorDot.className = "color-dot";
+    colorDot.style.backgroundColor = color;
+
+    // 🔹 Label de la demande
     const label = document.createElement("span");
     label.className = "delivery-label";
     label.textContent = `Demande no. ${index + 1}`;
 
+    // 🔹 Sélecteur de livreur
     const select = document.createElement("select");
     select.className = "delivery-select";
-    select.setAttribute("data-delivery-id", delivery.id || index);
+    select.setAttribute("data-delivery-id", delivery.node.id);
 
-    // Ajouter les options de livreurs
     for (let i = 1; i <= numberOfDeliverers; i++) {
       const option = document.createElement("option");
       option.value = i;
@@ -470,11 +532,34 @@ function generateDeliveriesList(deliveries, numberOfDeliverers = 1) {
       select.appendChild(option);
     }
 
-    // Assembler l'élément
+    // 🔹 Ajouter les événements hover
+    deliveryItem.addEventListener("mouseenter", () => {
+      highlightMarkers(deliveryId, true);
+    });
+    
+    deliveryItem.addEventListener("mouseleave", () => {
+      highlightMarkers(deliveryId, false);
+    });
+
+    // Assembler les éléments
+    deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
 
     deliveriesListContainer.appendChild(deliveryItem);
+  });
+}
+
+// Fonction pour agrandir/réduire les markers d'un deliveryId
+function highlightMarkers(deliveryId, highlight) {
+  const markers = deliveryIdToMarkers[deliveryId];
+  if (!markers) return;
+  
+  const size = highlight ? 48 : 32; // Taille agrandie ou normale
+  
+  markers.forEach(marker => {
+    const newIcon = createArrowIcon(marker.color, marker.direction, size);
+    marker.setIcon(newIcon);
   });
 }
 
@@ -485,8 +570,42 @@ function getNumberOfDeliverers() {
 
 function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
-  generateDeliveriesList(requestMap.values(), numberOfDeliverers);
+  generateDeliveriesList(requestMap.values(), numberOfDeliverers, pairColors);
 }
 
 const input = document.getElementById("numberOfDeliverers");
 input.addEventListener("input", updateDeliverersList);
+
+function generateDeliverersAssignment() {
+  const numberOfDeliverers = getNumberOfDeliverers();
+
+  const assignment = {};
+  for (let i = 1; i <= numberOfDeliverers; i++) {
+    assignment[`livreur ${i}`] = {};
+  }
+
+  const selects = document.querySelectorAll(".delivery-select");
+
+  selects.forEach((select) => {
+    const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
+    const selectedDeliverer = parseInt(select.value);
+
+    // Récupérer le POI pickup correspondant dans tourPOIMap
+    const pickupPOI = tourPOIMap.get(deliveryId);
+
+    let deliveryPOI = null;
+    tourPOIMap.forEach((poi) => {
+      if (poi.associatedPoI == deliveryId) {
+        deliveryPOI = poi;
+      }
+    });
+
+    // Ajouter les POIs au livreur sélectionné
+    const delivererKey = `livreur ${selectedDeliverer}`;
+    assignment[delivererKey][deliveryId] = pickupPOI;
+    assignment[delivererKey][deliveryPOI.node.id] = deliveryPOI;
+  });
+  console.log("Generated assignment:", assignment);
+
+  return assignment;
+}
