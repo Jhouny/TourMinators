@@ -21,10 +21,13 @@ public class DeliveryRequestParser {
      * - "pickup" pour l’adresse d’enlèvement
      * - "delivery" pour l’adresse de livraison
      */
-    public static Map<Long, PointOfInterest> mapDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
-        Map<Long, Triple<Node, Long, Integer>> deliveries = parseDeliveries(filename, graphNodes);
+    public static Map<Long, PointOfInterest> mapDeliveries(Map<Long, Triple<Node, Long, Integer>> deliveries)
+            throws Exception {
 
         Map<Long, PointOfInterest> poiMap = new HashMap<Long, PointOfInterest>();
+
+        // On garde une trace des pickup déjà vus
+        Map<Long, Long> seenPickups = new HashMap<Long, Long>(); // deliveryCounter -> pickupId
 
         for (Map.Entry<Long, Triple<Node, Long, Integer>> entry : deliveries.entrySet()) {
             Long nodeId = entry.getKey();
@@ -35,14 +38,12 @@ public class DeliveryRequestParser {
             PoIEnum type;
             Long associatedPickupId = null;
 
-            // On garde une trace des pickup déjà vus
-            Map<Long , Long> seenPickups = new HashMap<Long , Long>(); //deliveryCounter -> pickupId
-
             if (deliveryCounter == -1) {
                 type = PoIEnum.WAREHOUSE;
             } else if (!seenPickups.containsKey(deliveryCounter)) {
                 type = PoIEnum.PICKUP;
                 seenPickups.put(deliveryCounter, nodeId);
+
             } else {
                 type = PoIEnum.DELIVERY;
                 associatedPickupId = seenPickups.get(deliveryCounter);
@@ -56,7 +57,8 @@ public class DeliveryRequestParser {
         return poiMap;
     }
 
-    public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes) throws Exception {
+    public static Map<Long, Triple<Node, Long, Integer>> parseDeliveries(String filename, Map<Long, Node> graphNodes)
+            throws Exception {
         Map<Long, Triple<Node, Long, Integer>> sommets = new LinkedHashMap<>();
 
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File(filename));

@@ -1,5 +1,8 @@
 package backend.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class PointOfInterest {
 
     private Node node;
@@ -13,7 +16,12 @@ public class PointOfInterest {
         DELIVERY;
     }
 
-    public PointOfInterest(Node node, PoIEnum type, Long associatedPoI, int duration) {
+    @JsonCreator
+    public PointOfInterest(
+            @JsonProperty("node") Node node,
+            @JsonProperty("type") PoIEnum type,
+            @JsonProperty("associatedPoI") Long associatedPoI,
+            @JsonProperty("duration") int duration) {
         this.node = node;
         this.type = type;
         this.associatedPoI = associatedPoI;
@@ -32,5 +40,28 @@ public class PointOfInterest {
     }
     public Node getNode() {
         return node;
+    }
+
+    @Override
+    public String toString() {
+        return "PointOfInterest{" +
+                "node=" + node +
+                ", type=" + type +
+                ", associatedPoI=" + associatedPoI +
+                ", duration=" + duration +
+                '}';
+    }
+
+    public Long getId() {
+        return node.getId();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+
+        PointOfInterest that = (PointOfInterest) obj;
+        return this.getId().equals(that.getId());
     }
 }

@@ -3,8 +3,6 @@ package backend.TSP;
 import java.util.Collection;
 import java.util.Iterator;
 
-import backend.TSP.Graph;
-
 public class IteratorSeq implements Iterator<Long> {
 
 	private Long[] candidats;
@@ -22,8 +20,7 @@ public class IteratorSeq implements Iterator<Long> {
 		Iterator<Long> it = nonVus.iterator();
 		while (it.hasNext()){
 			Long s = it.next();
-			if (g.isEdge(sommetCrt, s))
-				candidats[nbCandidats++] = s;
+			candidats[nbCandidats++] = s;
 		}
 	}
 	

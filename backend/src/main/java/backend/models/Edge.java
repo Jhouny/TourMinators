@@ -1,5 +1,8 @@
 package backend.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Edge {
 
     long originId;
@@ -7,7 +10,12 @@ public class Edge {
     float length;
     String streetName;
 
-    public Edge(long originId, long destinationId, float length, String streetName) {
+    @JsonCreator
+    public Edge(
+            @JsonProperty("originId") long originId,
+            @JsonProperty("destinationId") long destinationId,
+            @JsonProperty("length") float length,
+            @JsonProperty("streetName") String streetName) {
         this.originId = originId;
         this.destinationId = destinationId;
         this.length = length;

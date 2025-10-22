@@ -1,5 +1,8 @@
 package backend.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Node {
 
     private long id;
@@ -7,7 +10,11 @@ public class Node {
     private double longitude;
     private String type;
 
-    public Node(long id, double latitude, double longitude) {
+    @JsonCreator
+    public Node(
+            @JsonProperty("id") long id,
+            @JsonProperty("latitude") double latitude,
+            @JsonProperty("longitude") double longitude) {
         this.id = id;
         this.latitude = latitude;
         this.longitude = longitude;
