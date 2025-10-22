@@ -66,22 +66,23 @@ function getRandomColor() {
   return color;
 }
 
-// Vérifie si une couleur est trop proche du vert
+// Checks if a color is "greenish" (to avoid green colors on the map)
 function isGreenish(hexColor) {
-  // Convertir hex en RGB
+  // Convert HEX to RGB
   const r = parseInt(hexColor.substr(1, 2), 16);
   const g = parseInt(hexColor.substr(3, 2), 16);
   const b = parseInt(hexColor.substr(5, 2), 16);
-  
-  // Éviter les couleurs où le vert domine (G > R et G > B)
-  // et où le vert est assez fort (G > 100)
+
+  // Avoid colors where green is dominant (G > R and G > B)
+  // and where green is too strong (G > 100)
   return g > r && g > b && g > 100;
 }
 
-// Génère une icône de flèche colorée (orientée selon le type)
+// Makes an arrow icon pointing up or down with the given color
 function createArrowIcon(color, direction, size = 32) {
   const rotation =
     direction === "down" ? "rotate(180 12 12)" : "rotate(0 12 12)";
+
   return L.divIcon({
     className: "",
     html: `
