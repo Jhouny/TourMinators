@@ -46,6 +46,8 @@ var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 
+var delivererColors = new Map(); // Map delivererId -> couleur
+
 // Génère une couleur hexadécimale aléatoire (évite les verts)
 function getRandomColor() {
   let color;
@@ -93,6 +95,65 @@ function createArrowIcon(color, direction, size = 32) {
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
+}
+
+// Génère une map de couleurs pour les livreurs
+function generateDelivererColors(numberOfDeliverers) {
+  delivererColors.clear(); // Réinitialiser la map
+  
+  for (let i = 1; i <= numberOfDeliverers; i++) {
+    // Si la couleur existe déjà, on la garde, sinon on en génère une nouvelle
+    if (!delivererColors.has(i)) {
+      delivererColors.set(i, getRandomColor());
+    }
+  }
+  
+  console.log("Deliverer colors map:", delivererColors);
+  return delivererColors;
+}
+
+// Créer ou mettre à jour la légende des livreurs
+function updateDelivererLegend() {
+  // Supprimer l'ancienne légende si elle existe
+  const oldLegend = document.querySelector('.deliverer-legend');
+  if (oldLegend) {
+    oldLegend.remove();
+  }
+  
+  // Si pas de livreurs, ne rien afficher
+  if (delivererColors.size === 0) {
+    return;
+  }
+  
+  // Créer la nouvelle légende
+  const legend = document.createElement('div');
+  legend.className = 'deliverer-legend';
+  
+  const title = document.createElement('h4');
+  title.textContent = 'Livreurs';
+  legend.appendChild(title);
+  
+  // Ajouter chaque livreur avec sa couleur
+  delivererColors.forEach((color, delivererId) => {
+    const item = document.createElement('div');
+    item.className = 'deliverer-legend-item';
+    
+    const colorDot = document.createElement('span');
+    colorDot.className = 'deliverer-color-dot';
+    colorDot.style.backgroundColor = color;
+    
+    const label = document.createElement('span');
+    label.className = 'deliverer-legend-label';
+    label.textContent = `Livreur ${delivererId}`;
+    
+    item.appendChild(colorDot);
+    item.appendChild(label);
+    legend.appendChild(item);
+  });
+  
+  // Ajouter la légende au container de la carte
+  const mapContainer = document.getElementById('map');
+  mapContainer.appendChild(legend);
 }
 
 // Charger la map en fonction du fichier XML choisi
@@ -338,6 +399,8 @@ function load_xml_delivery() {
           getNumberOfDeliverers(),
           pairColors
         );
+        generateDelivererColors(getNumberOfDeliverers());
+        updateDelivererLegend();
       })
 
       .catch((err) => {
@@ -570,6 +633,9 @@ function getNumberOfDeliverers() {
 
 function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
+  generateDelivererColors(numberOfDeliverers);
+  // Mettre à jour la légende
+  updateDelivererLegend();
   generateDeliveriesList(requestMap.values(), numberOfDeliverers, pairColors);
 }
 
