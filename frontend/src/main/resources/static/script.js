@@ -46,6 +46,8 @@ var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 
+var delivererLayerGroups = new Map(); // Map delivererId -> L.layerGroup
+var layerControl = null; // Contrôle des couches Leaflet
 var delivererColors = new Map(); // Map delivererId -> couleur
 
 // Génère une couleur hexadécimale aléatoire (évite les verts)
@@ -98,9 +100,103 @@ function createArrowIcon(color, direction, size = 32) {
   });
 }
 
+// Créer des LayerGroups pour chaque livreur basé sur l'assignation
+function createDelivererLayerGroups() {
+  // Nettoyer les anciens layer groups
+  /*delivererLayerGroups.forEach((layerGroup) => {
+    map.removeLayer(layerGroup);
+  });
+  delivererLayerGroups.clear();*/
+
+  // Créer un layer group pour chaque livreur
+  if (delivererLayerGroups.size === 0) {
+    delivererColors.forEach((color, delivererId) => {
+      if (delivererId > getNumberOfDeliverers()) return; // Ne pas créer pour les livreurs non utilisés
+      delivererLayerGroups.set(delivererId, L.layerGroup());
+    });
+  } else if (delivererLayerGroups.size < getNumberOfDeliverers()) {
+    // Ajouter les layer groups manquants
+    for (let i = delivererLayerGroups.size + 1; i <= getNumberOfDeliverers(); i++) {
+      const color = delivererColors.get(i);
+      delivererLayerGroups.set(i, L.layerGroup());
+    }
+  } 
+
+  // Parcourir toutes les sélections pour assigner les markers aux bons livreurs
+  const selects = document.querySelectorAll(".delivery-select");
+  
+  selects.forEach((select) => {
+    const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
+    const selectedDeliverer = parseInt(select.value);
+    
+    // Récupérer les markers pour ce deliveryId
+    const markers = deliveryIdToMarkers[deliveryId];
+    
+    if (markers && delivererLayerGroups.has(selectedDeliverer)) {
+      const layerGroup = delivererLayerGroups.get(selectedDeliverer);
+      markers.forEach(marker => {
+        // Retirer le marker de la carte principale
+        map.removeLayer(marker);
+        // L'ajouter au layer group du livreur
+        layerGroup.addLayer(marker);
+      });
+    }
+  });
+
+  // Ajouter tous les layer groups à la carte par défaut
+  delivererLayerGroups.forEach((layerGroup) => {
+    // Only add those that are actively used
+    const delivererId = Array.from(delivererLayerGroups.entries()).find(([id, lg]) => lg === layerGroup)[0];
+    if (delivererId > getNumberOfDeliverers()) {
+      return;
+    }; // Ne pas ajouter les livreurs non utilisés
+    if (!map.hasLayer(layerGroup)) {
+      layerGroup.addTo(map);
+    }
+  });
+}
+
+// Mettre à jour le contrôle des couches Leaflet
+function updateLayerControl() {
+  // Supprimer l'ancien contrôle s'il existe
+  if (layerControl) {
+    map.removeControl(layerControl);
+  }
+
+  // Créer l'objet overlays pour le contrôle
+  const overlayMaps = {};
+  
+  delivererColors.forEach((color, delivererId) => {
+    const layerGroup = delivererLayerGroups.get(delivererId);
+    if (layerGroup) {
+      // Utiliser du HTML pour afficher la couleur dans le nom
+      overlayMaps[`<span style="display: inline-flex; align-items: center;">
+        <span style="width: 12px; height: 12px; background-color: ${color}; 
+        border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
+        Livreur ${delivererId}
+      </span>`] = layerGroup;
+    }
+  });
+
+  // Créer et ajouter le nouveau contrôle
+  layerControl = L.control.layers(null, overlayMaps, {
+    collapsed: false, // Toujours ouvert
+    position: 'topright'
+  }).addTo(map);
+}
+
+// Fonction principale pour mettre à jour l'affichage des livreurs
+function updateDelivererDisplay() {
+  createDelivererLayerGroups();
+  updateLayerControl();
+}
+
 // Generate the colors for each deliverer
 // Colors are fixed for each deliverer during the session
 function generateDelivererColors(numberOfDeliverers) {
+  if (numberOfDeliverers !== delivererColors.size) {
+    delivererColors.clear();
+  }
   for (let i = 1; i <= numberOfDeliverers; i++) {
     if (!delivererColors.has(i)) {
       const hue = Math.floor((360 * i) / numberOfDeliverers);
@@ -164,6 +260,12 @@ function load_xml_map() {
 
   input.onchange = (e) => {
     let file = e.target.files[0];
+
+    if (!file) {
+      alert("Veuillez ajouter un fichier XML");
+      return;
+    }
+
     let formData = new FormData();
     formData.append("file", file);
 
@@ -254,6 +356,10 @@ function load_xml_map() {
       .catch((error) => console.error("Error loading XML map:", error));
   };
 
+  input.oncancel = () => {
+    alert("Veuillez ajouter un fichier XML");
+  };
+
   input.click();
 }
 
@@ -271,6 +377,12 @@ function load_xml_delivery() {
 
   input.onchange = (e) => {
     let deliveryFile = e.target.files[0];
+
+    if (!deliveryFile) {
+      alert("Veuillez ajouter un fichier XML");
+      return;
+    }
+
     let formData = new FormData();
     formData.append("file", deliveryFile);
 
@@ -398,7 +510,7 @@ function load_xml_delivery() {
           pairColors
         );
         generateDelivererColors(getNumberOfDeliverers());
-        updateDelivererLegend();
+        updateDelivererDisplay();
       })
 
       .catch((err) => {
@@ -407,6 +519,10 @@ function load_xml_delivery() {
           "Erreur lors du chargement de la demande de livraison (voir console)."
         );
       });
+  };
+
+  input.oncancel = () => {
+    alert("Veuillez ajouter un fichier XML");
   };
 
   input.click();
@@ -490,6 +606,10 @@ function computeSingleTour(deliverer, poiMap) {
 
       const delivererColor = delivererColors.get(parseInt(deliverer)) || "#000000";
 
+      const layerGroup = delivererLayerGroups.get(parseInt(deliverer));
+      if (layerGroup) {
+        layerGroup.addTo(map);
+      }
       // Draw new tour lines
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
         let fromId = POIbestSolution[i];
@@ -523,7 +643,7 @@ function computeSingleTour(deliverer, poiMap) {
                 [endNode.latitude, endNode.longitude],
               ];
               edgeTourLines.push(
-                L.polyline(latlngs, { color: delivererColor }).addTo(map)
+                L.polyline(latlngs, { color: delivererColor }).addTo(layerGroup)
               );
             }
             let latlngs = [
@@ -531,7 +651,7 @@ function computeSingleTour(deliverer, poiMap) {
               [endNode.latitude, endNode.longitude],
             ];
             edgeTourLines.push(
-              L.polyline(latlngs, { color: delivererColor }).addTo(map)
+              L.polyline(latlngs, { color: delivererColor }).addTo(layerGroup)
             );
           }
 
@@ -593,6 +713,9 @@ function generateDeliveriesList(
 
     // 🔹 Sélecteur de livreur
     const select = document.createElement("select");
+    select.addEventListener("change", () => {
+      updateDelivererDisplay();
+    });
     select.className = "delivery-select";
     select.setAttribute("data-delivery-id", delivery.node.id);
 
@@ -643,7 +766,7 @@ function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
   generateDelivererColors(numberOfDeliverers);
   // Mettre à jour la légende
-  updateDelivererLegend(numberOfDeliverers);
+  updateDelivererDisplay();
   generateDeliveriesList(requestMap.values(), numberOfDeliverers, pairColors);
 }
 
