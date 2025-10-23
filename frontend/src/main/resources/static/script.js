@@ -46,6 +46,8 @@ var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 
+var delivererLayerGroups = new Map(); // Map delivererId -> L.layerGroup
+var layerControl = null; // Contrôle des couches Leaflet
 var delivererColors = new Map(); // Map delivererId -> couleur
 
 // Génère une couleur hexadécimale aléatoire (évite les verts)
@@ -112,48 +114,79 @@ function generateDelivererColors(numberOfDeliverers) {
   return delivererColors;
 }
 
-// Créer ou mettre à jour la légende des livreurs
-function updateDelivererLegend() {
-  // Supprimer l'ancienne légende si elle existe
-  const oldLegend = document.querySelector('.deliverer-legend');
-  if (oldLegend) {
-    oldLegend.remove();
-  }
-  
-  // Si pas de livreurs, ne rien afficher
-  if (delivererColors.size === 0) {
-    return;
-  }
-  
-  // Créer la nouvelle légende
-  const legend = document.createElement('div');
-  legend.className = 'deliverer-legend';
-  
-  const title = document.createElement('h4');
-  title.textContent = 'Livreurs';
-  legend.appendChild(title);
-  
-  // Ajouter chaque livreur avec sa couleur
-  delivererColors.forEach((color, delivererId) => {
-    const item = document.createElement('div');
-    item.className = 'deliverer-legend-item';
-    
-    const colorDot = document.createElement('span');
-    colorDot.className = 'deliverer-color-dot';
-    colorDot.style.backgroundColor = color;
-    
-    const label = document.createElement('span');
-    label.className = 'deliverer-legend-label';
-    label.textContent = `Livreur ${delivererId}`;
-    
-    item.appendChild(colorDot);
-    item.appendChild(label);
-    legend.appendChild(item);
+// Créer des LayerGroups pour chaque livreur basé sur l'assignation
+function createDelivererLayerGroups() {
+  // Nettoyer les anciens layer groups
+  delivererLayerGroups.forEach((layerGroup) => {
+    map.removeLayer(layerGroup);
   });
+  delivererLayerGroups.clear();
+
+  // Créer un layer group pour chaque livreur
+  delivererColors.forEach((color, delivererId) => {
+    delivererLayerGroups.set(delivererId, L.layerGroup());
+  });
+
+  // Parcourir toutes les sélections pour assigner les markers aux bons livreurs
+  const selects = document.querySelectorAll(".delivery-select");
   
-  // Ajouter la légende au container de la carte
-  const mapContainer = document.getElementById('map');
-  mapContainer.appendChild(legend);
+  selects.forEach((select) => {
+    const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
+    const selectedDeliverer = parseInt(select.value);
+    
+    // Récupérer les markers pour ce deliveryId
+    const markers = deliveryIdToMarkers[deliveryId];
+    
+    if (markers && delivererLayerGroups.has(selectedDeliverer)) {
+      const layerGroup = delivererLayerGroups.get(selectedDeliverer);
+      markers.forEach(marker => {
+        // Retirer le marker de la carte principale
+        map.removeLayer(marker);
+        // L'ajouter au layer group du livreur
+        layerGroup.addLayer(marker);
+      });
+    }
+  });
+
+  // Ajouter tous les layer groups à la carte par défaut
+  delivererLayerGroups.forEach((layerGroup) => {
+    layerGroup.addTo(map);
+  });
+}
+
+// Mettre à jour le contrôle des couches Leaflet
+function updateLayerControl() {
+  // Supprimer l'ancien contrôle s'il existe
+  if (layerControl) {
+    map.removeControl(layerControl);
+  }
+
+  // Créer l'objet overlays pour le contrôle
+  const overlayMaps = {};
+  
+  delivererColors.forEach((color, delivererId) => {
+    const layerGroup = delivererLayerGroups.get(delivererId);
+    if (layerGroup) {
+      // Utiliser du HTML pour afficher la couleur dans le nom
+      overlayMaps[`<span style="display: inline-flex; align-items: center;">
+        <span style="width: 12px; height: 12px; background-color: ${color}; 
+        border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
+        Livreur ${delivererId}
+      </span>`] = layerGroup;
+    }
+  });
+
+  // Créer et ajouter le nouveau contrôle
+  layerControl = L.control.layers(null, overlayMaps, {
+    collapsed: false, // Toujours ouvert
+    position: 'topright'
+  }).addTo(map);
+}
+
+// Fonction principale pour mettre à jour l'affichage des livreurs
+function updateDelivererDisplay() {
+  createDelivererLayerGroups();
+  updateLayerControl();
 }
 
 // Charger la map en fonction du fichier XML choisi
@@ -416,7 +449,7 @@ function load_xml_delivery() {
           pairColors
         );
         generateDelivererColors(getNumberOfDeliverers());
-        updateDelivererLegend();
+        updateDelivererDisplay();
       })
 
       .catch((err) => {
@@ -605,6 +638,9 @@ function generateDeliveriesList(
 
     // 🔹 Sélecteur de livreur
     const select = document.createElement("select");
+    select.addEventListener("change", () => {
+      updateDelivererDisplay();
+    });
     select.className = "delivery-select";
     select.setAttribute("data-delivery-id", delivery.node.id);
 
@@ -655,7 +691,7 @@ function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
   generateDelivererColors(numberOfDeliverers);
   // Mettre à jour la légende
-  updateDelivererLegend();
+  updateDelivererDisplay();
   generateDeliveriesList(requestMap.values(), numberOfDeliverers, pairColors);
 }
 
