@@ -148,6 +148,8 @@ function createDelivererLayerGroups() {
     // Only add those that are actively used
     const delivererId = Array.from(delivererLayerGroups.entries()).find(([id, lg]) => lg === layerGroup)[0];
     if (delivererId > getNumberOfDeliverers()) {
+      // Empty other non-used layer groups
+      layerGroup.clearLayers();
       return;
     }; // Ne pas ajouter les livreurs non utilisés
     if (!map.hasLayer(layerGroup)) {
@@ -562,6 +564,11 @@ function compute_tour() {
   // Remove previous tour lines
   edgeTourLines.forEach((l) => map.removeLayer(l));
   edgeTourLines = [];
+
+  // Clear control layers content
+  for (const layerGroup of delivererLayerGroups.values()) {
+    layerGroup.clearLayers();
+  }
 
   // Make separate requests for each deliverer
   for (const [deliverer, poiMap] of Object.entries(assignement)) {
