@@ -189,6 +189,65 @@ function updateDelivererDisplay() {
   updateLayerControl();
 }
 
+// Génère une map de couleurs pour les livreurs
+function generateDelivererColors(numberOfDeliverers) {
+  delivererColors.clear(); // Réinitialiser la map
+  
+  for (let i = 1; i <= numberOfDeliverers; i++) {
+    // Si la couleur existe déjà, on la garde, sinon on en génère une nouvelle
+    if (!delivererColors.has(i)) {
+      delivererColors.set(i, getRandomColor());
+    }
+  }
+  
+  console.log("Deliverer colors map:", delivererColors);
+  return delivererColors;
+}
+
+// Créer ou mettre à jour la légende des livreurs
+function updateDelivererLegend() {
+  // Supprimer l'ancienne légende si elle existe
+  const oldLegend = document.querySelector('.deliverer-legend');
+  if (oldLegend) {
+    oldLegend.remove();
+  }
+  
+  // Si pas de livreurs, ne rien afficher
+  if (delivererColors.size === 0) {
+    return;
+  }
+  
+  // Créer la nouvelle légende
+  const legend = document.createElement('div');
+  legend.className = 'deliverer-legend';
+  
+  const title = document.createElement('h4');
+  title.textContent = 'Livreurs';
+  legend.appendChild(title);
+  
+  // Ajouter chaque livreur avec sa couleur
+  delivererColors.forEach((color, delivererId) => {
+    const item = document.createElement('div');
+    item.className = 'deliverer-legend-item';
+    
+    const colorDot = document.createElement('span');
+    colorDot.className = 'deliverer-color-dot';
+    colorDot.style.backgroundColor = color;
+    
+    const label = document.createElement('span');
+    label.className = 'deliverer-legend-label';
+    label.textContent = `Livreur ${delivererId}`;
+    
+    item.appendChild(colorDot);
+    item.appendChild(label);
+    legend.appendChild(item);
+  });
+  
+  // Ajouter la légende au container de la carte
+  const mapContainer = document.getElementById('map');
+  mapContainer.appendChild(legend);
+}
+
 // Charger la map en fonction du fichier XML choisi
 function load_xml_map() {
   console.log("Loading XML map...");
@@ -500,12 +559,12 @@ function compute_tour() {
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    delivererAssignments: Object.fromEntries(assignement),
+    tour: Object.fromEntries(tourPOIMap),  // Map<Long, POI>
   };
 
   console.log("Computing tour...");
 
-  fetch("http://localhost:8090/runTSP", {
+  fetch("http://localhost:8080/runTSP", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -523,10 +582,8 @@ function compute_tour() {
         return;
       }
 
-      // TODO: Need to modify the response type: data.all_bestSolutions & data.all_POIbestSolutions
-
-      var bestSolution = data.bestSolution; // Pair<Long,LocalTime> []
-      var POIbestSolution = bestSolution.map((bs) => bs.id); //List<Long>
+      var bestSolution = data.solutionOrder;
+      var POIbestSolution = bestSolution;
       console.log("POIbestSolution:", POIbestSolution);
       var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
@@ -537,7 +594,6 @@ function compute_tour() {
       edgeTourLines = [];
 
       // Draw new tour lines
-
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
         let fromId = POIbestSolution[i];
         let toId = POIbestSolution[i + 1];
@@ -551,7 +607,9 @@ function compute_tour() {
           }
         }
         console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
-        while (currentId && currentId !== fromId) {
+        for (let j = 0; j < Object.keys(subtour).length - 1; j++) {
+          let currentId = subtour[j];
+          let nextId = subtour[j + 1];
           let startNode = nodeMap.get(parseInt(currentId));
           let endNode = nodeMap.get(parseInt(nextId));
           console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);

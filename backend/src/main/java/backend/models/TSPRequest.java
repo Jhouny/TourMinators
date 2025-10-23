@@ -12,7 +12,6 @@ public class TSPRequest {
     private List<Edge> allEdges;
     private Map<Long, PointOfInterest> tour;
 
-
     @JsonCreator
     public TSPRequest(
         @JsonProperty("allNodes") Map<Long, Node> allNodes, 
