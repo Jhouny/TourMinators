@@ -1,7 +1,9 @@
 package backend.TSP;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -109,10 +111,39 @@ public abstract class TemplateTSP implements TSP {
 	/**
 	 * Return the full solution found by the last search as an ordered set of node ids.
 	 * 
-	 * @return the solution ordered as a LinkedHashSet of node ids 
+	 * @return the solution ordered as a LinkedHashSet of node ids with their time of arrival
 	 */
-	public LinkedList<Long> getSolutionOrder() {
-		return solutionOrder;
+	public LinkedList<Pair<Long, LocalTime>> getSolutionOrder() {
+		
+		LocalTime time = LocalTime.of(8, 0); // 8:00 AM - default start time
+		LinkedList<Pair<Long, LocalTime>> bestSolution = new LinkedList<>();
+
+        long previousNodeId = solutionOrder.get(0);
+        long nodeId = solutionOrder.get(0);
+        bestSolution.add(new Pair<Long, LocalTime>(nodeId, time));
+
+		for (int i = 1; i < solutionOrder.size() + 1; i++) {
+			previousNodeId = nodeId;
+			if (i != solutionOrder.size())
+				nodeId = solutionOrder.get(i);
+			else
+				nodeId = solutionOrder.get(0);
+
+			// add duration of previous PoI
+			if (i != 1){
+				for (PointOfInterest poi : g.tour) {
+					if (poi.getId().equals(previousNodeId)) {
+						time = time.plusSeconds(poi.getDuration());
+						break;
+					}
+				}
+			}
+			
+			// add travel time between previous and current PoI, assuming 15km/h speed
+			time = time.plusSeconds((long) (g.getPathCost(previousNodeId, nodeId) * 3600 / 15000));
+			bestSolution.add(new Pair<Long, LocalTime>(nodeId, time));
+		}
+		return bestSolution;
 	}
 	
 
