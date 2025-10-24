@@ -231,6 +231,17 @@ body, html {
   flex-shrink: 0;
 }
 
+/* Personnalisation optionnelle du contrôle de couches Leaflet */
+.leaflet-control-layers {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-control-layers-expanded {
+  padding: 10px;
+  min-width: 180px;
+}
 .deliverer-legend {
   position: absolute;
   top: 10px;

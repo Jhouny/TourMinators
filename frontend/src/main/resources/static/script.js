@@ -47,6 +47,8 @@ var delivererList = []; // Liste des livreurs
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 var numberOfRequests = 1; // Nombre de demandes de livraison (initialement 1)
 
+var delivererLayerGroups = new Map(); // Map delivererId -> L.layerGroup
+var layerControl = null; // Contrôle des couches Leaflet
 var delivererColors = new Map(); // Map delivererId -> couleur
 
 // Génère une couleur hexadécimale aléatoire (évite les verts)
@@ -67,22 +69,23 @@ function getRandomColor() {
   return color;
 }
 
-// Vérifie si une couleur est trop proche du vert
+// Checks if a color is "greenish" (to avoid green colors on the map)
 function isGreenish(hexColor) {
-  // Convertir hex en RGB
+  // Convert HEX to RGB
   const r = parseInt(hexColor.substr(1, 2), 16);
   const g = parseInt(hexColor.substr(3, 2), 16);
   const b = parseInt(hexColor.substr(5, 2), 16);
 
-  // Éviter les couleurs où le vert domine (G > R et G > B)
-  // et où le vert est assez fort (G > 100)
+  // Avoid colors where green is dominant (G > R and G > B)
+  // and where green is too strong (G > 100)
   return g > r && g > b && g > 100;
 }
 
-// Génère une icône de flèche colorée (orientée selon le type)
+// Makes an arrow icon pointing up or down with the given color
 function createArrowIcon(color, direction, size = 32) {
   const rotation =
     direction === "down" ? "rotate(180 12 12)" : "rotate(0 12 12)";
+
   return L.divIcon({
     className: "",
     html: `
@@ -98,23 +101,125 @@ function createArrowIcon(color, direction, size = 32) {
   });
 }
 
-// Génère une map de couleurs pour les livreurs
-function generateDelivererColors(numberOfDeliverers) {
-  delivererColors.clear(); // Réinitialiser la map
+// Créer des LayerGroups pour chaque livreur basé sur l'assignation
+function createDelivererLayerGroups() {
+  // Nettoyer les anciens layer groups
+  /*delivererLayerGroups.forEach((layerGroup) => {
+    map.removeLayer(layerGroup);
+  });
+  delivererLayerGroups.clear();*/
 
-  for (let i = 1; i <= numberOfDeliverers; i++) {
-    // Si la couleur existe déjà, on la garde, sinon on en génère une nouvelle
-    if (!delivererColors.has(i)) {
-      delivererColors.set(i, getRandomColor());
+  // Créer un layer group pour chaque livreur
+  if (delivererLayerGroups.size === 0) {
+    delivererColors.forEach((color, delivererId) => {
+      if (delivererId > getNumberOfDeliverers()) return; // Ne pas créer pour les livreurs non utilisés
+      delivererLayerGroups.set(delivererId, L.layerGroup());
+    });
+  } else if (delivererLayerGroups.size < getNumberOfDeliverers()) {
+    // Ajouter les layer groups manquants
+    for (
+      let i = delivererLayerGroups.size + 1;
+      i <= getNumberOfDeliverers();
+      i++
+    ) {
+      const color = delivererColors.get(i);
+      delivererLayerGroups.set(i, L.layerGroup());
     }
   }
 
-  console.log("Deliverer colors map:", delivererColors);
-  return delivererColors;
+  // Parcourir toutes les sélections pour assigner les markers aux bons livreurs
+  const selects = document.querySelectorAll(".delivery-select");
+
+  selects.forEach((select) => {
+    const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
+    const selectedDeliverer = parseInt(select.value);
+
+    // Récupérer les markers pour ce deliveryId
+    const markers = deliveryIdToMarkers[deliveryId];
+
+    if (markers && delivererLayerGroups.has(selectedDeliverer)) {
+      const layerGroup = delivererLayerGroups.get(selectedDeliverer);
+      markers.forEach((marker) => {
+        // Retirer le marker de la carte principale
+        map.removeLayer(marker);
+        // L'ajouter au layer group du livreur
+        layerGroup.addLayer(marker);
+      });
+    }
+  });
+
+  // Ajouter tous les layer groups à la carte par défaut
+  delivererLayerGroups.forEach((layerGroup) => {
+    // Only add those that are actively used
+    const delivererId = Array.from(delivererLayerGroups.entries()).find(
+      ([id, lg]) => lg === layerGroup
+    )[0];
+    if (delivererId > getNumberOfDeliverers()) {
+      // Empty other non-used layer groups
+      layerGroup.clearLayers();
+      return;
+    } // Ne pas ajouter les livreurs non utilisés
+    if (!map.hasLayer(layerGroup)) {
+      layerGroup.addTo(map);
+    }
+  });
+}
+
+// Mettre à jour le contrôle des couches Leaflet
+function updateLayerControl() {
+  // Supprimer l'ancien contrôle s'il existe
+  if (layerControl) {
+    map.removeControl(layerControl);
+  }
+
+  // Créer l'objet overlays pour le contrôle
+  const overlayMaps = {};
+
+  delivererColors.forEach((color, delivererId) => {
+    const layerGroup = delivererLayerGroups.get(delivererId);
+    if (layerGroup) {
+      // Utiliser du HTML pour afficher la couleur dans le nom
+      overlayMaps[
+        `<span style="display: inline-flex; align-items: center;">
+        <span style="width: 12px; height: 12px; background-color: ${color}; 
+        border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
+        Livreur ${delivererId}
+      </span>`
+      ] = layerGroup;
+    }
+  });
+
+  // Créer et ajouter le nouveau contrôle
+  layerControl = L.control
+    .layers(null, overlayMaps, {
+      collapsed: false, // Toujours ouvert
+      position: "topright",
+    })
+    .addTo(map);
+}
+
+// Fonction principale pour mettre à jour l'affichage des livreurs
+function updateDelivererDisplay() {
+  createDelivererLayerGroups();
+  updateLayerControl();
+}
+
+// Generate the colors for each deliverer
+// Colors are fixed for each deliverer during the session
+function generateDelivererColors(numberOfDeliverers) {
+  if (numberOfDeliverers !== delivererColors.size) {
+    delivererColors.clear();
+  }
+  for (let i = 1; i <= numberOfDeliverers; i++) {
+    if (!delivererColors.has(i)) {
+      const hue = Math.floor((360 * i) / numberOfDeliverers);
+      delivererColors.set(i, `hsl(${hue}, 80%, 50%)`);
+    }
+  }
 }
 
 // Créer ou mettre à jour la légende des livreurs
-function updateDelivererLegend() {
+function updateDelivererLegend(numberOfDeliverers) {
   // Supprimer l'ancienne légende si elle existe
   const oldLegend = document.querySelector(".deliverer-legend");
   if (oldLegend) {
@@ -122,7 +227,7 @@ function updateDelivererLegend() {
   }
 
   // Si pas de livreurs, ne rien afficher
-  if (delivererColors.size === 0) {
+  if (numberOfDeliverers === 0) {
     return;
   }
 
@@ -136,6 +241,7 @@ function updateDelivererLegend() {
 
   // Ajouter chaque livreur avec sa couleur
   delivererColors.forEach((color, delivererId) => {
+    if (delivererId > numberOfDeliverers) return; // Ne pas afficher les livreurs non utilisés
     const item = document.createElement("div");
     item.className = "deliverer-legend-item";
 
@@ -167,6 +273,12 @@ function load_xml_map() {
 
   input.onchange = (e) => {
     let file = e.target.files[0];
+
+    if (!file) {
+      alert("Veuillez ajouter un fichier XML");
+      return;
+    }
+
     let formData = new FormData();
     formData.append("file", file);
 
@@ -257,6 +369,10 @@ function load_xml_map() {
       .catch((error) => console.error("Error loading XML map:", error));
   };
 
+  input.oncancel = () => {
+    alert("Veuillez ajouter un fichier XML");
+  };
+
   input.click();
 }
 
@@ -274,6 +390,12 @@ function load_xml_delivery() {
 
   input.onchange = (e) => {
     let deliveryFile = e.target.files[0];
+
+    if (!deliveryFile) {
+      alert("Veuillez ajouter un fichier XML");
+      return;
+    }
+
     let formData = new FormData();
     formData.append("file", deliveryFile);
 
@@ -408,7 +530,7 @@ function load_xml_delivery() {
           pairColors
         );
         generateDelivererColors(getNumberOfDeliverers());
-        updateDelivererLegend();
+        updateDelivererDisplay();
       })
 
       .catch((err) => {
@@ -417,6 +539,10 @@ function load_xml_delivery() {
           "Erreur lors du chargement de la demande de livraison (voir console)."
         );
       });
+  };
+
+  input.oncancel = () => {
+    alert("Veuillez ajouter un fichier XML");
   };
 
   input.click();
@@ -450,12 +576,32 @@ function compute_tour() {
   }
 
   let assignement = generateDeliverersAssignment();
+  console.log("Deliverers assignment:", assignement);
 
+  // Diplay the edges tour lines above the existing edges lines
+  // Remove previous tour lines
+  edgeTourLines.forEach((l) => map.removeLayer(l));
+  edgeTourLines = [];
+
+  // Clear control layers content
+  for (const layerGroup of delivererLayerGroups.values()) {
+    layerGroup.clearLayers();
+  }
+
+  // Make separate requests for each deliverer
+  for (const [deliverer, poiMap] of Object.entries(assignement)) {
+    computeSingleTour(deliverer, poiMap);
+  }
+}
+
+// Compute the tour for a single deliverer and draw it on the map
+function computeSingleTour(deliverer, poiMap) {
+  console.log(`Computing tour for ${deliverer} with POIs:`, poiMap);
   // Prepare data to send to backend to compute the tour
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(tourPOIMap), // Map<Long, POI>
+    tour: poiMap, // Map<Long, POI>
   };
 
   console.log("Computing tour...");
@@ -472,7 +618,6 @@ function compute_tour() {
       return response.json();
     })
     .then((data) => {
-      console.log("Tour response:", data);
       if (!data.solutionOrder) {
         console.error("No tour in response:", data);
         return;
@@ -480,15 +625,16 @@ function compute_tour() {
 
       var bestSolution = data.solutionOrder;
       var POIbestSolution = bestSolution;
-      console.log("POIbestSolution:", POIbestSolution);
       var tour = data.solutionPaths; // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
-      // Diplay the edges tour lines above the existing edges lines
-      // Remove previous tour lines
-      edgeTourLines.forEach((l) => map.removeLayer(l));
-      edgeTourLines = [];
+      const delivererColor =
+        delivererColors.get(parseInt(deliverer)) || "#000000";
 
+      const layerGroup = delivererLayerGroups.get(parseInt(deliverer));
+      if (layerGroup) {
+        layerGroup.addTo(map);
+      }
       // Draw new tour lines
       for (let i = 0; i < POIbestSolution.length - 1; i++) {
         let fromId = POIbestSolution[i];
@@ -529,7 +675,7 @@ function compute_tour() {
                 [endNode.latitude, endNode.longitude],
               ];
               edgeTourLines.push(
-                L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+                L.polyline(latlngs, { color: delivererColor }).addTo(layerGroup)
               );
             }
             let latlngs = [
@@ -537,7 +683,7 @@ function compute_tour() {
               [endNode.latitude, endNode.longitude],
             ];
             edgeTourLines.push(
-              L.polyline(latlngs, { color: "#0b3213" }).addTo(map)
+              L.polyline(latlngs, { color: delivererColor }).addTo(layerGroup)
             );
           }
 
@@ -599,6 +745,9 @@ function generateDeliveriesList(
 
     // 🔹 Sélecteur de livreur
     const select = document.createElement("select");
+    select.addEventListener("change", () => {
+      updateDelivererDisplay();
+    });
     select.className = "delivery-select";
     select.setAttribute("data-delivery-id", delivery.node.id);
 
@@ -649,7 +798,7 @@ function updateDeliverersList() {
   const numberOfDeliverers = getNumberOfDeliverers();
   generateDelivererColors(numberOfDeliverers);
   // Mettre à jour la légende
-  updateDelivererLegend();
+  updateDelivererDisplay();
   generateDeliveriesList(requestMap.values(), numberOfDeliverers, pairColors);
 }
 
@@ -661,10 +810,18 @@ function generateDeliverersAssignment() {
 
   const assignment = {};
   for (let i = 1; i <= numberOfDeliverers; i++) {
-    assignment[`livreur ${i}`] = {};
+    assignment[i] = {};
   }
 
   const selects = document.querySelectorAll(".delivery-select");
+
+  // Add the warehouse POI to each deliverer
+  const warehousePOI = Array.from(tourPOIMap.values()).find(
+    (poi) => poi.type === "WAREHOUSE"
+  );
+  for (let i = 1; i <= numberOfDeliverers; i++) {
+    assignment[i][warehousePOI.node.id] = warehousePOI;
+  }
 
   selects.forEach((select) => {
     const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
@@ -681,11 +838,9 @@ function generateDeliverersAssignment() {
     });
 
     // Ajouter les POIs au livreur sélectionné
-    const delivererKey = `livreur ${selectedDeliverer}`;
-    assignment[delivererKey][deliveryId] = pickupPOI;
-    assignment[delivererKey][deliveryPOI.node.id] = deliveryPOI;
+    assignment[selectedDeliverer][deliveryId] = pickupPOI;
+    assignment[selectedDeliverer][deliveryPOI.node.id] = deliveryPOI;
   });
-  console.log("Generated assignment:", assignment);
 
   return assignment;
 }
