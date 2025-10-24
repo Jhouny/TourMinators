@@ -50,6 +50,8 @@ var delivererLayerGroups = new Map(); // Map delivererId -> L.layerGroup
 var layerControl = null; // Contrôle des couches Leaflet
 var delivererColors = new Map(); // Map delivererId -> couleur
 
+var allDeliverersTours = {}; // Map delivererId -> tour data
+
 // Génère une couleur hexadécimale aléatoire (évite les verts)
 function getRandomColor() {
   let color;
@@ -611,6 +613,14 @@ function computeSingleTour(deliverer, poiMap) {
       var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
+      const delivererId = parseInt(deliverer);
+      allDeliverersTours[delivererId] = {
+        delivererId: delivererId,
+        tourOrder: POIbestSolution,
+        tourDetails: [],
+        color: delivererColors.get(delivererId)
+      };
+
       const delivererColor = delivererColors.get(parseInt(deliverer)) || "#000000";
 
       const layerGroup = delivererLayerGroups.get(parseInt(deliverer));
@@ -622,6 +632,27 @@ function computeSingleTour(deliverer, poiMap) {
         let fromId = POIbestSolution[i];
         let toId = POIbestSolution[i + 1];
         console.log(`Drawing tour segment from ${fromId} to ${toId}`);
+
+        const fromNode = nodeMap.get(parseInt(fromId));
+        const toNode = nodeMap.get(parseInt(toId));
+        const fromPOI = tourPOIMap.get(fromId);
+        const toPOI = tourPOIMap.get(toId);
+        
+        allDeliverersTours[delivererId].tourDetails.push({
+          from: {
+            id: fromId,
+            type: fromPOI?.type || "UNKNOWN",
+            latitude: fromNode?.latitude,
+            longitude: fromNode?.longitude
+          },
+          to: {
+            id: toId,
+            type: toPOI?.type || "UNKNOWN",
+            latitude: toNode?.latitude,
+            longitude: toNode?.longitude
+          }
+        });
+
         let subtour = null;
         let key = `(${fromId}, ${toId})`;
         for (el in tour) {
@@ -668,7 +699,10 @@ function computeSingleTour(deliverer, poiMap) {
           nextId = subtour[currentId];
         }
       }
-    })
+    }
+  )
+
+    
     .catch((err) => {
       console.error("Error fetching /runTSP:", err);
     });
@@ -818,4 +852,191 @@ function generateDeliverersAssignment() {
   });
 
   return assignment;
+}
+
+// Fonction pour exporter les tournées en JSON
+function exportToursToJSON() {
+  // Vérifier qu'il y a des tournées à exporter
+  if (Object.keys(allDeliverersTours).length === 0) {
+    alert("Aucune tournée à exporter. Veuillez d'abord calculer les tournées.");
+    return;
+  }
+
+  // Créer l'objet JSON avec toutes les informations
+  const exportData = {
+    exportDate: new Date().toISOString(),
+    numberOfDeliverers: getNumberOfDeliverers(),
+    deliverersTours: allDeliverersTours
+  };
+
+  // Convertir en JSON avec indentation pour la lisibilité
+  const jsonString = JSON.stringify(exportData, null, 2);
+
+  // Créer un blob et télécharger le fichier
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  
+  // Créer un lien de téléchargement temporaire
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `tournees_${new Date().toISOString().split('T')[0]}.json`;
+  
+  // Déclencher le téléchargement
+  document.body.appendChild(link);
+  link.click();
+  
+  // Nettoyer
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  console.log("Tours exported successfully:", exportData);
+}
+
+// Fonction pour importer les tournées depuis un JSON
+function importToursFromJSON() {
+  console.log("Importing tours from JSON...");
+
+  if (!nodeMap || nodeMap.size === 0) {
+    alert("Veuillez d'abord importer un plan avant d'importer une tournée.");
+    return;
+  }
+
+  if (!tourPOIMap || tourPOIMap.size === 0) {
+    alert("Veuillez d'abord charger une demande de livraison avant d'importer une tournée.");
+    return;
+  }
+
+  let input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+
+  input.onchange = (e) => {
+    let file = e.target.files[0];
+
+    if (!file) {
+      alert("Veuillez sélectionner un fichier JSON");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        console.log("Imported data:", importedData);
+
+        if (!importedData.deliverersTours) {
+          alert("Format JSON invalide : 'deliverersTours' manquant");
+          return;
+        }
+
+        // Mettre à jour le nombre de livreurs
+        const importedNumberOfDeliverers = importedData.numberOfDeliverers || Object.keys(importedData.deliverersTours).length;
+        const currentNumberOfDeliverers = getNumberOfDeliverers();
+        
+        if (importedNumberOfDeliverers !== currentNumberOfDeliverers) {
+          const input = document.getElementById("numberOfDeliverers");
+          if (input) {
+            input.value = importedNumberOfDeliverers;
+            updateDeliverersList();
+          }
+        }
+
+        // Créer une map POI ID -> Deliverer ID
+        const poiToDelivererMap = new Map();
+        Object.entries(importedData.deliverersTours).forEach(([delivererId, tourData]) => {
+          tourData.tourOrder.forEach(poiId => {
+            const poi = tourPOIMap.get(poiId);
+            if (poi && poi.type === "PICKUP") {
+              poiToDelivererMap.set(poiId, parseInt(delivererId));
+            }
+          });
+        });
+
+        // Mettre à jour les selects
+        const selects = document.querySelectorAll(".delivery-select");
+        selects.forEach((select) => {
+          const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
+          const assignedDeliverer = poiToDelivererMap.get(deliveryId);
+          
+          if (assignedDeliverer) {
+            select.value = assignedDeliverer;
+          }
+        });
+
+        // Mettre à jour l'affichage des markers
+        updateDelivererDisplay();
+
+        // Nettoyer les anciennes tournées
+        edgeTourLines.forEach((l) => map.removeLayer(l));
+        edgeTourLines = [];
+
+        for (const layerGroup of delivererLayerGroups.values()) {
+          layerGroup.clearLayers();
+        }
+
+        // Stocker les tournées
+        allDeliverersTours = importedData.deliverersTours;
+
+        // Dessiner chaque tournée importée
+        Object.entries(allDeliverersTours).forEach(([delivererId, tourData]) => {
+          const delivererIdInt = parseInt(delivererId);
+          const delivererColor = delivererColors.get(delivererIdInt) || tourData.color || "#000000";
+          const layerGroup = delivererLayerGroups.get(delivererIdInt);
+
+          if (!layerGroup) {
+            console.error(`No layer group found for deliverer ${delivererIdInt}`);
+            return;
+          }
+
+          layerGroup.addTo(map);
+
+          // Dessiner les segments de tournée
+          if (tourData.tourOrder && tourData.tourOrder.length > 0) {
+            for (let i = 0; i < tourData.tourOrder.length - 1; i++) {
+              const fromId = tourData.tourOrder[i];
+              const toId = tourData.tourOrder[i + 1];
+              
+              const fromNode = nodeMap.get(parseInt(fromId));
+              const toNode = nodeMap.get(parseInt(toId));
+              
+              if (fromNode && toNode) {
+                const latlngs = [
+                  [fromNode.latitude, fromNode.longitude],
+                  [toNode.latitude, toNode.longitude]
+                ];
+                
+                const line = L.polyline(latlngs, { 
+                  color: delivererColor,
+                  weight: 4,
+                  opacity: 0.7
+                }).addTo(layerGroup);
+                
+                edgeTourLines.push(line);
+              }
+            }
+          }
+
+          console.log(`Tour drawn for deliverer ${delivererIdInt}`);
+        });
+
+        alert(`Tournée importée avec succès pour ${importedNumberOfDeliverers} livreur(s) !`);
+
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+        alert("Erreur lors de la lecture du fichier JSON : " + error.message);
+      }
+    };
+
+    reader.onerror = () => {
+      alert("Erreur lors de la lecture du fichier");
+    };
+
+    reader.readAsText(file);
+  };
+
+  input.oncancel = () => {
+    console.log("Import cancelled");
+  };
+
+  input.click();
 }
