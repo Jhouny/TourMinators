@@ -2,9 +2,9 @@ package backend;
 
 import java.util.*;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.Before;
 
 import backend.models.Node;
 import backend.TSP.Graph;
@@ -18,7 +18,7 @@ public class TestGraph {
     private Map<Long, PointOfInterest> tour = new HashMap<>();
     private List<Edge> edges = new ArrayList<>();
 
-    @BeforeEach
+    @Before
     public void setUp() {
         // --- Création des sommets (nœuds) ---
 
