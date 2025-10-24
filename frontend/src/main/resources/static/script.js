@@ -353,10 +353,12 @@ function load_xml_map() {
 
   input.oncancel = () => {
     alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
   };
 
   input.onabort = () => {
     alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
   };
 
   input.click();
