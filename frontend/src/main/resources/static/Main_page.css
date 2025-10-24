@@ -67,6 +67,13 @@ body, html {
     border: 2px solid var(--primary-green);
 }
 
+.header button:disabled {
+    background-color: #cccccc;
+    border-color: #aaaaaa;
+    cursor: not-allowed;
+    color: #666666;
+}
+
 .header button:hover {
     background-color: var(--secondary-green); 
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -337,4 +344,10 @@ body, html {
 
 #minusBtn {
     border-bottom: none;
+}
+
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
 }

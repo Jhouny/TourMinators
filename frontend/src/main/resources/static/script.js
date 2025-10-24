@@ -41,6 +41,7 @@ var edgeTourLines = [];
 var tourPOIMap = new Map(); // POI de la tournée déjà chargés
 var deliveryIdToMarkers = {}; // Map deliveryId -> [markers]
 
+var activeRequestCounter = 0; // Counter for 'still-calculating' requests
 var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
@@ -249,6 +250,8 @@ function load_xml_map() {
       return;
     }
 
+    blockButtons();
+
     let formData = new FormData();
     formData.append("file", file);
 
@@ -338,12 +341,24 @@ function load_xml_map() {
           planButton.style.backgroundColor = "var(--primary-green)";
           planButton.style.color = "white";
         }
+
+        unblockButtons();
       })
-      .catch((error) => console.error("Error loading XML map:", error));
+      .catch((error) => {
+        console.error("Error loading XML map:", error);
+        unblockButtons();
+        alert("Erreur lors du chargement du plan (voir console).");
+      });
   };
 
   input.oncancel = () => {
     alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
+  };
+
+  input.onabort = () => {
+    alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
   };
 
   input.click();
@@ -372,12 +387,15 @@ function load_xml_delivery() {
     let formData = new FormData();
     formData.append("file", deliveryFile);
 
+    blockButtons();
+
     fetch("/uploadDeliveries", {
       method: "POST",
       body: formData,
     })
       .then((response) => {
         if (!response.ok) throw new Error("HTTP error " + response.status);
+        unblockButtons();
         return response.json();
       })
       .then((data) => {
@@ -505,17 +523,18 @@ function load_xml_delivery() {
         generateDelivererColors(getNumberOfDeliverers());
         updateDelivererDisplay();
       })
-
       .catch((err) => {
         console.error("Error fetching /uploadDeliveries:", err);
         alert(
           "Erreur lors du chargement de la demande de livraison (voir console)."
         );
+        unblockButtons();
       });
   };
 
   input.oncancel = () => {
     alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
   };
 
   input.click();
@@ -542,11 +561,30 @@ function toggleEdges() {
   edgesVisible = !edgesVisible;
 }
 
+// Function to block buttons
+function blockButtons() {
+  const btns = document.getElementsByClassName("user-action-button");
+  for (let btn of btns) {
+    btn.disabled = true;
+  }
+}
+
+// Function to unblock buttons
+function unblockButtons() {
+  const btns = document.getElementsByClassName("user-action-button");
+  for (let btn of btns) {
+    btn.disabled = false;
+  }
+}
+
 function compute_tour() {
   if (!nodeMap || nodeMap.size === 0) {
     alert("Veuillez d'abord importer un plan avant de calculer une tournée.");
     return;
   }
+
+  blockButtons();
+  activeRequestCounter = 0;
 
   let assignement = generateDeliverersAssignment();
   console.log("Deliverers assignment:", assignement);
@@ -578,7 +616,7 @@ function computeSingleTour(deliverer, poiMap) {
   };
 
   console.log("Computing tour...");
-
+  activeRequestCounter++;
   fetch("http://localhost:8080/runTSP", {
     method: "POST",
     headers: {
@@ -606,10 +644,11 @@ function computeSingleTour(deliverer, poiMap) {
         delivererId: delivererId,
         tourOrder: POIbestSolution,
         tourDetails: [],
-        color: delivererColors.get(delivererId)
+        color: delivererColors.get(delivererId),
       };
 
-      const delivererColor = delivererColors.get(parseInt(deliverer)) || "#000000";
+      const delivererColor =
+        delivererColors.get(parseInt(deliverer)) || "#000000";
 
       const layerGroup = delivererLayerGroups.get(parseInt(deliverer));
       if (layerGroup) {
@@ -625,20 +664,20 @@ function computeSingleTour(deliverer, poiMap) {
         const toNode = nodeMap.get(parseInt(toId));
         const fromPOI = tourPOIMap.get(fromId);
         const toPOI = tourPOIMap.get(toId);
-        
+
         allDeliverersTours[delivererId].tourDetails.push({
           from: {
             id: fromId,
             type: fromPOI?.type || "UNKNOWN",
             latitude: fromNode?.latitude,
-            longitude: fromNode?.longitude
+            longitude: fromNode?.longitude,
           },
           to: {
             id: toId,
             type: toPOI?.type || "UNKNOWN",
             latitude: toNode?.latitude,
-            longitude: toNode?.longitude
-          }
+            longitude: toNode?.longitude,
+          },
         });
 
         let subtour = null;
@@ -693,6 +732,11 @@ function computeSingleTour(deliverer, poiMap) {
           currentId = nextId;
           nextId = subtour[currentId];
         }
+      }
+      activeRequestCounter--;
+      // Unblock buttons only after all async requests are done
+      if (activeRequestCounter === 0) {
+        unblockButtons();
       }
     }
   )
