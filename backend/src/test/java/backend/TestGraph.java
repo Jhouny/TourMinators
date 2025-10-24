@@ -64,28 +64,6 @@ public class TestGraph {
         graph = new Graph(nodes, edges, tour);
     }
 
-    // @Test
-    // public void testInitialisation(Graph graph){
-    //     // // --- Tests d’initialisation ---
-    //     // System.out.println("=== TEST INITIALISATION GRAPH ===");
-    //     // System.out.println("Nodes: " + graph.all_nodes.keySet());
-    //     // System.out.println("Edges:");
-    //     // for (Edge e : graph.all_edges) {
-    //     //     System.out.println("  " + e.getOrigin() + " -> " + e.getDestination() + " (" + e.getLength() + ")");
-    //     // }
-
-    //     // System.out.println("\nAdjacency:");
-    //     // for (Map.Entry<Long, Set<Long>> entry : graph.adjacency.entrySet()) {
-    //     //     System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-    //     // }
-
-    //     // System.out.println("\nAll costs:");
-    //     // for (Map.Entry<Pair<Long, Long>, Float> entry : graph.all_costs.entrySet()) {
-    //     //     System.out.println("  " + entry.getKey() + " : " + entry.getValue());
-    //     // }
-
-    //     // System.out.println("\nPath cost (devrait être vide au début): " + graph.pathCost);
-    // }
 
 
     @Test
@@ -148,6 +126,30 @@ public class TestGraph {
     // }
 
     //############### Not implemented #####################
+
+    // @Test
+    // public void testInitialisation(Graph graph){
+    //     // // --- Tests d’initialisation ---
+    //     // System.out.println("=== TEST INITIALISATION GRAPH ===");
+    //     // System.out.println("Nodes: " + graph.all_nodes.keySet());
+    //     // System.out.println("Edges:");
+    //     // for (Edge e : graph.all_edges) {
+    //     //     System.out.println("  " + e.getOrigin() + " -> " + e.getDestination() + " (" + e.getLength() + ")");
+    //     // }
+
+    //     // System.out.println("\nAdjacency:");
+    //     // for (Map.Entry<Long, Set<Long>> entry : graph.adjacency.entrySet()) {
+    //     //     System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
+    //     // }
+
+    //     // System.out.println("\nAll costs:");
+    //     // for (Map.Entry<Pair<Long, Long>, Float> entry : graph.all_costs.entrySet()) {
+    //     //     System.out.println("  " + entry.getKey() + " : " + entry.getValue());
+    //     // }
+
+    //     // System.out.println("\nPath cost (devrait être vide au début): " + graph.pathCost);
+    // }
+
     // public static void testGetNbNodes(Graph graph){
     //     // --- Test getNbNodes ---
     //     System.out.println("\n=== TEST getNbNodes ===");
