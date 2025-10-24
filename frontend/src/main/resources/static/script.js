@@ -837,5 +837,9 @@ async function addPOI() {
 }
 
 async function deletePOI() {
-  
+  if(!planLoaded) {
+    alert("Good morning client (Killian). Nice try to break our code. Please load the map first.");
+    return false;
+  }
+  const deliveryName = document.getElementById("inputPickupDeliveryID").value;
 }

@@ -42,11 +42,15 @@
                         <!-- La liste des Demandes := Pickup + Delivery est générée ici -->
                     </div>
                 </div>
-                
+
                 <div class="buttons">
                     <input id="inputPickup" type="text" placeholder="Pickup Address to Add"/>
                     <input id="inputDelivery" type="text" placeholder="Delivery Address to Add"/>
                     <button id="testAddNode" onclick="addPOI()">Ajouter le Pickup-Delivery test</button>
+                </div>
+                <div class="buttons">
+                    <input id="inputPickupDeliveryID" type="text" placeholder="Type a valid Pickup-Delivery ID"/>
+                    <button id="deletePOI" onclick="deletePOI()">Delete an existing Pickup-Delivery pair</button>
                 </div>
             </div>
            
