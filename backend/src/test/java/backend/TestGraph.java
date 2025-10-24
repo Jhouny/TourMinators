@@ -64,41 +64,6 @@ public class TestGraph {
         graph = new Graph(nodes, edges, tour);
     }
 
-    // public static void main(String[] args) {
-        
-
-    //     // testInitialisation(graph); //validated 
-    //     // testGetNodesToVisit(graph); //validated
-    //     // testGetAssociatedPoI(graph, 2L); //validated
-    //     //testGetAssociatedPoI(graph, 4L); //null, validated
-        
-    //     // testGetBeginId(graph); //validated
-    //     // testGetNbNodes(graph); //validated
-
-    //     // testGetCost(graph,1L,2L); //validated
-    //     // //testGetCost(graph,2L,4L); //suppose to throw exception (no edge), validated
-        
-    //     // testGetPathCost(graph); //validated
-
-    //     // testGetNeighbors(graph, 2L); //validated
-    //     // testGetNeighbors(graph, 6L); //validated
-
-    //     // IMPORTANT ! Pour les tests AWA*, il faut que les latitudes et longitudes soient réalistes
-    //     // Puisqu'elles sont utilisées pour les heuristiques
-
-    //     // testAWAStar(graph, 1L, 2L); //validated 
-    //     // testAWAStar(graph, 1L, 6L);
-    //     // testAWAStar(graph, 1L,7L); //tester pour un noeud qui est dans le graph mais pas connecté
-    //     // testAWAStar(graph, 1L,8L); //tester pour un ID invalide
-
-    //     // System.out.println("\n=== PATH COST ===");
-    //     // System.out.println("Path cost from 1 to 2: " + graph.getPathCost(1L, 2L));
-    //     // System.out.println("Path cost from 1 to 6: " + graph.getPathCost(1L, 6L));
-    //     // System.out.println("Path cost from 1 to 7: " + graph.getPathCost(1L, 7L)); // should be
-    //     // System.out.println("Path cost from 1 to 8: " + graph.getPathCost(1L, 8L)); // should be
-    //     // System.out.println();
-    // }
-
     // @Test
     // public void testInitialisation(Graph graph){
     //     // // --- Tests d’initialisation ---
