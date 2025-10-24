@@ -45,6 +45,7 @@ var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
+var numberOfRequests = 1; // Nombre de demandes de livraison (initialement 1)
 
 var delivererColors = new Map(); // Map delivererId -> couleur
 
@@ -53,7 +54,7 @@ function getRandomColor() {
   let color;
   let attempts = 0;
   const maxAttempts = 100;
-  
+
   do {
     const letters = "0123456789ABCDEF";
     color = "#";
@@ -62,7 +63,7 @@ function getRandomColor() {
     }
     attempts++;
   } while (isGreenish(color) && attempts < maxAttempts);
-  
+
   return color;
 }
 
@@ -72,7 +73,7 @@ function isGreenish(hexColor) {
   const r = parseInt(hexColor.substr(1, 2), 16);
   const g = parseInt(hexColor.substr(3, 2), 16);
   const b = parseInt(hexColor.substr(5, 2), 16);
-  
+
   // Éviter les couleurs où le vert domine (G > R et G > B)
   // et où le vert est assez fort (G > 100)
   return g > r && g > b && g > 100;
@@ -100,14 +101,14 @@ function createArrowIcon(color, direction, size = 32) {
 // Génère une map de couleurs pour les livreurs
 function generateDelivererColors(numberOfDeliverers) {
   delivererColors.clear(); // Réinitialiser la map
-  
+
   for (let i = 1; i <= numberOfDeliverers; i++) {
     // Si la couleur existe déjà, on la garde, sinon on en génère une nouvelle
     if (!delivererColors.has(i)) {
       delivererColors.set(i, getRandomColor());
     }
   }
-  
+
   console.log("Deliverer colors map:", delivererColors);
   return delivererColors;
 }
@@ -115,44 +116,44 @@ function generateDelivererColors(numberOfDeliverers) {
 // Créer ou mettre à jour la légende des livreurs
 function updateDelivererLegend() {
   // Supprimer l'ancienne légende si elle existe
-  const oldLegend = document.querySelector('.deliverer-legend');
+  const oldLegend = document.querySelector(".deliverer-legend");
   if (oldLegend) {
     oldLegend.remove();
   }
-  
+
   // Si pas de livreurs, ne rien afficher
   if (delivererColors.size === 0) {
     return;
   }
-  
+
   // Créer la nouvelle légende
-  const legend = document.createElement('div');
-  legend.className = 'deliverer-legend';
-  
-  const title = document.createElement('h4');
-  title.textContent = 'Livreurs';
+  const legend = document.createElement("div");
+  legend.className = "deliverer-legend";
+
+  const title = document.createElement("h4");
+  title.textContent = "Livreurs";
   legend.appendChild(title);
-  
+
   // Ajouter chaque livreur avec sa couleur
   delivererColors.forEach((color, delivererId) => {
-    const item = document.createElement('div');
-    item.className = 'deliverer-legend-item';
-    
-    const colorDot = document.createElement('span');
-    colorDot.className = 'deliverer-color-dot';
+    const item = document.createElement("div");
+    item.className = "deliverer-legend-item";
+
+    const colorDot = document.createElement("span");
+    colorDot.className = "deliverer-color-dot";
     colorDot.style.backgroundColor = color;
-    
-    const label = document.createElement('span');
-    label.className = 'deliverer-legend-label';
+
+    const label = document.createElement("span");
+    label.className = "deliverer-legend-label";
     label.textContent = `Livreur ${delivererId}`;
-    
+
     item.appendChild(colorDot);
     item.appendChild(label);
     legend.appendChild(item);
   });
-  
+
   // Ajouter la légende au container de la carte
-  const mapContainer = document.getElementById('map');
+  const mapContainer = document.getElementById("map");
   mapContainer.appendChild(legend);
 }
 
@@ -312,9 +313,11 @@ function load_xml_delivery() {
           // Ajouter le deliveryId au node dans le POI
           const nodeId = Number(id);
           const deliveryId = nodeIdToDeliveryId.get(nodeId);
-          
-          console.log(`Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`);
-          
+
+          console.log(
+            `Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`
+          );
+
           if (poi.node) {
             poi.node.deliveryId = deliveryId;
           }
@@ -330,6 +333,9 @@ function load_xml_delivery() {
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           tourPOIMap.set(Number(id), poi);
         });
+
+        updateNumberOfRequests();
+        console.log("Number of requests:", numberOfRequests);
 
         console.log("Final requestMap:", requestMap);
         console.log("Updated tourPOIMap:", tourPOIMap);
@@ -377,15 +383,17 @@ function load_xml_delivery() {
 
           const icon = createArrowIcon(color, direction);
 
-          const marker = L.marker([element.latitude, element.longitude], { icon }).addTo(map);
-          
+          const marker = L.marker([element.latitude, element.longitude], {
+            icon,
+          }).addTo(map);
+
           // Stocker les informations du marker pour le hover
           marker.deliveryId = element.deliveryId;
           marker.color = color;
           marker.direction = direction;
-          
+
           nodeMarkers.push(marker);
-          
+
           // Grouper les markers par deliveryId
           if (!deliveryIdToMarkers[element.deliveryId]) {
             deliveryIdToMarkers[element.deliveryId] = [];
@@ -447,7 +455,7 @@ function compute_tour() {
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: Object.fromEntries(tourPOIMap),  // Map<Long, POI>
+    tour: Object.fromEntries(tourPOIMap), // Map<Long, POI>
   };
 
   console.log("Computing tour...");
@@ -473,7 +481,7 @@ function compute_tour() {
       var bestSolution = data.solutionOrder;
       var POIbestSolution = bestSolution;
       console.log("POIbestSolution:", POIbestSolution);
-      var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
+      var tour = data.solutionPaths; // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
       // Diplay the edges tour lines above the existing edges lines
@@ -489,7 +497,14 @@ function compute_tour() {
         let subtour = null;
         let key = `(${fromId}, ${toId})`;
         for (el in tour) {
-          console.log("Tour element:", el, "  Tour[el]:", tour[el], " Searching for key:", key);
+          console.log(
+            "Tour element:",
+            el,
+            "  Tour[el]:",
+            tour[el],
+            " Searching for key:",
+            key
+          );
           if (key in tour[el]) {
             subtour = tour[el][key];
           }
@@ -598,7 +613,7 @@ function generateDeliveriesList(
     deliveryItem.addEventListener("mouseenter", () => {
       highlightMarkers(deliveryId, true);
     });
-    
+
     deliveryItem.addEventListener("mouseleave", () => {
       highlightMarkers(deliveryId, false);
     });
@@ -616,10 +631,10 @@ function generateDeliveriesList(
 function highlightMarkers(deliveryId, highlight) {
   const markers = deliveryIdToMarkers[deliveryId];
   if (!markers) return;
-  
+
   const size = highlight ? 48 : 32; // Taille agrandie ou normale
-  
-  markers.forEach(marker => {
+
+  markers.forEach((marker) => {
     const newIcon = createArrowIcon(marker.color, marker.direction, size);
     marker.setIcon(newIcon);
   });
@@ -639,7 +654,7 @@ function updateDeliverersList() {
 }
 
 const input = document.getElementById("numberOfDeliverers");
-input.addEventListener("input", updateDeliverersList);
+input.addEventListener("change", updateDeliverersList);
 
 function generateDeliverersAssignment() {
   const numberOfDeliverers = getNumberOfDeliverers();
@@ -673,4 +688,33 @@ function generateDeliverersAssignment() {
   console.log("Generated assignment:", assignment);
 
   return assignment;
+}
+
+const plusBtn = document.getElementById("plusBtn");
+console.log("Plus button element:", plusBtn);
+const minusBtn = document.getElementById("minusBtn");
+console.log("Minus button element:", minusBtn);
+
+plusBtn.addEventListener("click", () => {
+  let current = parseInt(numberOfDeliverers);
+  console.log("Current number of deliverers:", current);
+  console.log("Total number of requests:", numberOfRequests);
+  if (current < numberOfRequests) {
+    numberOfDeliverers = current + 1;
+    document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
+    updateDeliverersList();
+  }
+});
+
+minusBtn.addEventListener("click", () => {
+  let current = parseInt(numberOfDeliverers);
+  if (current > 1) {
+    numberOfDeliverers = current - 1;
+    document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
+    updateDeliverersList();
+  }
+});
+
+function updateNumberOfRequests() {
+  numberOfRequests = requestMap.size;
 }

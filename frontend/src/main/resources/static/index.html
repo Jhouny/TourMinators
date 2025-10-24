@@ -36,7 +36,14 @@
                 
                 <div class="right-panel">
                     <div class="delivery-number-people">
-                    <p>Nombre de livreurs : <input type="number" min="1" value="1" id="numberOfDeliverers"/></p>
+                        <span>Nombre de livreurs :</span>
+                        <div class="input-wrapper">
+                            <input type="number" id="numberOfDeliverers" value="1" min="1" readonly style="width: 60px; text-align: center;">
+                            <div class="deliverers-controls">
+                                <button id="plusBtn">+</button>
+                                <button id="minusBtn">−</button>    
+                            </div>
+                        </div>
                     </div>
                     <div class="deliveries-list" id="deliveries-list">
                         <!-- La liste des Demandes := Pickup + Delivery est générée ici -->
