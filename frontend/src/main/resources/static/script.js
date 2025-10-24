@@ -41,6 +41,7 @@ var edgeTourLines = [];
 var tourPOIMap = new Map(); // POI de la tournée déjà chargés
 var deliveryIdToMarkers = {}; // Map deliveryId -> [markers]
 
+var activeRequestCounter = 0; // Counter for 'still-calculating' requests
 var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
@@ -392,6 +393,7 @@ function load_xml_delivery() {
     })
       .then((response) => {
         if (!response.ok) throw new Error("HTTP error " + response.status);
+        unblockButtons();
         return response.json();
       })
       .then((data) => {
@@ -519,7 +521,6 @@ function load_xml_delivery() {
         generateDelivererColors(getNumberOfDeliverers());
         updateDelivererDisplay();
       })
-
       .catch((err) => {
         console.error("Error fetching /uploadDeliveries:", err);
         alert(
@@ -527,11 +528,11 @@ function load_xml_delivery() {
         );
         unblockButtons();
       });
-    unblockButtons();
   };
 
   input.oncancel = () => {
     alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
   };
 
   input.click();
@@ -580,7 +581,8 @@ function compute_tour() {
     return;
   }
 
-  blockButtons(); 
+  blockButtons();
+  activeRequestCounter = 0;
 
   let assignement = generateDeliverersAssignment();
   console.log("Deliverers assignment:", assignement);
@@ -599,10 +601,6 @@ function compute_tour() {
   for (const [deliverer, poiMap] of Object.entries(assignement)) {
     computeSingleTour(deliverer, poiMap);
   }
-
-  setTimeout(() => {
-    unblockButtons();
-  }, 3000);
 }
 
 // Compute the tour for a single deliverer and draw it on the map
@@ -616,7 +614,7 @@ function computeSingleTour(deliverer, poiMap) {
   };
 
   console.log("Computing tour...");
-
+  activeRequestCounter++;
   fetch("http://localhost:8080/runTSP", {
     method: "POST",
     headers: {
@@ -644,10 +642,11 @@ function computeSingleTour(deliverer, poiMap) {
         delivererId: delivererId,
         tourOrder: POIbestSolution,
         tourDetails: [],
-        color: delivererColors.get(delivererId)
+        color: delivererColors.get(delivererId),
       };
 
-      const delivererColor = delivererColors.get(parseInt(deliverer)) || "#000000";
+      const delivererColor =
+        delivererColors.get(parseInt(deliverer)) || "#000000";
 
       const layerGroup = delivererLayerGroups.get(parseInt(deliverer));
       if (layerGroup) {
@@ -663,20 +662,20 @@ function computeSingleTour(deliverer, poiMap) {
         const toNode = nodeMap.get(parseInt(toId));
         const fromPOI = tourPOIMap.get(fromId);
         const toPOI = tourPOIMap.get(toId);
-        
+
         allDeliverersTours[delivererId].tourDetails.push({
           from: {
             id: fromId,
             type: fromPOI?.type || "UNKNOWN",
             latitude: fromNode?.latitude,
-            longitude: fromNode?.longitude
+            longitude: fromNode?.longitude,
           },
           to: {
             id: toId,
             type: toPOI?.type || "UNKNOWN",
             latitude: toNode?.latitude,
-            longitude: toNode?.longitude
-          }
+            longitude: toNode?.longitude,
+          },
         });
 
         let subtour = null;
@@ -731,6 +730,11 @@ function computeSingleTour(deliverer, poiMap) {
           currentId = nextId;
           nextId = subtour[currentId];
         }
+      }
+      activeRequestCounter--;
+      // Unblock buttons only after all async requests are done
+      if (activeRequestCounter === 0) {
+        unblockButtons();
       }
     }
   )
