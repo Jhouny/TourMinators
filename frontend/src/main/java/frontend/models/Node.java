@@ -20,7 +20,6 @@ public class Node {
                 "id=" + id +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
-                ", type='" + type +
                 '}';
     }
 
@@ -31,15 +30,15 @@ public class Node {
     public double getLongitude() {
         return longitude;
     }
-
+    
     public long getId() {
         return id;
     }
 
     public String getType() {
-        return type;
+        return type; 
     }
-
+    
     public void setType(String type) {
         this.type = type;
     }
