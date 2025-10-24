@@ -140,9 +140,10 @@ body, html {
 }
 
 .delivery-number-people {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    background-color: var(--white);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .delivery-number-people p {
@@ -164,10 +165,6 @@ body, html {
 .delivery-number-people input:focus {
     outline: none;
     border-color: var(--primary-green);
-}
-
-.delivery-number-people span {
-    margin-right: 5px;
 }
 
 .deliveries-list {
@@ -285,56 +282,4 @@ body, html {
 .deliverer-legend-label {
   font-size: 13px;
   color: #555;
-}
-
-.input-wrapper {
-    display: inline-flex;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-#numberOfDeliverers {
-    width: 60px;
-    text-align: center;
-    border: none;
-    outline: none;
-    padding: 0;
-    margin: 0;
-    line-height: normal;
-    appearance: textfield;
-    -moz-appearance:textfield;
-}
-
-.deliverers-controls {
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid #ccc;
-}
-
-.deliverers-controls button {
-    width: 25px;
-    height: 20px;
-    padding: 0;
-    margin: 0;
-    font-size: 14px;
-    line-height: 20px;
-    cursor: pointer;
-    border: none;
-    background-color: #f8f8f8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.deliverers-controls button:hover {
-    background-color: #e0e0e0;
-}
-
-#plusBtn {
-    border-bottom: 1px solid #ccc;
-}
-
-#minusBtn {
-    border-bottom: none;
 }
