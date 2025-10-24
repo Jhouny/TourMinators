@@ -71,6 +71,25 @@ function getRandomColor() {
   return color;
 }
 
+// Reset global variables
+function resetGlobalState() {
+  // Reset the other global variables
+  requestMap.clear();
+  tourPOIMap.clear();
+  deliveryIdToMarkers = {};
+  pairColors = {};
+  edgeTourLines = [];
+  for (const layerGroup of delivererLayerGroups.values()) {
+    layerGroup.clearLayers();
+  }
+  delivererLayerGroups.clear();
+  if (layerControl) {
+    map.removeControl(layerControl);
+    layerControl = null;
+  }
+  delivererColors.clear();
+}
+
 // Checks if a color is "greenish" (to avoid green colors on the map)
 function isGreenish(hexColor) {
   // Convert HEX to RGB
@@ -105,12 +124,6 @@ function createArrowIcon(color, direction, size = 32) {
 
 // Créer des LayerGroups pour chaque livreur basé sur l'assignation
 function createDelivererLayerGroups() {
-  // Nettoyer les anciens layer groups
-  /*delivererLayerGroups.forEach((layerGroup) => {
-    map.removeLayer(layerGroup);
-  });
-  delivererLayerGroups.clear();*/
-
   // Créer un layer group pour chaque livreur
   if (delivererLayerGroups.size === 0) {
     delivererColors.forEach((color, delivererId) => {
@@ -220,51 +233,6 @@ function generateDelivererColors(numberOfDeliverers) {
   }
 }
 
-// Créer ou mettre à jour la légende des livreurs
-function updateDelivererLegend(numberOfDeliverers) {
-  // Supprimer l'ancienne légende si elle existe
-  const oldLegend = document.querySelector(".deliverer-legend");
-  if (oldLegend) {
-    oldLegend.remove();
-  }
-
-  // Si pas de livreurs, ne rien afficher
-  if (numberOfDeliverers === 0) {
-    return;
-  }
-
-  // Créer la nouvelle légende
-  const legend = document.createElement("div");
-  legend.className = "deliverer-legend";
-
-  const title = document.createElement("h4");
-  title.textContent = "Livreurs";
-  legend.appendChild(title);
-
-  // Ajouter chaque livreur avec sa couleur
-  delivererColors.forEach((color, delivererId) => {
-    if (delivererId > numberOfDeliverers) return; // Ne pas afficher les livreurs non utilisés
-    const item = document.createElement("div");
-    item.className = "deliverer-legend-item";
-
-    const colorDot = document.createElement("span");
-    colorDot.className = "deliverer-color-dot";
-    colorDot.style.backgroundColor = color;
-
-    const label = document.createElement("span");
-    label.className = "deliverer-legend-label";
-    label.textContent = `Livreur ${delivererId}`;
-
-    item.appendChild(colorDot);
-    item.appendChild(label);
-    legend.appendChild(item);
-  });
-
-  // Ajouter la légende au container de la carte
-  const mapContainer = document.getElementById("map");
-  mapContainer.appendChild(legend);
-}
-
 // Charger la map en fonction du fichier XML choisi
 function load_xml_map() {
   console.log("Loading XML map...");
@@ -308,6 +276,9 @@ function load_xml_map() {
 
         // Réinitialiser la liste des edges
         edges_list = edges;
+
+        // Reset the global state related to deliveries
+        resetGlobalState();
 
         // Variables pour calculer les bounds
         let topLeftNode = null;
@@ -430,8 +401,8 @@ function load_xml_delivery() {
 
         console.log("nodeIdToDeliveryId Map:", nodeIdToDeliveryId);
 
-        // Reset des Requests de la tournée
-        requestMap.clear();
+        // Reset global state related to deliveries
+        resetGlobalState();
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           // Ajouter le deliveryId au node dans le POI
