@@ -25,11 +25,11 @@ public class TestGraph {
         // --- Création des sommets (nœuds) ---
         
         Node n1 = new Node(1, 0, 0);
-        Node n2 = new Node(2, 3, 4);
-        Node n3 = new Node(3, 1, 2);
-        Node n4 = new Node(4, 8, 7);
-        Node n5 = new Node(5, 2, 8);
-        Node n6 = new Node(6, 5, 5);
+        Node n2 = new Node(2, 2, 2);
+        Node n3 = new Node(3, 0, 1);
+        Node n4 = new Node(4, 0, 5);
+        Node n5 = new Node(5, 4, 4);
+        Node n6 = new Node(6, 2, 4);
         Node n7 = new Node(7, 6, 5);
 
         nodes.put(1L, n1);
@@ -42,7 +42,7 @@ public class TestGraph {
 
         // --- Création des arêtes (edges) ---
         
-        edges.add(new Edge(1L, 2L, 5.0f, "node1-node2"));
+        edges.add(new Edge(1L, 2L, 3.0f, "node1-node2"));
         edges.add(new Edge(2L, 3L, 2.0f, "node2-node3"));
         edges.add(new Edge(1L, 3L, 1.0f, "node1-node3"));
         edges.add(new Edge(3L, 2L, 1.0f, "node3-node4"));
@@ -131,7 +131,7 @@ public class TestGraph {
     @Test
     public void getPathCost_ShouldReturnPathCost(){
         
-        Assert.assertEquals(2.0, graph.getPathCost(1L, 2L), 0.001);
+        Assert.assertEquals(7.0, graph.getPathCost(1L, 6L), 0.001);
     }
 
     @Test
@@ -147,20 +147,21 @@ public class TestGraph {
                 graph.getPathCost(1L, 7L);
             });
     }
-    public static void testGetNeighbors(Graph graph, Long nodeId){
-        // --- Test getNeighbors ---
-        System.out.println("\n=== TEST getNeighbors ===");
-        Set<Long> neighbors = graph.getNeighbors(nodeId);
-        System.out.println("Neighbors of node " + nodeId + ": " + neighbors);
-    }
+    // public static void testGetNeighbors(Graph graph, Long nodeId){
+    //     // --- Test getNeighbors ---
+    //     System.out.println("\n=== TEST getNeighbors ===");
+    //     Set<Long> neighbors = graph.getNeighbors(nodeId);
+    //     System.out.println("Neighbors of node " + nodeId + ": " + neighbors);
+    // }
     @Test
     public void testAWAStar(){
         
         Map<Long, Long> exptectedOptimalPath = new HashMap<>();
-        exptectedOptimalPath.put(2L, 3L);
+        exptectedOptimalPath.put(6L, 4L);
+        exptectedOptimalPath.put(4L, 3L);
         exptectedOptimalPath.put(3L, 1L);
         exptectedOptimalPath.put(1L, null);
-        Assert.assertEquals(exptectedOptimalPath, graph.AWAStar(1L, 2L));
+        Assert.assertEquals(exptectedOptimalPath, graph.AWAStar(1L, 6L));
     }
 
 }
