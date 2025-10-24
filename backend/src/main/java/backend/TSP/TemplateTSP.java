@@ -16,26 +16,32 @@ import backend.models.PointOfInterest;
 /**
  * Template for solving a TSP instance using branch-and-bound.
  *
- * <p>This abstract class implements the generic search flow and leaves two
+ * <p>
+ * This abstract class implements the generic search flow and leaves two
  * strategy points to subclasses: {@link #bound(Long, Collection)} and
  * {@link #iterator(Long, Collection, Graph)}. The methods and fields use a
  * {@link Graph} instance supplied to {@link #chercheSolution(int, Graph)}.
  *
- * <p>Notes on behavior:
+ * <p>
+ * Notes on behavior:
  * - All public methods operate on the Graph instance stored in {@code g}.
  * - The search respects a time limit (milliseconds) passed to
- *   {@link #chercheSolution(int, Graph)}. When the limit is exceeded the
- *   search returns early.
+ * {@link #chercheSolution(int, Graph)}. When the limit is exceeded the
+ * search returns early.
  */
 public abstract class TemplateTSP implements TSP {
-	
+
 	protected Graph g;
 	private double coutMeilleureSolution;
 	private int timeLimit;
 	private long startTime;
-	private LinkedList<Long> solutionOrder;  // Solution is an ordered set of node ids representing the order of visit
-	private LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> solutionPath; // Solution is an ordered set of paths (Pair from PoI node to PoI node) with an ordered list of nodes representing the full path between them
-	
+	private LinkedList<Long> solutionOrder; // Solution is an ordered set of node ids representing the order of visit
+	private LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> solutionPath; // Solution is an ordered set of paths
+																					// (Pair from PoI node to PoI node)
+																					// with an ordered list of nodes
+																					// representing the full path
+																					// between them
+
 	public TemplateTSP(int timeLimit, Graph g) {
 		this.timeLimit = timeLimit;
 		this.startTime = 0;
@@ -51,12 +57,14 @@ public abstract class TemplateTSP implements TSP {
 	 *                  immediately without searching
 	 * @param g         the {@link Graph} to solve; stored in this instance
 	 *
-	 * Side effects: populates {@link #solutionOrder} and
-	 * {@link #coutMeilleureSolution} when a solution is found. The method
-	 * returns early if the time limit elapses.
+	 *                  Side effects: populates {@link #solutionOrder} and
+	 *                  {@link #coutMeilleureSolution} when a solution is found. The
+	 *                  method
+	 *                  returns early if the time limit elapses.
 	 */
-	public void chercheSolution(){
-		if (timeLimit <= 0) return;
+	public void chercheSolution() {
+		if (timeLimit <= 0)
+			return;
 		this.startTime = System.currentTimeMillis();
 
 		LinkedHashSet<Long> nonVus = g.getPickupPoIs();
@@ -84,7 +92,8 @@ public abstract class TemplateTSP implements TSP {
 		}
 		solutionPath = fullPathMap;
 
-		// Calculate the nodes to return to the warehouse at the end if not already present
+		// Calculate the nodes to return to the warehouse at the end if not already
+		// present
 		if (solutionOrder.size() > 0 && solutionOrder.getLast() != g.getBeginId()) {
 			Long previous = solutionOrder.getLast();
 			Long last = previous;
@@ -97,7 +106,7 @@ public abstract class TemplateTSP implements TSP {
 				previous = current;
 				current = cameFrom.get(current);
 			}
-			
+
 			// Remove the first node as it is the last node of the current solution
 			solutionOrder.add(g.getBeginId());
 			coutMeilleureSolution += g.getPathCost(last, g.getBeginId());
@@ -107,22 +116,34 @@ public abstract class TemplateTSP implements TSP {
 		}
 
 	}
-	
+
 	/**
-	 * Return the full solution found by the last search as an ordered set of node ids.
+	 * Return the full solution found by the last search as an ordered list of node
+	 * ids
 	 * 
-	 * @return the solution ordered as a LinkedHashSet of node ids with their time of arrival
+	 * @return the solution ordered as a LinkedList of node ids
 	 */
-	public LinkedList<Pair<Long, LocalTime>> getSolutionOrder() {
-		
+	public LinkedList<Long> getSolutionOrder() {
+		return solutionOrder;
+	}
+
+	/**
+	 * Return the full solution found by the last search as an ordered set of node
+	 * ids.
+	 * 
+	 * @return the solution ordered as a LinkedHashSet of node ids with their time
+	 *         of arrival
+	 */
+	public LinkedList<Pair<Long, LocalTime>> getSolutionOrderWithArrivalTime() {
+
 		LocalTime time = LocalTime.of(8, 0); // 8:00 AM - default start time
 		LinkedList<Pair<Long, LocalTime>> bestSolution = new LinkedList<>();
 
-        long previousNodeId = solutionOrder.get(0);
-        long nodeId = solutionOrder.get(0);
-        bestSolution.add(new Pair<Long, LocalTime>(nodeId, time));
+		long previousNodeId = solutionOrder.get(0);
+		long nodeId = solutionOrder.get(0);
+		bestSolution.add(new Pair<Long, LocalTime>(nodeId, time));
 
-		for (int i = 1; i < solutionOrder.size() + 1; i++) {
+		for (int i = 1; i < solutionOrder.size(); i++) {
 			previousNodeId = nodeId;
 			if (i != solutionOrder.size())
 				nodeId = solutionOrder.get(i);
@@ -130,7 +151,7 @@ public abstract class TemplateTSP implements TSP {
 				nodeId = solutionOrder.get(0);
 
 			// add duration of previous PoI
-			if (i != 1){
+			if (i != 1) {
 				for (PointOfInterest poi : g.tour) {
 					if (poi.getId().equals(previousNodeId)) {
 						time = time.plusSeconds(poi.getDuration());
@@ -138,19 +159,20 @@ public abstract class TemplateTSP implements TSP {
 					}
 				}
 			}
-			
+
 			// add travel time between previous and current PoI, assuming 15km/h speed
 			time = time.plusSeconds((long) (g.getPathCost(previousNodeId, nodeId) * 3600 / 15000));
 			bestSolution.add(new Pair<Long, LocalTime>(nodeId, time));
 		}
 		return bestSolution;
 	}
-	
 
 	/**
-	 * Return the full solution found by the last search as an ordered set of maps of paths between points of interest.
+	 * Return the full solution found by the last search as an ordered set of maps
+	 * of paths between points of interest.
 	 *
-	 * @return the solution ordered as a LinkedHashSet of maps of paths (from node to node)
+	 * @return the solution ordered as a LinkedHashSet of maps of paths (from node
+	 *         to node)
 	 */
 	public LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> getSolutionPath() {
 		return solutionPath;
@@ -161,26 +183,27 @@ public abstract class TemplateTSP implements TSP {
 	 *
 	 * @return the cost as a double, or -1 when no graph is set
 	 */
-	public double getCoutSolution(){
+	public double getCoutSolution() {
 		if (g != null)
 			return coutMeilleureSolution;
 		return -1;
 	}
-	
+
 	/**
 	 * Validate the solution order
+	 * 
 	 * @param List<Long> order
 	 * @return true if the solution is valid, false otherwise
 	 * 
 	 */
 	public boolean validateIncompleteOrder(List<Long> order) {
 		// Verify that the first node is the warehouse
-		if (order.get(0) != g.getBeginId()) 
+		if (order.get(0) != g.getBeginId())
 			return false;
 
 		// Verify that Pickups come before their associated Deliveries
 		LinkedList<Long> check = new LinkedList<Long>();
-		
+
 		for (Long id : order) {
 			PointOfInterest.PoIEnum type = g.getTypePoI(id);
 			if (type == PointOfInterest.PoIEnum.PICKUP) {
@@ -196,14 +219,6 @@ public abstract class TemplateTSP implements TSP {
 
 	}
 
-
-	/**
-	 * Methode devant etre redefinie par les sous-classes de TemplateTSP
-	 * @param sommetCourant
-	 * @param nonVus
-	 * @return une borne inferieure du cout des chemins de <code>g</code> partant de <code>sommetCourant</code>, visitant 
-	 * tous les sommets de <code>nonVus</code> exactement une fois, puis retournant sur le sommet de départ.
-	 */
 	/**
 	 * Compute a lower bound for the cost of completing the tour.
 	 *
@@ -214,7 +229,7 @@ public abstract class TemplateTSP implements TSP {
 	 *         {@code nonVus} exactly once and return to the start
 	 */
 	protected abstract double bound(Long sommetCourant, Collection<Long> nonVus);
-	
+
 	/**
 	 * Provide an iterator over candidate successors of {@code sommetCrt}.
 	 *
@@ -226,20 +241,23 @@ public abstract class TemplateTSP implements TSP {
 	 *         an empty iterator rather than null when there are no candidates.
 	 */
 	protected abstract Iterator<Long> iterator(Long sommetCrt, Collection<Long> nonVus, Graph g);
-	
-	/**
-	 * Methode definissant le patron (template) d'une resolution par separation et evaluation (branch and bound) du TSP pour le graphe <code>g</code>.
-	 * @param sommetCrt le dernier sommet visite
-	 * @param nonVus la liste des sommets qui n'ont pas encore ete visites
-	 * @param vus la liste des sommets deja visites (y compris sommetCrt)
-	 * @param coutVus la somme des couts des arcs du chemin passant par tous les sommets de vus dans l'ordre ou ils ont ete visites
-	 */	
 
+	/**
+	 * Methode definissant le patron (template) d'une resolution par separation et
+	 * evaluation (branch and bound) du TSP pour le graphe <code>g</code>.
+	 * 
+	 * @param sommetCrt le dernier sommet visite
+	 * @param nonVus    la liste des sommets qui n'ont pas encore ete visites
+	 * @param vus       la liste des sommets deja visites (y compris sommetCrt)
+	 * @param coutVus   la somme des couts des arcs du chemin passant par tous les
+	 *                  sommets de vus dans l'ordre ou ils ont ete visites
+	 */
 
 	/**
 	 * Core branch-and-bound recursive procedure.
 	 *
-	 * <p>Updates {@link #meilleureSolution} and {@link #coutMeilleureSolution}
+	 * <p>
+	 * Updates {@link #meilleureSolution} and {@link #coutMeilleureSolution}
 	 * when a better full tour is found. The method respects the time limit
 	 * imposed to {@link #TemplateTSP} and returns early when
 	 * the limit elapses.
@@ -247,60 +265,65 @@ public abstract class TemplateTSP implements TSP {
 	 * @param sommetCrt current (last visited) node id
 	 * @param nonVus    collection of nodes not yet visited
 	 * @param vus       collection of nodes already visited (contains sommetCrt)
-	 * @param coutVus   cumulative cost of the path visiting nodes in {@code vus}; must start as 0.0
+	 * @param coutVus   cumulative cost of the path visiting nodes in {@code vus};
+	 *                  must start as 0.0
 	 *
 	 * @throws IllegalArgumentException when an encountered PoI is associated to
-	 *         itself (this is considered an invalid input)
-	 * @throws NullPointerException when the Graph or required PoI data is missing
+	 *                                  itself (this is considered an invalid input)
+	 * @throws NullPointerException     when the Graph or required PoI data is
+	 *                                  missing
 	 */
-	private void branchAndBound(Long sommetCrt, LinkedHashSet<Long> nonVus, ArrayList<Long> vus, ArrayList<Long> order, double coutVus, int nbRecursions) {
+	private void branchAndBound(Long sommetCrt, LinkedHashSet<Long> nonVus, ArrayList<Long> vus, ArrayList<Long> order,
+			double coutVus, int nbRecursions) {
 		nbRecursions++;
 
-		if ( System.currentTimeMillis() - startTime > timeLimit )
+		if (System.currentTimeMillis() - startTime > timeLimit)
 			return;
 
 		// If all nodes have been visited, check if we can return to start
-		if ( nonVus.isEmpty() ) {
-			if ( g.pathCost.containsKey(new Pair<>(sommetCrt, g.getBeginId())) || sommetCrt == g.getBeginId() ) {
+		if (nonVus.isEmpty()) {
+			if (g.pathCost.containsKey(new Pair<>(sommetCrt, g.getBeginId())) || sommetCrt == g.getBeginId()) {
 				// Check if this solution is better than the best one so far
-				if ( coutVus < coutMeilleureSolution ) {
+				if (coutVus < coutMeilleureSolution) {
 					coutMeilleureSolution = coutVus;
 					solutionOrder.clear();
 					for (Long l : order)
 						solutionOrder.add(l);
 				}
 			}
-		} else if ( coutVus + bound(sommetCrt, nonVus) < coutMeilleureSolution ) { // If there is potential for a better solution
+		} else if (coutVus + bound(sommetCrt, nonVus) < coutMeilleureSolution) { // If there is potential for a better
+																					// solution
 			Iterator<Long> it = iterator(sommetCrt, nonVus, g);
-			while ( it.hasNext() ) {
+			while (it.hasNext()) {
 				Long prochainSommet = it.next();
 				boolean wasInNonVus = nonVus.contains(prochainSommet);
 
 				vus.add(prochainSommet);
-                
+
 				Long assoc = g.getAssociatedPoI(prochainSommet);
-				if ( g.getTypePoI(prochainSommet) == PointOfInterest.PoIEnum.PICKUP && assoc != null && !nonVus.contains(assoc) && !order.contains(assoc)) {
+				if (g.getTypePoI(prochainSommet) == PointOfInterest.PoIEnum.PICKUP && assoc != null
+						&& !nonVus.contains(assoc) && !order.contains(assoc)) {
 					// Pickup is being visited, add associated delivery to nonVus
 					nonVus.add(assoc);
 				}
 
-				if ( wasInNonVus )
+				if (wasInNonVus)
 					order.add(prochainSommet);
 
 				nonVus.remove(prochainSommet);
-				branchAndBound(prochainSommet, nonVus, vus, order, coutVus+g.getPathCost(sommetCrt, prochainSommet), nbRecursions);
+				branchAndBound(prochainSommet, nonVus, vus, order, coutVus + g.getPathCost(sommetCrt, prochainSommet),
+						nbRecursions);
 				vus.remove(vus.lastIndexOf(prochainSommet));
-				if ( wasInNonVus ) {
+				if (wasInNonVus) {
 					nonVus.add(prochainSommet);
 					order.remove(order.lastIndexOf(prochainSommet));
 				}
 
 				// Remove associated delivery if we just backtracked from a pickup
-				if ( assoc != null) 
+				if (assoc != null)
 					nonVus.remove(assoc);
 
-			}        
+			}
 		}
 	}
 }
-

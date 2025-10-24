@@ -1,7 +1,5 @@
 package backend;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.*;
 
 import org.junit.jupiter.api.Test;
@@ -23,7 +21,7 @@ public class TestGraph {
     @BeforeEach
     public void setUp() {
         // --- Création des sommets (nœuds) ---
-        
+
         Node n1 = new Node(1, 0, 0);
         Node n2 = new Node(2, 2, 2);
         Node n3 = new Node(3, 0, 1);
@@ -41,7 +39,7 @@ public class TestGraph {
         nodes.put(7L, n7);
 
         // --- Création des arêtes (edges) ---
-        
+
         edges.add(new Edge(1L, 2L, 3.0f, "node1-node2"));
         edges.add(new Edge(2L, 3L, 2.0f, "node2-node3"));
         edges.add(new Edge(1L, 3L, 1.0f, "node1-node3"));
@@ -53,9 +51,8 @@ public class TestGraph {
         edges.add(new Edge(5L, 6L, 4.0f, "node5-node6"));
         edges.add(new Edge(6L, 5L, 4.0f, "node6-node5"));
 
-
         // --- Points d’intérêt (tour) ---
-       
+
         tour.put(1L, new PointOfInterest(n1, PoIEnum.WAREHOUSE, null, 0));
         tour.put(2L, new PointOfInterest(n2, PoIEnum.PICKUP, 6L, 10));
         tour.put(6L, new PointOfInterest(n6, PoIEnum.DELIVERY, 2L, 5));
@@ -64,20 +61,18 @@ public class TestGraph {
         graph = new Graph(nodes, edges, tour);
     }
 
-
-
     @Test
-    public void getPickupPoIs_ShouldReturnAllPickups(){
-        
-        LinkedHashSet<Long> expectedNodesToVisit= new LinkedHashSet<>();
+    public void getPickupPoIs_ShouldReturnAllPickups() {
+
+        LinkedHashSet<Long> expectedNodesToVisit = new LinkedHashSet<>();
         expectedNodesToVisit.add(2L); // pickup
 
         Assert.assertEquals(expectedNodesToVisit, graph.getPickupPoIs());
     }
 
     @Test
-    public void getAssociatedPoI_ShouldReturnAssociatedPoi(){
-        
+    public void getAssociatedPoI_ShouldReturnAssociatedPoi() {
+
         Long pickupId = 2L;
         Long deliveryId = 6L;
 
@@ -86,90 +81,91 @@ public class TestGraph {
     }
 
     @Test
-    public void getBeginId_ShouldReturnWarehouseId(){
-        
+    public void getBeginId_ShouldReturnWarehouseId() {
+
         Long warehouseId = 1L;
-        
+
         Assert.assertEquals(warehouseId, graph.getBeginId());
     }
 
     @Test
-    public void getPathCost_ShouldRaiseErrorIfPoiAreNotConnected(){
+    public void getPathCost_ShouldRaiseErrorIfPoiAreNotConnected() {
 
-        
         tour.put(7L, new PointOfInterest(nodes.get(7L), PoIEnum.PICKUP, 3L, 5));
         graph = new Graph(nodes, edges, tour);
-        
+
         Assert.assertThrows(
-            IllegalArgumentException.class,
-            () -> {
-                graph.getPathCost(1L, 7L);
-            });
+                IllegalArgumentException.class,
+                () -> {
+                    graph.getPathCost(1L, 7L);
+                });
     }
-    
-    //############### Failing #####################
+
+    // ############### Failing #####################
     // @Test
     // public void getPathCost_ShouldReturnPathCost(){
-        
-    //     Assert.assertEquals(7.0, graph.getPathCost(1L, 6L), 0.001);
+
+    // Assert.assertEquals(7.0, graph.getPathCost(1L, 6L), 0.001);
     // }
 
     // @Test
     // public void testAWAStar(){
-        
-    //     Map<Long, Long> exptectedOptimalPath = new HashMap<>();
-    //     exptectedOptimalPath.put(6L, 4L);
-    //     exptectedOptimalPath.put(4L, 3L);
-    //     exptectedOptimalPath.put(3L, 1L);
-    //     exptectedOptimalPath.put(1L, null);
-    //     Assert.assertEquals(exptectedOptimalPath, graph.AWAStar(1L, 6L));
+
+    // Map<Long, Long> exptectedOptimalPath = new HashMap<>();
+    // exptectedOptimalPath.put(6L, 4L);
+    // exptectedOptimalPath.put(4L, 3L);
+    // exptectedOptimalPath.put(3L, 1L);
+    // exptectedOptimalPath.put(1L, null);
+    // Assert.assertEquals(exptectedOptimalPath, graph.AWAStar(1L, 6L));
     // }
 
-    //############### Not implemented #####################
+    // ############### Not implemented #####################
 
     // @Test
     // public void testInitialisation(Graph graph){
-    //     // // --- Tests d’initialisation ---
-    //     // System.out.println("=== TEST INITIALISATION GRAPH ===");
-    //     // System.out.println("Nodes: " + graph.all_nodes.keySet());
-    //     // System.out.println("Edges:");
-    //     // for (Edge e : graph.all_edges) {
-    //     //     System.out.println("  " + e.getOrigin() + " -> " + e.getDestination() + " (" + e.getLength() + ")");
-    //     // }
+    // // // --- Tests d’initialisation ---
+    // // System.out.println("=== TEST INITIALISATION GRAPH ===");
+    // // System.out.println("Nodes: " + graph.all_nodes.keySet());
+    // // System.out.println("Edges:");
+    // // for (Edge e : graph.all_edges) {
+    // // System.out.println(" " + e.getOrigin() + " -> " + e.getDestination() + "
+    // (" + e.getLength() + ")");
+    // // }
 
-    //     // System.out.println("\nAdjacency:");
-    //     // for (Map.Entry<Long, Set<Long>> entry : graph.adjacency.entrySet()) {
-    //     //     System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-    //     // }
+    // // System.out.println("\nAdjacency:");
+    // // for (Map.Entry<Long, Set<Long>> entry : graph.adjacency.entrySet()) {
+    // // System.out.println(" " + entry.getKey() + " -> " + entry.getValue());
+    // // }
 
-    //     // System.out.println("\nAll costs:");
-    //     // for (Map.Entry<Pair<Long, Long>, Float> entry : graph.all_costs.entrySet()) {
-    //     //     System.out.println("  " + entry.getKey() + " : " + entry.getValue());
-    //     // }
+    // // System.out.println("\nAll costs:");
+    // // for (Map.Entry<Pair<Long, Long>, Float> entry :
+    // graph.all_costs.entrySet()) {
+    // // System.out.println(" " + entry.getKey() + " : " + entry.getValue());
+    // // }
 
-    //     // System.out.println("\nPath cost (devrait être vide au début): " + graph.pathCost);
+    // // System.out.println("\nPath cost (devrait être vide au début): " +
+    // graph.pathCost);
     // }
 
     // public static void testGetNbNodes(Graph graph){
-    //     // --- Test getNbNodes ---
-    //     System.out.println("\n=== TEST getNbNodes ===");
-    //     int nbNodes = graph.getNbNodes();
-    //     System.out.println("Number of nodes: " + nbNodes);
+    // // --- Test getNbNodes ---
+    // System.out.println("\n=== TEST getNbNodes ===");
+    // int nbNodes = graph.getNbNodes();
+    // System.out.println("Number of nodes: " + nbNodes);
     // }
 
     // public static void testGetCost(Graph graph, Long from, Long to){
-    //     // --- Test getCost ---
-    //     System.out.println("\n=== TEST getCost ===");
-    //     Float cost = graph.getCost(from, to);
-    //     System.out.println("Cost from " + from + " to " + to + ": " + cost);
+    // // --- Test getCost ---
+    // System.out.println("\n=== TEST getCost ===");
+    // Float cost = graph.getCost(from, to);
+    // System.out.println("Cost from " + from + " to " + to + ": " + cost);
     // }
 
-    
     // public static void testGetNeighbors(Graph graph, Long nodeId){
-    //     // --- Test getNeighbors ---
-    //     System.out.println("\n=== TEST getNeighbors ===");
-    //     Set<Long> neighbors = graph.getNeighbors(nodeId);
-    //     System.out.println("Neighbors of node " + nodeId + ": " + neighbors);
+    // // --- Test getNeighbors ---
+    // System.out.println("\n=== TEST getNeighbors ===");
+    // Set<Long> neighbors = graph.getNeighbors(nodeId);
+    // System.out.println("Neighbors of node " + nodeId + ": " + neighbors);
     // }
 
 }
