@@ -743,11 +743,20 @@ async function getNodeIdsByNames(pickupName, deliveryName) {
       deliveryId = id;
     }
   });
+  const MAXDISTANCE = 0.05; // approx ~5km (in degrees)
+  console.log("Minimum distances - pickup:", minDistPickup, "delivery:", minDistDelivery);
+  if (minDistPickup >= MAXDISTANCE || minDistDelivery >= MAXDISTANCE) {
+    console.warn("Pickup or delivery nodes too far away from the current chart. Please enter another address.");
+  }
   console.log("Found node IDs - pickup:", pickupId, "delivery:", deliveryId);
   return [pickupId, deliveryId];
 }
 
 async function addPOI() {
+  if(!planLoaded) {
+    alert("Good morning client (Killian). Nice try to break our code. Please load the map first.");
+    return false;
+  }
   const pickupName = document.getElementById("inputPickup").value;
   const deliveryName = document.getElementById("inputDelivery").value;
 
@@ -762,6 +771,7 @@ async function addPOI() {
     alert("Le point de pickup et de delivery correspondent au même noeud. Choisir une autre adresse.");
     return false;
   }
+
 
   const pickupNode = nodeMap.get(pickupId);
   const deliveryNode = nodeMap.get(deliveryId);
@@ -797,7 +807,7 @@ async function addPOI() {
   const pickupIcon = createArrowIcon(color, "up");
   const deliveryIcon = createArrowIcon(color, "down");
 
-const pickupMarker = L.marker([pickupNode.latitude, pickupNode.longitude], { icon: pickupIcon }).addTo(map);
+  const pickupMarker = L.marker([pickupNode.latitude, pickupNode.longitude], { icon: pickupIcon }).addTo(map);
   pickupMarker.deliveryId = pairId;
   pickupMarker.color = color;
   pickupMarker.direction = "up";
@@ -824,4 +834,8 @@ const pickupMarker = L.marker([pickupNode.latitude, pickupNode.longitude], { ico
   console.log("POI pair added:", pairId, pickupId, deliveryId);
 
   return true;
+}
+
+async function deletePOI() {
+  
 }
