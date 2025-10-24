@@ -1,5 +1,7 @@
 package backend;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.*;
 
 import org.junit.jupiter.api.Test;
@@ -14,11 +16,14 @@ import backend.models.PointOfInterest.PoIEnum;
 
 public class TestGraph {
     private Graph graph;
+    private Map<Long, Node> nodes = new HashMap<>();
+    private Map<Long, PointOfInterest> tour = new HashMap<>();
+    private List<Edge> edges = new ArrayList<>();
 
     @BeforeEach
     public void setUp() {
         // --- Création des sommets (nœuds) ---
-        Map<Long, Node> nodes = new HashMap<>();
+        
         Node n1 = new Node(1, 0, 0);
         Node n2 = new Node(2, 3, 4);
         Node n3 = new Node(3, 1, 2);
@@ -36,7 +41,7 @@ public class TestGraph {
         nodes.put(7L, n7);
 
         // --- Création des arêtes (edges) ---
-        List<Edge> edges = new ArrayList<>();
+        
         edges.add(new Edge(1L, 2L, 5.0f, "node1-node2"));
         edges.add(new Edge(2L, 3L, 2.0f, "node2-node3"));
         edges.add(new Edge(1L, 3L, 1.0f, "node1-node3"));
@@ -50,7 +55,7 @@ public class TestGraph {
 
 
         // --- Points d’intérêt (tour) ---
-        Map<Long, PointOfInterest> tour = new HashMap<>();
+       
         tour.put(1L, new PointOfInterest(n1, PoIEnum.WAREHOUSE, null, 0));
         tour.put(2L, new PointOfInterest(n2, PoIEnum.PICKUP, 6L, 10));
         tour.put(6L, new PointOfInterest(n6, PoIEnum.DELIVERY, 2L, 5));
@@ -128,7 +133,7 @@ public class TestGraph {
     }
 
     @Test
-    public void testGetAssociatedPoI_ShouldReturnAssociatedPoi(){
+    public void getAssociatedPoI_ShouldReturnAssociatedPoi(){
         
         Long pickupId = 2L;
         Long deliveryId = 6L;
@@ -137,19 +142,13 @@ public class TestGraph {
         Assert.assertEquals(deliveryId, graph.getAssociatedPoI(pickupId));
     }
 
-    // public static void testGetAssociatedPoI(Graph graph, Long id){
-    //     // --- Test getAssociatedPoI ---
-    //     System.out.println("\n=== TEST getAssociatedPoI ===");
-    //     Long associatedPoI = graph.getAssociatedPoI(id);
-    //     System.out.println("Associated PoI for node " + id + ": " + associatedPoI);
-    // }
-
-    // public static void testGetBeginId(Graph graph){
-    //     // --- Test getBeginId ---
-    //     System.out.println("\n=== TEST getBeginId ===");
-    //     Long beginId = graph.getBeginId();
-    //     System.out.println("Begin ID (warehouse): " + beginId);
-    // }
+    @Test
+    public void getBeginId_ShouldReturnWarehouseId(){
+        
+        Long warehouseId = 1L;
+        
+        Assert.assertEquals(warehouseId, graph.getBeginId());
+    }
 
     // public static void testGetNbNodes(Graph graph){
     //     // --- Test getNbNodes ---
@@ -164,24 +163,39 @@ public class TestGraph {
     //     Float cost = graph.getCost(from, to);
     //     System.out.println("Cost from " + from + " to " + to + ": " + cost);
     // }
-    // public static void testGetPathCost(Graph graph){
-    //     // --- Test getPathCost ---
-    //     System.out.println("\n=== TEST getPathCost ===");
-    //     Float pathCost = graph.getPathCost(Long.valueOf(1), Long.valueOf(2));
-    //     System.out.println("Path cost (should be empty initially): " + pathCost);
-    // }
-    // public static void testGetNeighbors(Graph graph, Long nodeId){
-    //     // --- Test getNeighbors ---
-    //     System.out.println("\n=== TEST getNeighbors ===");
-    //     Set<Long> neighbors = graph.getNeighbors(nodeId);
-    //     System.out.println("Neighbors of node " + nodeId + ": " + neighbors);
-    // }
-    // public static void testAWAStar(Graph graph, Long startId, Long endId){
-    //     // --- Test AWA* ---
-    //     System.out.println("\n=== TEST AWA* ===");
-    //     //graph.AWAStar(startId, endId);
-    //     Map<Long,Long> pathCost = graph.AWAStar(startId, endId);
-    //     System.out.println("Path cost from " + startId + " to " + endId + " after AWA*: " + pathCost);
-    // }
+    @Test
+    public void getPathCost_ShouldReturnPathCost(){
+        
+        Assert.assertEquals(2.0, graph.getPathCost(1L, 2L), 0.001);
+    }
+
+    @Test
+    public void getPathCost_ShouldRaiseErrorIfPoiAreNotConnected(){
+
+        
+        tour.put(7L, new PointOfInterest(nodes.get(7L), PoIEnum.PICKUP, 3L, 5));
+        graph = new Graph(nodes, edges, tour);
+        
+        Assert.assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                graph.getPathCost(1L, 7L);
+            });
+    }
+    public static void testGetNeighbors(Graph graph, Long nodeId){
+        // --- Test getNeighbors ---
+        System.out.println("\n=== TEST getNeighbors ===");
+        Set<Long> neighbors = graph.getNeighbors(nodeId);
+        System.out.println("Neighbors of node " + nodeId + ": " + neighbors);
+    }
+    @Test
+    public void testAWAStar(){
+        
+        Map<Long, Long> exptectedOptimalPath = new HashMap<>();
+        exptectedOptimalPath.put(2L, 3L);
+        exptectedOptimalPath.put(3L, 1L);
+        exptectedOptimalPath.put(1L, null);
+        Assert.assertEquals(exptectedOptimalPath, graph.AWAStar(1L, 2L));
+    }
 
 }
