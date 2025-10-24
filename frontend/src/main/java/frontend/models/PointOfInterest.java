@@ -27,13 +27,21 @@ public class PointOfInterest {
     public int getDuration() {
         return duration;
     }
+
     public Long getAssociatedPoI() {
         return associatedPoI;
     }
+
     public Node getNode() {
         return node;
     }
+
     public void setAssociatedPickupId(Long associatedPoI) {
         this.associatedPoI = associatedPoI;
+    }
+
+    public String toString() {
+        return "PointOfInterest [node=" + node + ", type=" + type + ", associatedPoI=" + associatedPoI + ", duration="
+                + duration + "]";
     }
 }
