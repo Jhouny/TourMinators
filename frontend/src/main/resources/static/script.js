@@ -560,16 +560,18 @@ function toggleEdges() {
 
 // Function to block buttons
 function blockButtons() {
-  document.getElementById("btnLoadMap").disabled = true;
-  document.getElementById("btnLoadDelivery").disabled = true;
-  document.getElementById("btnComputeTour").disabled = true;
+  const btns = document.getElementsByClassName("user-action-button");
+  for (let btn of btns) {
+    btn.disabled = true;
+  }
 }
 
 // Function to unblock buttons
 function unblockButtons() {
-  document.getElementById("btnLoadMap").disabled = false;
-  document.getElementById("btnLoadDelivery").disabled = false;
-  document.getElementById("btnComputeTour").disabled = false;
+  const btns = document.getElementsByClassName("user-action-button");
+  for (let btn of btns) {
+    btn.disabled = false;
+  }
 }
 
 function compute_tour() {
