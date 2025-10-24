@@ -283,3 +283,8 @@ body, html {
   font-size: 13px;
   color: #555;
 }
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}

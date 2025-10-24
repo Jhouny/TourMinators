@@ -268,6 +268,8 @@ function load_xml_map() {
       return;
     }
 
+    blockButtons();
+
     let formData = new FormData();
     formData.append("file", file);
 
@@ -354,11 +356,21 @@ function load_xml_map() {
           planButton.style.backgroundColor = "var(--primary-green)";
           planButton.style.color = "white";
         }
+
+        unblockButtons();
       })
-      .catch((error) => console.error("Error loading XML map:", error));
+      .catch((error) => {
+        console.error("Error loading XML map:", error);
+        unblockButtons();
+        alert("Erreur lors du chargement du plan (voir console).");
+      });
   };
 
   input.oncancel = () => {
+    alert("Veuillez ajouter un fichier XML");
+  };
+
+  input.onabort = () => {
     alert("Veuillez ajouter un fichier XML");
   };
 
@@ -387,6 +399,8 @@ function load_xml_delivery() {
 
     let formData = new FormData();
     formData.append("file", deliveryFile);
+
+    blockButtons();
 
     fetch("/uploadDeliveries", {
       method: "POST",
@@ -520,7 +534,9 @@ function load_xml_delivery() {
         alert(
           "Erreur lors du chargement de la demande de livraison (voir console)."
         );
+        unblockButtons();
       });
+    unblockButtons();
   };
 
   input.oncancel = () => {
@@ -551,11 +567,27 @@ function toggleEdges() {
   edgesVisible = !edgesVisible;
 }
 
+// Function to block buttons
+function blockButtons() {
+  document.getElementById("btnLoadMap").disabled = true;
+  document.getElementById("btnLoadDelivery").disabled = true;
+  document.getElementById("btnComputeTour").disabled = true;
+}
+
+// Function to unblock buttons
+function unblockButtons() {
+  document.getElementById("btnLoadMap").disabled = false;
+  document.getElementById("btnLoadDelivery").disabled = false;
+  document.getElementById("btnComputeTour").disabled = false;
+}
+
 function compute_tour() {
   if (!nodeMap || nodeMap.size === 0) {
     alert("Veuillez d'abord importer un plan avant de calculer une tournée.");
     return;
   }
+
+  blockButtons(); 
 
   let assignement = generateDeliverersAssignment();
   console.log("Deliverers assignment:", assignement);
@@ -574,6 +606,10 @@ function compute_tour() {
   for (const [deliverer, poiMap] of Object.entries(assignement)) {
     computeSingleTour(deliverer, poiMap);
   }
+
+  setTimeout(() => {
+    unblockButtons();
+  }, 3000);
 }
 
 // Compute the tour for a single deliverer and draw it on the map
