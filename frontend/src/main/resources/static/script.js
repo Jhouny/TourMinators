@@ -45,6 +45,10 @@ var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
+
+// Set initial number of deliverers
+document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
+
 var numberOfRequests = 1; // Nombre de demandes de livraison (initialement 1)
 
 var delivererLayerGroups = new Map(); // Map delivererId -> L.layerGroup
