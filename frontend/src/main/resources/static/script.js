@@ -678,10 +678,11 @@ function generateDeliverersAssignment() {
 async function getCoordinatesFromAddress(address) {
   if (!address || !address.trim()) return null;
   const encoded = encodeURIComponent(address.trim());
-  // Add an email param for the public Nominatim service (replace with your email or app contact)
-  const email = encodeURIComponent("your-email@example.com");
-  const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&email=${email}`;
 
+  // Add an email param for the public Nominatim service (replace with your email or app contact)
+  const email = encodeURIComponent("vi.zocrato@gmail.com");
+  const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&email=${email}`;
+  console.log("Nominatim URL:", url);
   try {
     const res = await fetch(url, {
       method: "GET",
@@ -695,10 +696,16 @@ async function getCoordinatesFromAddress(address) {
       return null;
     }
     const json = await res.json();
-    if (!Array.isArray(json) || json.length === 0) return null;
+    if (!Array.isArray(json) || json.length === 0) {
+      console.warn("No results from Nominatim for address:", address);
+    return null;}
     const best = json[0];
-    return { lat: parseFloat(best.lat), lon: parseFloat(best.lon), displayName: best.display_name };
-  } catch (err) {
+    console.log("Geocoding result:", best);
+    lat = parseFloat(best.lat);
+    lon = parseFloat(best.lon);
+    return { lat : lat, lon: lon};
+  }
+  catch (err) {
     console.error("Geocoding error", err);
     return null;
   }
@@ -710,43 +717,111 @@ async function getNodeIdsByNames(pickupName, deliveryName) {
 
   const coords1 = await getCoordinatesFromAddress(pickupName);     // {lat, lon} or null
   const coords2 = await getCoordinatesFromAddress(deliveryName);
-
+  console.log("Coordinates for pickup:", coords1, "delivery:", coords2);
   if (!coords1 || !coords2) {
     // handle not found (return nulls, throw, or inform UI)
     return [pickupId, deliveryId];
   }
-
-  // tolerance in degrees (~0.0001 ≈ 11m), tune as needed
-  const tol = 0.00015;
+  minDistPickup = Infinity;
+  minDistDelivery = Infinity;
 
   nodeMap.forEach((node, id) => {
-    if (pickupId === null && Math.abs(node.latitude - coords1.lat) <= tol && Math.abs(node.longitude - coords1.lon) <= tol) {
+    const distToPickup = Math.sqrt(
+      Math.pow(node.latitude - coords1.lat, 2) +
+      Math.pow(node.longitude - coords1.lon, 2)
+    );
+    const distToDelivery = Math.sqrt(
+      Math.pow(node.latitude - coords2.lat, 2) +
+      Math.pow(node.longitude - coords2.lon, 2)
+    );
+    if (distToPickup < minDistPickup) {
+      minDistPickup = distToPickup;
       pickupId = id;
     }
-    if (deliveryId === null && Math.abs(node.latitude - coords2.lat) <= tol && Math.abs(node.longitude - coords2.lon) <= tol) {
+    if (distToDelivery < minDistDelivery) {
+      minDistDelivery = distToDelivery;
       deliveryId = id;
     }
   });
-
+  console.log("Found node IDs - pickup:", pickupId, "delivery:", deliveryId);
   return [pickupId, deliveryId];
 }
 
 async function addPOI() {
-  pickupName = document.getElementById("inputPickup").value;
-  pickupDelivery = document.getElementById("inputDelivery").value;
-  
+  const pickupName = document.getElementById("inputPickup").value;
+  const deliveryName = document.getElementById("inputDelivery").value;
+
   const [pickupId, deliveryId] = await getNodeIdsByNames(pickupName, deliveryName);
 
   if (!pickupId || !deliveryId) {
     console.warn("Could not find node(s) for addresses", pickupName, deliveryName, pickupId, deliveryId);
-    // Optionally create a new ephemeral node in nodeMap if coords exist
+    return false;
+  }
+
+  if (pickupId === deliveryId) {
+    alert("Le point de pickup et de delivery correspondent au même noeud. Choisir une autre adresse.");
     return false;
   }
 
   const pickupNode = nodeMap.get(pickupId);
   const deliveryNode = nodeMap.get(deliveryId);
 
-  tourPOIMap.set(pickupId, { type: "PICKUP", node: pickupNode });
-  tourPOIMap.set(deliveryId, { type: "DELIVERY", node: deliveryNode, associatedPoI: pickupId });
+  let lastPairId = 0;
+  for (let [, poi] of tourPOIMap) {
+    if (poi.node.deliveryId && poi.node.deliveryId > lastPairId) {
+      lastPairId = poi.node.deliveryId;    }
+  } // À vérifier
+
+  pairId = lastPairId+1;
+  pickupNode.deliveryId = pairId;
+  deliveryNode.deliveryId = pairId;
+
+  const pickupPOI = { type: "PICKUP", node: pickupNode, associatedPoI: deliveryId, duration: null };
+  const deliveryPOI = { type: "DELIVERY", node: deliveryNode, associatedPoI: pickupId, duration: null };
+
+  // requestMap contient les PICKUP (comme load_xml_delivery)
+  requestMap.set(pickupId, pickupPOI);
+
+  // tourPOIMap doit contenir tous les POIs (pickup + delivery) pour compute_tour
+  tourPOIMap.set(pickupId, pickupPOI);
+  tourPOIMap.set(deliveryId, deliveryPOI);
+
+  if (!pairColors[pairId]) {
+    pairColors[pairId] = getRandomColor();
+  } else{
+    console.warn("Pair color already exists for pairId. Verify if pairID is unique", pairId, ":", pairColors[pairId]);
+  }
+  const color = pairColors[pairId];
+
+  // Créer et ajouter les markers sur la carte (pickup = up, delivery = down)
+  const pickupIcon = createArrowIcon(color, "up");
+  const deliveryIcon = createArrowIcon(color, "down");
+
+const pickupMarker = L.marker([pickupNode.latitude, pickupNode.longitude], { icon: pickupIcon }).addTo(map);
+  pickupMarker.deliveryId = pairId;
+  pickupMarker.color = color;
+  pickupMarker.direction = "up";
+
+  const deliveryMarker = L.marker([deliveryNode.latitude, deliveryNode.longitude], { icon: deliveryIcon }).addTo(map);
+  deliveryMarker.deliveryId = pairId;
+  deliveryMarker.color = color;
+  deliveryMarker.direction = "down";
+
+  // Stocker les markers pour gestion hover / highlight / suppression ultérieure
+  nodeMarkers.push(pickupMarker, deliveryMarker);
+  if (!deliveryIdToMarkers[pairId]) deliveryIdToMarkers[pairId] = [];
+  deliveryIdToMarkers[pairId].push(pickupMarker, deliveryMarker);
+
+  // Mettre à jour l'UI
+  generateDeliveriesList(requestMap.values(), getNumberOfDeliverers(), pairColors);
+  generateDelivererColors(getNumberOfDeliverers());
+  updateDelivererLegend();
+
+  // Optionnel : vider les inputs après ajout
+  document.getElementById("inputPickup").value = "";
+  document.getElementById("inputDelivery").value = "";
+
+  console.log("POI pair added:", pairId, pickupId, deliveryId);
+
   return true;
 }
