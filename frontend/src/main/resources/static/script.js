@@ -45,6 +45,7 @@ var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
+var numberOfRequests = 1; // Nombre de demandes de livraison (initialement 1)
 
 var delivererLayerGroups = new Map(); // Map delivererId -> L.layerGroup
 var layerControl = null; // Contrôle des couches Leaflet
@@ -57,7 +58,7 @@ function getRandomColor() {
   let color;
   let attempts = 0;
   const maxAttempts = 100;
-  
+
   do {
     const letters = "0123456789ABCDEF";
     color = "#";
@@ -66,7 +67,7 @@ function getRandomColor() {
     }
     attempts++;
   } while (isGreenish(color) && attempts < maxAttempts);
-  
+
   return color;
 }
 
@@ -118,25 +119,29 @@ function createDelivererLayerGroups() {
     });
   } else if (delivererLayerGroups.size < getNumberOfDeliverers()) {
     // Ajouter les layer groups manquants
-    for (let i = delivererLayerGroups.size + 1; i <= getNumberOfDeliverers(); i++) {
+    for (
+      let i = delivererLayerGroups.size + 1;
+      i <= getNumberOfDeliverers();
+      i++
+    ) {
       const color = delivererColors.get(i);
       delivererLayerGroups.set(i, L.layerGroup());
     }
-  } 
+  }
 
   // Parcourir toutes les sélections pour assigner les markers aux bons livreurs
   const selects = document.querySelectorAll(".delivery-select");
-  
+
   selects.forEach((select) => {
     const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
     const selectedDeliverer = parseInt(select.value);
-    
+
     // Récupérer les markers pour ce deliveryId
     const markers = deliveryIdToMarkers[deliveryId];
-    
+
     if (markers && delivererLayerGroups.has(selectedDeliverer)) {
       const layerGroup = delivererLayerGroups.get(selectedDeliverer);
-      markers.forEach(marker => {
+      markers.forEach((marker) => {
         // Retirer le marker de la carte principale
         map.removeLayer(marker);
         // L'ajouter au layer group du livreur
@@ -148,12 +153,14 @@ function createDelivererLayerGroups() {
   // Ajouter tous les layer groups à la carte par défaut
   delivererLayerGroups.forEach((layerGroup) => {
     // Only add those that are actively used
-    const delivererId = Array.from(delivererLayerGroups.entries()).find(([id, lg]) => lg === layerGroup)[0];
+    const delivererId = Array.from(delivererLayerGroups.entries()).find(
+      ([id, lg]) => lg === layerGroup
+    )[0];
     if (delivererId > getNumberOfDeliverers()) {
       // Empty other non-used layer groups
       layerGroup.clearLayers();
       return;
-    }; // Ne pas ajouter les livreurs non utilisés
+    } // Ne pas ajouter les livreurs non utilisés
     if (!map.hasLayer(layerGroup)) {
       layerGroup.addTo(map);
     }
@@ -169,24 +176,28 @@ function updateLayerControl() {
 
   // Créer l'objet overlays pour le contrôle
   const overlayMaps = {};
-  
+
   delivererColors.forEach((color, delivererId) => {
     const layerGroup = delivererLayerGroups.get(delivererId);
     if (layerGroup) {
       // Utiliser du HTML pour afficher la couleur dans le nom
-      overlayMaps[`<span style="display: inline-flex; align-items: center;">
+      overlayMaps[
+        `<span style="display: inline-flex; align-items: center;">
         <span style="width: 12px; height: 12px; background-color: ${color}; 
         border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
         Livreur ${delivererId}
-      </span>`] = layerGroup;
+      </span>`
+      ] = layerGroup;
     }
   });
 
   // Créer et ajouter le nouveau contrôle
-  layerControl = L.control.layers(null, overlayMaps, {
-    collapsed: false, // Toujours ouvert
-    position: 'topright'
-  }).addTo(map);
+  layerControl = L.control
+    .layers(null, overlayMaps, {
+      collapsed: false, // Toujours ouvert
+      position: "topright",
+    })
+    .addTo(map);
 }
 
 // Fonction principale pour mettre à jour l'affichage des livreurs
@@ -212,45 +223,45 @@ function generateDelivererColors(numberOfDeliverers) {
 // Créer ou mettre à jour la légende des livreurs
 function updateDelivererLegend(numberOfDeliverers) {
   // Supprimer l'ancienne légende si elle existe
-  const oldLegend = document.querySelector('.deliverer-legend');
+  const oldLegend = document.querySelector(".deliverer-legend");
   if (oldLegend) {
     oldLegend.remove();
   }
-  
+
   // Si pas de livreurs, ne rien afficher
   if (numberOfDeliverers === 0) {
     return;
   }
-  
+
   // Créer la nouvelle légende
-  const legend = document.createElement('div');
-  legend.className = 'deliverer-legend';
-  
-  const title = document.createElement('h4');
-  title.textContent = 'Livreurs';
+  const legend = document.createElement("div");
+  legend.className = "deliverer-legend";
+
+  const title = document.createElement("h4");
+  title.textContent = "Livreurs";
   legend.appendChild(title);
-  
+
   // Ajouter chaque livreur avec sa couleur
   delivererColors.forEach((color, delivererId) => {
     if (delivererId > numberOfDeliverers) return; // Ne pas afficher les livreurs non utilisés
-    const item = document.createElement('div');
-    item.className = 'deliverer-legend-item';
-    
-    const colorDot = document.createElement('span');
-    colorDot.className = 'deliverer-color-dot';
+    const item = document.createElement("div");
+    item.className = "deliverer-legend-item";
+
+    const colorDot = document.createElement("span");
+    colorDot.className = "deliverer-color-dot";
     colorDot.style.backgroundColor = color;
-    
-    const label = document.createElement('span');
-    label.className = 'deliverer-legend-label';
+
+    const label = document.createElement("span");
+    label.className = "deliverer-legend-label";
     label.textContent = `Livreur ${delivererId}`;
-    
+
     item.appendChild(colorDot);
     item.appendChild(label);
     legend.appendChild(item);
   });
-  
+
   // Ajouter la légende au container de la carte
-  const mapContainer = document.getElementById('map');
+  const mapContainer = document.getElementById("map");
   mapContainer.appendChild(legend);
 }
 
@@ -426,9 +437,11 @@ function load_xml_delivery() {
           // Ajouter le deliveryId au node dans le POI
           const nodeId = Number(id);
           const deliveryId = nodeIdToDeliveryId.get(nodeId);
-          
-          console.log(`Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`);
-          
+
+          console.log(
+            `Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`
+          );
+
           if (poi.node) {
             poi.node.deliveryId = deliveryId;
           }
@@ -444,6 +457,9 @@ function load_xml_delivery() {
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           tourPOIMap.set(Number(id), poi);
         });
+
+        updateNumberOfRequests();
+        console.log("Number of requests:", numberOfRequests);
 
         console.log("Final requestMap:", requestMap);
         console.log("Updated tourPOIMap:", tourPOIMap);
@@ -491,15 +507,17 @@ function load_xml_delivery() {
 
           const icon = createArrowIcon(color, direction);
 
-          const marker = L.marker([element.latitude, element.longitude], { icon }).addTo(map);
-          
+          const marker = L.marker([element.latitude, element.longitude], {
+            icon,
+          }).addTo(map);
+
           // Stocker les informations du marker pour le hover
           marker.deliveryId = element.deliveryId;
           marker.color = color;
           marker.direction = direction;
-          
+
           nodeMarkers.push(marker);
-          
+
           // Grouper les markers par deliveryId
           if (!deliveryIdToMarkers[element.deliveryId]) {
             deliveryIdToMarkers[element.deliveryId] = [];
@@ -580,13 +598,12 @@ function compute_tour() {
 
 // Compute the tour for a single deliverer and draw it on the map
 function computeSingleTour(deliverer, poiMap) {
-
   console.log(`Computing tour for ${deliverer} with POIs:`, poiMap);
   // Prepare data to send to backend to compute the tour
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: poiMap,  // Map<Long, POI>
+    tour: poiMap, // Map<Long, POI>
   };
 
   console.log("Computing tour...");
@@ -610,7 +627,7 @@ function computeSingleTour(deliverer, poiMap) {
 
       var bestSolution = data.solutionOrder;
       var POIbestSolution = bestSolution;
-      var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
+      var tour = data.solutionPaths; // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
       const delivererId = parseInt(deliverer);
@@ -656,7 +673,14 @@ function computeSingleTour(deliverer, poiMap) {
         let subtour = null;
         let key = `(${fromId}, ${toId})`;
         for (el in tour) {
-          console.log("Tour element:", el, "  Tour[el]:", tour[el], " Searching for key:", key);
+          console.log(
+            "Tour element:",
+            el,
+            "  Tour[el]:",
+            tour[el],
+            " Searching for key:",
+            key
+          );
           if (key in tour[el]) {
             subtour = tour[el][key];
           }
@@ -771,7 +795,7 @@ function generateDeliveriesList(
     deliveryItem.addEventListener("mouseenter", () => {
       highlightMarkers(deliveryId, true);
     });
-    
+
     deliveryItem.addEventListener("mouseleave", () => {
       highlightMarkers(deliveryId, false);
     });
@@ -789,10 +813,10 @@ function generateDeliveriesList(
 function highlightMarkers(deliveryId, highlight) {
   const markers = deliveryIdToMarkers[deliveryId];
   if (!markers) return;
-  
+
   const size = highlight ? 48 : 32; // Taille agrandie ou normale
-  
-  markers.forEach(marker => {
+
+  markers.forEach((marker) => {
     const newIcon = createArrowIcon(marker.color, marker.direction, size);
     marker.setIcon(newIcon);
   });
@@ -812,7 +836,7 @@ function updateDeliverersList() {
 }
 
 const input = document.getElementById("numberOfDeliverers");
-input.addEventListener("input", updateDeliverersList);
+input.addEventListener("change", updateDeliverersList);
 
 function generateDeliverersAssignment() {
   const numberOfDeliverers = getNumberOfDeliverers();
@@ -854,6 +878,34 @@ function generateDeliverersAssignment() {
   return assignment;
 }
 
+const plusBtn = document.getElementById("plusBtn");
+console.log("Plus button element:", plusBtn);
+const minusBtn = document.getElementById("minusBtn");
+console.log("Minus button element:", minusBtn);
+
+plusBtn.addEventListener("click", () => {
+  let current = parseInt(numberOfDeliverers);
+  console.log("Current number of deliverers:", current);
+  console.log("Total number of requests:", numberOfRequests);
+  if (current < numberOfRequests) {
+    numberOfDeliverers = current + 1;
+    document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
+    updateDeliverersList();
+  }
+});
+
+minusBtn.addEventListener("click", () => {
+  let current = parseInt(numberOfDeliverers);
+  if (current > 1) {
+    numberOfDeliverers = current - 1;
+    document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
+    updateDeliverersList();
+  }
+});
+
+function updateNumberOfRequests() {
+  numberOfRequests = requestMap.size;
+}
 // Fonction pour exporter les tournées en JSON
 function exportToursToJSON() {
   // Vérifier qu'il y a des tournées à exporter
