@@ -27,7 +27,7 @@ public class DeliveryRequestParser {
         Map<Long, PointOfInterest> poiMap = new HashMap<Long, PointOfInterest>();
 
         // On garde une trace des pickup déjà vus
-        Map<Long, Long> seenDeliveries = new HashMap<Long, Long>(); // deliveryCounter -> pickupId
+        Map<Long, Long> seenPickups = new HashMap<Long, Long>(); // deliveryCounter -> pickupId
 
         for (Map.Entry<Long, Triple<Node, Long, Integer>> entry : deliveries.entrySet()) {
             Long nodeId = entry.getKey();
@@ -36,40 +36,22 @@ public class DeliveryRequestParser {
             Long deliveryCounter = triple.second;
             Integer duration = triple.third;
             PoIEnum type;
-            Long associatedDeliveryId = null;
+            Long associatedPickupId = null;
 
-            if (node.getType() == null) {
-                throw new Exception("Node type is not set for node ID: " + nodeId);
-            } else if (node.getType().equals("warehouse")) {
+            if (deliveryCounter == -1) {
                 type = PoIEnum.WAREHOUSE;
-            } else if (node.getType().equals("pickup")) {
+            } else if (!seenPickups.containsKey(deliveryCounter)) {
                 type = PoIEnum.PICKUP;
-
-                associatedDeliveryId = seenDeliveries.get(deliveryCounter);
-
-                poiMap.get(associatedDeliveryId).setAssociatedPickupId(nodeId);
+                seenPickups.put(deliveryCounter, nodeId);
 
             } else {
                 type = PoIEnum.DELIVERY;
+                associatedPickupId = seenPickups.get(deliveryCounter);
 
-                seenDeliveries.put(deliveryCounter, nodeId);
+                poiMap.get(associatedPickupId).setAssociatedPickupId(nodeId);
             }
 
-            // ################### deprecated ? ####################
-            // if (deliveryCounter == -1) {
-            // type = PoIEnum.WAREHOUSE;
-            // } else if (!seenPickups.containsKey(deliveryCounter)) {
-            // type = PoIEnum.PICKUP;
-            // seenPickups.put(deliveryCounter, nodeId);
-
-            // } else {
-            // type = PoIEnum.DELIVERY;
-            // associatedPickupId = seenPickups.get(deliveryCounter);
-
-            // poiMap.get(associatedPickupId).setAssociatedPickupId(nodeId);
-            // }
-
-            poiMap.put(nodeId, new PointOfInterest(node, type, associatedDeliveryId, duration));
+            poiMap.put(nodeId, new PointOfInterest(node, type, associatedPickupId, duration));
 
         }
         return poiMap;
