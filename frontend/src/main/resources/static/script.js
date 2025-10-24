@@ -68,6 +68,25 @@ function getRandomColor() {
   return color;
 }
 
+// Reset global variables
+function resetGlobalState() {
+  // Reset the other global variables
+  requestMap.clear();
+  tourPOIMap.clear();
+  deliveryIdToMarkers = {};
+  pairColors = {};
+  edgeTourLines = [];
+  for (const layerGroup of delivererLayerGroups.values()) {
+    layerGroup.clearLayers();
+  }
+  delivererLayerGroups.clear();
+  if (layerControl) {
+    map.removeControl(layerControl);
+    layerControl = null;
+  }
+  delivererColors.clear();
+}
+
 // Checks if a color is "greenish" (to avoid green colors on the map)
 function isGreenish(hexColor) {
   // Convert HEX to RGB
@@ -245,21 +264,8 @@ function load_xml_map() {
         // Réinitialiser la liste des edges
         edges_list = edges;
 
-        // Reset the other global variables
-        requestMap.clear();
-        tourPOIMap.clear();
-        deliveryIdToMarkers = {};
-        pairColors = {};
-        edgeTourLines = [];
-        for (const layerGroup of delivererLayerGroups.values()) {
-          layerGroup.clearLayers();
-        }
-        delivererLayerGroups.clear();
-        if (layerControl) {
-          map.removeControl(layerControl);
-          layerControl = null;
-        }
-        delivererColors.clear();
+        // Reset the global state related to deliveries
+        resetGlobalState();
 
         // Variables pour calculer les bounds
         let topLeftNode = null;
@@ -382,21 +388,8 @@ function load_xml_delivery() {
 
         console.log("nodeIdToDeliveryId Map:", nodeIdToDeliveryId);
 
-        // Reset the global variables
-        requestMap.clear();
-        tourPOIMap.clear();
-        deliveryIdToMarkers = {};
-        pairColors = {};
-        edgeTourLines = [];
-        for (const layerGroup of delivererLayerGroups.values()) {
-          layerGroup.clearLayers();
-        }
-        delivererLayerGroups.clear();
-        if (layerControl) {
-          map.removeControl(layerControl);
-          layerControl = null;
-        }
-        delivererColors.clear();
+        // Reset global state related to deliveries
+        resetGlobalState();
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           // Ajouter le deliveryId au node dans le POI
