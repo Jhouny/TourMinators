@@ -53,7 +53,7 @@ public class Server {
         solver.chercheSolution();
 
         // Get the solution order and paths
-        LinkedList<Long> solutionOrder = solver.getSolutionOrder();
+        LinkedList<Pair<Long, LocalTime>> solutionOrder = solver.getSolutionOrder();
         LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> solutionPaths = solver.getSolutionPath();
 
         // Log the solution
