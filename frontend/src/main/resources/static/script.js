@@ -712,6 +712,24 @@ function computeSingleTour(deliverer, poiMap) {
           nextId = subtour[currentId];
         }
       }
+
+      // Update arrival times in the deliveries list
+      for (let i = 0; i < bestSolution.length; i++) {
+        const nodeId = bestSolution[i];
+        const arrivalTime = arrivalTimes[i].right;
+        const deliveryItem = document.getElementById(`delivery-item-${nodeId}`);
+        console.log(`Updating arrival time for node ${nodeId}: ${arrivalTime}`);
+        if (deliveryItem) {
+          const etaSpan = deliveryItem.querySelector(".eta-span");
+          console.log(`Found ETA span for node ${nodeId}`);
+          if (etaSpan) {
+            etaSpan.textContent = `ETA: ${arrivalTime}`;
+            etaSpan.style.display = "block"; // Show the ETA
+          }
+        }
+      }
+
+      // Unblock buttons when all requests are done
       activeRequestCounter--;
       // Unblock buttons only after all async requests are done
       if (activeRequestCounter === 0) {
@@ -725,18 +743,15 @@ function computeSingleTour(deliverer, poiMap) {
     });
 }
 
-function generateDeliveriesList(
-  deliveries,
-  numberOfDeliverers = 1,
-  pairColors = {}
-) {
+function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors = {}) {
   const deliveriesListContainer = document.getElementById("deliveries-list");
   deliveriesListContainer.innerHTML = "";
 
   // Comme deliveries est un Map.values(), on le transforme en tableau
   const deliveriesArray = Array.from(deliveries);
 
-  // Filtrer pour exclure le warehouse (deliveryId === -1)
+  console.log("Generating deliveries list for:", deliveriesArray);
+  // Filter out the deliveries with deliveryId -1 (warehouse)
   const filteredDeliveries = deliveriesArray.filter(
     (delivery) => delivery.node?.deliveryId !== -1
   );
@@ -744,6 +759,7 @@ function generateDeliveriesList(
   filteredDeliveries.forEach((delivery, index) => {
     const deliveryItem = document.createElement("div");
     deliveryItem.className = "delivery-item";
+    deliveryItem.id = `delivery-item-${delivery.node.id}`;
 
     // 🔹 Récupérer la couleur associée - utiliser le deliveryId du node
     const deliveryId = delivery.node?.deliveryId ?? index;
@@ -774,6 +790,12 @@ function generateDeliveriesList(
       select.appendChild(option);
     }
 
+    // ETA time display
+    const etaSpan = document.createElement("span");
+    etaSpan.className = "eta-span";
+    etaSpan.textContent = "ETA: --:--";
+    //etaSpan.style.display = "none"; // Removed from DOM for now
+
     // 🔹 Ajouter les événements hover
     deliveryItem.addEventListener("mouseenter", () => {
       highlightMarkers(deliveryId, true);
@@ -781,12 +803,18 @@ function generateDeliveriesList(
 
     deliveryItem.addEventListener("mouseleave", () => {
       highlightMarkers(deliveryId, false);
+      //etaSpan.style.display = "none"; // Hide the ETA
+    });
+
+    deliveryItem.addEventListener("click", () => {
+      etaSpan.style.display = "block"; // Show the ETAz
     });
 
     // Assembler les éléments
     deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
+    deliveryItem.appendChild(etaSpan);
 
     deliveriesListContainer.appendChild(deliveryItem);
   });
