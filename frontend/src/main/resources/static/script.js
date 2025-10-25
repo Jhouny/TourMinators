@@ -45,6 +45,7 @@ var activeRequestCounter = 0; // Counter for 'still-calculating' requests
 var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
+var delivererETA = {}; // Map delivererId -> ETA string
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 var numberOfRequests = 1; // Nombre de demandes de livraison (initialement 1)
 
@@ -80,6 +81,11 @@ function resetGlobalState() {
   deliveryIdToMarkers = {};
   pairColors = {};
   edgeTourLines = [];
+  numberOfDeliverers = 1;
+  numberOfRequests = 0;
+  delivererETA = {};
+  allDeliverersTours = {};
+  delivererList = [];
   for (const layerGroup of delivererLayerGroups.values()) {
     layerGroup.clearLayers();
   }
@@ -133,12 +139,7 @@ function createDelivererLayerGroups() {
     });
   } else if (delivererLayerGroups.size < getNumberOfDeliverers()) {
     // Ajouter les layer groups manquants
-    for (
-      let i = delivererLayerGroups.size + 1;
-      i <= getNumberOfDeliverers();
-      i++
-    ) {
-      const color = delivererColors.get(i);
+    for ( let i = delivererLayerGroups.size + 1; i <= getNumberOfDeliverers(); i++ ) {
       delivererLayerGroups.set(i, L.layerGroup());
     }
   }
@@ -195,12 +196,11 @@ function updateLayerControl() {
     const layerGroup = delivererLayerGroups.get(delivererId);
     if (layerGroup) {
       // Utiliser du HTML pour afficher la couleur dans le nom
-      overlayMaps[
-        `<span style="display: inline-flex; align-items: center;">
-        <span style="width: 12px; height: 12px; background-color: ${color}; 
-        border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
-        Livreur ${delivererId}
-      </span>`
+      overlayMaps[`
+        <span style="display: inline-flex; align-items: center;">
+          <span style="width: 12px; height: 12px; background-color: ${color}; border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
+          ${delivererId in delivererETA ? `Livreur ${delivererId} - ETA ${delivererETA[delivererId]}` : `Livreur ${delivererId} - ETA --:--`}
+        </span>`
       ] = layerGroup;
     }
   });
@@ -236,8 +236,6 @@ function generateDelivererColors(numberOfDeliverers) {
 
 // Charger la map en fonction du fichier XML choisi
 function load_xml_map() {
-  console.log("Loading XML map...");
-
   let input = document.createElement("input");
   input.type = "file";
   input.accept = ".xml";
@@ -263,9 +261,6 @@ function load_xml_map() {
       .then((data) => {
         var nodes = data.nodes;
         var edges = data.edges;
-
-        console.log("Nodes:", nodes);
-        console.log("Edges:", edges);
 
         // Supprimer anciens markers et edges
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -399,8 +394,6 @@ function load_xml_delivery() {
         return response.json();
       })
       .then((data) => {
-        console.log("Pickup/Delivery response:", data);
-
         if (!data.nodes) {
           console.error("No nodes in response:", data);
           return;
@@ -417,8 +410,6 @@ function load_xml_delivery() {
           nodeIdToDeliveryId.set(node.id, node.deliveryId);
         });
 
-        console.log("nodeIdToDeliveryId Map:", nodeIdToDeliveryId);
-
         // Reset global state related to deliveries
         resetGlobalState();
 
@@ -427,17 +418,11 @@ function load_xml_delivery() {
           const nodeId = Number(id);
           const deliveryId = nodeIdToDeliveryId.get(nodeId);
 
-          console.log(
-            `Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`
-          );
-
           if (poi.node) {
             poi.node.deliveryId = deliveryId;
           }
 
-          console.log("POI type:", poi.type, "deliveryId:", deliveryId);
           if (poi.type === "PICKUP" && deliveryId !== -1) {
-            console.log("Adding pickup POI with deliveryId:", deliveryId);
             requestMap.set(nodeId, poi);
           }
         });
@@ -448,10 +433,6 @@ function load_xml_delivery() {
         });
 
         updateNumberOfRequests();
-        console.log("Number of requests:", numberOfRequests);
-
-        console.log("Final requestMap:", requestMap);
-        console.log("Updated tourPOIMap:", tourPOIMap);
 
         // Supprime les anciens marqueurs (on veut rafraîchir)
         nodeMarkers.forEach((m) => map.removeLayer(m));
@@ -489,21 +470,24 @@ function load_xml_delivery() {
           }
 
           const color = pairColors[element.deliveryId];
-          console.log(
-            `élément du type est ${element.type} et id est ${element.deliveryId}`
-          );
           const direction = element.type === "pickup" ? "up" : "down";
 
           const icon = createArrowIcon(color, direction);
-
+          const popUp = L.popup({
+            closeButton: false,
+            autoClose: false,
+            className: "custom-popup",
+          }).setContent(`Type: ${element.type}`);
           const marker = L.marker([element.latitude, element.longitude], {
             icon,
-          }).addTo(map);
+          }).addTo(map).bindPopup(popUp);
 
           // Stocker les informations du marker pour le hover
           marker.deliveryId = element.deliveryId;
           marker.color = color;
           marker.direction = direction;
+          marker.type = element.type;
+          marker.nodeId = element.id;
 
           nodeMarkers.push(marker);
 
@@ -587,7 +571,6 @@ function compute_tour() {
   activeRequestCounter = 0;
 
   let assignement = generateDeliverersAssignment();
-  console.log("Deliverers assignment:", assignement);
 
   // Diplay the edges tour lines above the existing edges lines
   // Remove previous tour lines
@@ -616,7 +599,6 @@ function computeSingleTour(deliverer, poiMap) {
   };
 
   
-  console.log("Computing tour...");
   activeRequestCounter++;
   fetch("http://localhost:8080/runTSP", {
     method: "POST",
@@ -638,9 +620,6 @@ function computeSingleTour(deliverer, poiMap) {
       var bestSolution = data.solutionOrder;
       var arrivalTimes = data.solutionOrderWithArrivalTime;
       var tour = data.solutionPaths; // Map<String, Map<Long, Long>>
-
-      console.log(`Best solution for deliverer ${deliverer}:`, bestSolution);
-      console.log(`Arrival times for deliverer ${deliverer}:`, arrivalTimes);
 
       const delivererId = parseInt(deliverer);
       allDeliverersTours[delivererId] = {
@@ -712,6 +691,23 @@ function computeSingleTour(deliverer, poiMap) {
           nextId = subtour[currentId];
         }
       }
+
+      // Add arrival times to markers' popups
+      for (const [id, arrivalTimeObj] of Object.entries(arrivalTimes)) {
+        const nodeId = arrivalTimeObj.left;
+        const arrivalTime = arrivalTimeObj.right;
+        const marker = nodeMarkers.find((m) => m.nodeId === parseInt(nodeId));
+        if (marker) {
+          marker.setPopupContent(`Type: ${marker.type}<br>Arrival Time: ${arrivalTime}`);
+        }
+      }
+
+      // Update ETA for deliverer in the layer control
+      // Get last element in arrivalTimes
+      const lastArrival = arrivalTimes[arrivalTimes.length - 1].right || "Unknown";
+      delivererETA[delivererId] = lastArrival;
+      updateLayerControl();
+
       activeRequestCounter--;
       // Unblock buttons only after all async requests are done
       if (activeRequestCounter === 0) {
@@ -725,18 +721,14 @@ function computeSingleTour(deliverer, poiMap) {
     });
 }
 
-function generateDeliveriesList(
-  deliveries,
-  numberOfDeliverers = 1,
-  pairColors = {}
-) {
+function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors = {}) {
   const deliveriesListContainer = document.getElementById("deliveries-list");
   deliveriesListContainer.innerHTML = "";
 
   // Comme deliveries est un Map.values(), on le transforme en tableau
   const deliveriesArray = Array.from(deliveries);
 
-  // Filtrer pour exclure le warehouse (deliveryId === -1)
+  // Filter out the deliveries with deliveryId -1 (warehouse)
   const filteredDeliveries = deliveriesArray.filter(
     (delivery) => delivery.node?.deliveryId !== -1
   );
@@ -862,14 +854,10 @@ function generateDeliverersAssignment() {
 }
 
 const plusBtn = document.getElementById("plusBtn");
-console.log("Plus button element:", plusBtn);
 const minusBtn = document.getElementById("minusBtn");
-console.log("Minus button element:", minusBtn);
 
 plusBtn.addEventListener("click", () => {
   let current = parseInt(numberOfDeliverers);
-  console.log("Current number of deliverers:", current);
-  console.log("Total number of requests:", numberOfRequests);
   if (current < numberOfRequests) {
     numberOfDeliverers = current + 1;
     document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
@@ -1003,7 +991,6 @@ function exportToursToJSON() {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
   
-  console.log("Complete tour exported successfully:", exportData);
   alert("Tournée complète exportée avec succès !");
 }
 
@@ -1018,6 +1005,8 @@ function importToursFromJSON() {
   input.onchange = (e) => {
     let file = e.target.files[0];
 
+    blockButtons();
+
     if (!file) {
       alert("Veuillez sélectionner un fichier JSON");
       return;
@@ -1027,7 +1016,6 @@ function importToursFromJSON() {
     reader.onload = (event) => {
       try {
         const importedData = JSON.parse(event.target.result);
-        console.log("Imported complete data:", importedData);
 
         // Vérifier le format du fichier
         if (!importedData.map || !importedData.deliveries || !importedData.deliverers) {
@@ -1036,8 +1024,6 @@ function importToursFromJSON() {
         }
 
         // ===== 1. CHARGER LE PLAN (NODES ET EDGES) =====
-        console.log("Loading map data...");
-        
         // Nettoyer les anciens markers et edges du plan
         nodeMarkers.forEach((m) => map.removeLayer(m));
         nodeMarkers = [];
@@ -1102,7 +1088,6 @@ function importToursFromJSON() {
         }
         
         // ===== 2. CHARGER LES PICKUPS ET DELIVERIES =====
-        console.log("Loading pickups and deliveries...");
         
         // Charger les POIs
         tourPOIMap.clear();
@@ -1169,8 +1154,6 @@ function importToursFromJSON() {
         });
         
         // ===== 3. CONFIGURER LES LIVREURS =====
-        console.log("Configuring deliverers...");
-        
         const importedNumberOfDeliverers = importedData.deliverers.numberOfDeliverers;
         
         // Mettre à jour le nombre de livreurs
@@ -1208,8 +1191,6 @@ function importToursFromJSON() {
         updateDelivererDisplay();
         
         // ===== 4. CHARGER LES TOURNÉES AVEC LES TRAJETS EXACTS =====
-        console.log("Loading tour paths...");
-        
         // Nettoyer les anciennes tournées
         edgeTourLines.forEach((l) => map.removeLayer(l));
         edgeTourLines = [];
@@ -1279,7 +1260,7 @@ function importToursFromJSON() {
   };
 
   input.oncancel = () => {
-    console.log("Import cancelled");
+    unblockButtons();
   };
 
   input.click();
