@@ -139,6 +139,13 @@ public abstract class TemplateTSP implements TSP {
 		LocalTime time = LocalTime.of(8, 0); // 8:00 AM - default start time
 		LinkedList<Pair<Long, LocalTime>> bestSolution = new LinkedList<>();
 
+		// Check if solutionOrder is empty
+		if (solutionOrder.isEmpty()) {
+			// Return the warehouse and the start/end time
+			bestSolution.add(new Pair<Long, LocalTime>(g.getBeginId(), time));
+			return bestSolution;
+		}
+
 		long previousNodeId = solutionOrder.get(0);
 		long nodeId = solutionOrder.get(0);
 		bestSolution.add(new Pair<Long, LocalTime>(nodeId, time));

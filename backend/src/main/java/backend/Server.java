@@ -56,7 +56,8 @@ public class Server {
         solver.chercheSolution();
 
         // Get the solution order and paths
-        LinkedList<Pair<Long, LocalTime>> solutionOrder = solver.getSolutionOrderWithArrivalTime();
+        LinkedList<Long> solutionOrder = solver.getSolutionOrder();
+        LinkedList<Pair<Long, LocalTime>> solutionOrderWithArrivalTime = solver.getSolutionOrderWithArrivalTime();
         LinkedHashSet<Map<Pair<Long, Long>, LinkedList<Long>>> solutionPaths = solver.getSolutionPath();
 
         // Log the solution
@@ -66,6 +67,7 @@ public class Server {
         // Return the solution in the response
         Map<String, Object> response = new HashMap<>();
         response.put("solutionOrder", solutionOrder);
+        response.put("solutionOrderWithArrivalTime", solutionOrderWithArrivalTime);
         response.put("solutionPaths", solutionPaths);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
