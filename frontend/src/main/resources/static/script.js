@@ -615,6 +615,7 @@ function computeSingleTour(deliverer, poiMap) {
     tour: poiMap, // Map<Long, POI>
   };
 
+  
   console.log("Computing tour...");
   activeRequestCounter++;
   fetch("http://localhost:8080/runTSP", {
@@ -635,14 +636,16 @@ function computeSingleTour(deliverer, poiMap) {
       }
 
       var bestSolution = data.solutionOrder;
-      var POIbestSolution = bestSolution;
+      var arrivalTimes = data.solutionOrderWithArrivalTime;
       var tour = data.solutionPaths; // Map<String, Map<Long, Long>>
-      //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
+
+      console.log(`Best solution for deliverer ${deliverer}:`, bestSolution);
+      console.log(`Arrival times for deliverer ${deliverer}:`, arrivalTimes);
 
       const delivererId = parseInt(deliverer);
       allDeliverersTours[delivererId] = {
         delivererId: delivererId,
-        tourOrder: POIbestSolution,
+        tourOrder: bestSolution,
         tourDetails: [],
         color: delivererColors.get(delivererId),
       };
@@ -654,11 +657,11 @@ function computeSingleTour(deliverer, poiMap) {
       if (layerGroup) {
         layerGroup.addTo(map);
       }
+
       // Draw new tour lines
-      for (let i = 0; i < POIbestSolution.length - 1; i++) {
-        let fromId = POIbestSolution[i];
-        let toId = POIbestSolution[i + 1];
-        console.log(`Drawing tour segment from ${fromId} to ${toId}`);
+      for (let i = 0; i < bestSolution.length - 1; i++) {
+        let fromId = bestSolution[i];
+        let toId = bestSolution[i + 1];
 
         const fromNode = nodeMap.get(parseInt(fromId));
         const toNode = nodeMap.get(parseInt(toId));
@@ -683,41 +686,17 @@ function computeSingleTour(deliverer, poiMap) {
         let subtour = null;
         let key = `(${fromId}, ${toId})`;
         for (el in tour) {
-          console.log(
-            "Tour element:",
-            el,
-            "  Tour[el]:",
-            tour[el],
-            " Searching for key:",
-            key
-          );
           if (key in tour[el]) {
             subtour = tour[el][key];
           }
         }
-        console.log(`Drawing subtour from ${fromId} to ${toId}:`, subtour);
+
         for (let j = 0; j < Object.keys(subtour).length - 1; j++) {
           let currentId = subtour[j];
           let nextId = subtour[j + 1];
           let startNode = nodeMap.get(parseInt(currentId));
           let endNode = nodeMap.get(parseInt(nextId));
-          console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
-          console.log("Start Node:", startNode);
           if (startNode && endNode) {
-            let startNode = nodeMap.get(parseInt(currentId));
-            let endNode = nodeMap.get(parseInt(nextId));
-            console.log(`Predecessor: ${currentId}, Arrival: ${nextId}`);
-            console.log("Start Node:", startNode);
-            if (startNode && endNode) {
-              console.log(`Drawing edge from ${currentId} to ${nextId}`);
-              let latlngs = [
-                [startNode.latitude, startNode.longitude],
-                [endNode.latitude, endNode.longitude],
-              ];
-              edgeTourLines.push(
-                L.polyline(latlngs, { color: delivererColor }).addTo(layerGroup)
-              );
-            }
             let latlngs = [
               [startNode.latitude, startNode.longitude],
               [endNode.latitude, endNode.longitude],
@@ -738,12 +717,11 @@ function computeSingleTour(deliverer, poiMap) {
       if (activeRequestCounter === 0) {
         unblockButtons();
       }
-    }
-  )
-
-    
+    })
     .catch((err) => {
       console.error("Error fetching /runTSP:", err);
+      alert("Erreur lors du calcul de la tournée: " + err.message);
+      unblockButtons(); // Unblock buttons on error
     });
 }
 
@@ -767,19 +745,9 @@ function generateDeliveriesList(
     const deliveryItem = document.createElement("div");
     deliveryItem.className = "delivery-item";
 
-    // 🔹 Debug: afficher la structure complète
-    console.log("Delivery object:", delivery);
-    console.log("Node:", delivery.node);
-    console.log("Node deliveryId:", delivery.node?.deliveryId);
-
     // 🔹 Récupérer la couleur associée - utiliser le deliveryId du node
     const deliveryId = delivery.node?.deliveryId ?? index;
     const color = pairColors[deliveryId] || "#999";
-
-    console.log(
-      `Delivery ID: ${deliveryId}, Color: ${pairColors[deliveryId]}, Available colors:`,
-      pairColors
-    );
 
     // 🔹 Créer la pastille colorée
     const colorDot = document.createElement("span");
