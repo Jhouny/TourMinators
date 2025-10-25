@@ -41,21 +41,25 @@ var edgeTourLines = [];
 var tourPOIMap = new Map(); // POI de la tournée déjà chargés
 var deliveryIdToMarkers = {}; // Map deliveryId -> [markers]
 
+var activeRequestCounter = 0; // Counter for 'still-calculating' requests
 var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
+var numberOfRequests = 1; // Nombre de demandes de livraison (initialement 1)
 
 var delivererLayerGroups = new Map(); // Map delivererId -> L.layerGroup
 var layerControl = null; // Contrôle des couches Leaflet
 var delivererColors = new Map(); // Map delivererId -> couleur
+
+var allDeliverersTours = {}; // Map delivererId -> tour data
 
 // Génère une couleur hexadécimale aléatoire (évite les verts)
 function getRandomColor() {
   let color;
   let attempts = 0;
   const maxAttempts = 100;
-  
+
   do {
     const letters = "0123456789ABCDEF";
     color = "#";
@@ -64,8 +68,27 @@ function getRandomColor() {
     }
     attempts++;
   } while (isGreenish(color) && attempts < maxAttempts);
-  
+
   return color;
+}
+
+// Reset global variables
+function resetGlobalState() {
+  // Reset the other global variables
+  requestMap.clear();
+  tourPOIMap.clear();
+  deliveryIdToMarkers = {};
+  pairColors = {};
+  edgeTourLines = [];
+  for (const layerGroup of delivererLayerGroups.values()) {
+    layerGroup.clearLayers();
+  }
+  delivererLayerGroups.clear();
+  if (layerControl) {
+    map.removeControl(layerControl);
+    layerControl = null;
+  }
+  delivererColors.clear();
 }
 
 // Checks if a color is "greenish" (to avoid green colors on the map)
@@ -102,12 +125,6 @@ function createArrowIcon(color, direction, size = 32) {
 
 // Créer des LayerGroups pour chaque livreur basé sur l'assignation
 function createDelivererLayerGroups() {
-  // Nettoyer les anciens layer groups
-  /*delivererLayerGroups.forEach((layerGroup) => {
-    map.removeLayer(layerGroup);
-  });
-  delivererLayerGroups.clear();*/
-
   // Créer un layer group pour chaque livreur
   if (delivererLayerGroups.size === 0) {
     delivererColors.forEach((color, delivererId) => {
@@ -116,25 +133,29 @@ function createDelivererLayerGroups() {
     });
   } else if (delivererLayerGroups.size < getNumberOfDeliverers()) {
     // Ajouter les layer groups manquants
-    for (let i = delivererLayerGroups.size + 1; i <= getNumberOfDeliverers(); i++) {
+    for (
+      let i = delivererLayerGroups.size + 1;
+      i <= getNumberOfDeliverers();
+      i++
+    ) {
       const color = delivererColors.get(i);
       delivererLayerGroups.set(i, L.layerGroup());
     }
-  } 
+  }
 
   // Parcourir toutes les sélections pour assigner les markers aux bons livreurs
   const selects = document.querySelectorAll(".delivery-select");
-  
+
   selects.forEach((select) => {
     const deliveryId = parseInt(select.getAttribute("data-delivery-id"));
     const selectedDeliverer = parseInt(select.value);
-    
+
     // Récupérer les markers pour ce deliveryId
     const markers = deliveryIdToMarkers[deliveryId];
-    
+
     if (markers && delivererLayerGroups.has(selectedDeliverer)) {
       const layerGroup = delivererLayerGroups.get(selectedDeliverer);
-      markers.forEach(marker => {
+      markers.forEach((marker) => {
         // Retirer le marker de la carte principale
         map.removeLayer(marker);
         // L'ajouter au layer group du livreur
@@ -146,12 +167,14 @@ function createDelivererLayerGroups() {
   // Ajouter tous les layer groups à la carte par défaut
   delivererLayerGroups.forEach((layerGroup) => {
     // Only add those that are actively used
-    const delivererId = Array.from(delivererLayerGroups.entries()).find(([id, lg]) => lg === layerGroup)[0];
+    const delivererId = Array.from(delivererLayerGroups.entries()).find(
+      ([id, lg]) => lg === layerGroup
+    )[0];
     if (delivererId > getNumberOfDeliverers()) {
       // Empty other non-used layer groups
       layerGroup.clearLayers();
       return;
-    }; // Ne pas ajouter les livreurs non utilisés
+    } // Ne pas ajouter les livreurs non utilisés
     if (!map.hasLayer(layerGroup)) {
       layerGroup.addTo(map);
     }
@@ -167,24 +190,28 @@ function updateLayerControl() {
 
   // Créer l'objet overlays pour le contrôle
   const overlayMaps = {};
-  
+
   delivererColors.forEach((color, delivererId) => {
     const layerGroup = delivererLayerGroups.get(delivererId);
     if (layerGroup) {
       // Utiliser du HTML pour afficher la couleur dans le nom
-      overlayMaps[`<span style="display: inline-flex; align-items: center;">
+      overlayMaps[
+        `<span style="display: inline-flex; align-items: center;">
         <span style="width: 12px; height: 12px; background-color: ${color}; 
         border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
         Livreur ${delivererId}
-      </span>`] = layerGroup;
+      </span>`
+      ] = layerGroup;
     }
   });
 
   // Créer et ajouter le nouveau contrôle
-  layerControl = L.control.layers(null, overlayMaps, {
-    collapsed: false, // Toujours ouvert
-    position: 'topright'
-  }).addTo(map);
+  layerControl = L.control
+    .layers(null, overlayMaps, {
+      collapsed: false, // Toujours ouvert
+      position: "topright",
+    })
+    .addTo(map);
 }
 
 // Fonction principale pour mettre à jour l'affichage des livreurs
@@ -207,51 +234,6 @@ function generateDelivererColors(numberOfDeliverers) {
   }
 }
 
-// Créer ou mettre à jour la légende des livreurs
-function updateDelivererLegend(numberOfDeliverers) {
-  // Supprimer l'ancienne légende si elle existe
-  const oldLegend = document.querySelector('.deliverer-legend');
-  if (oldLegend) {
-    oldLegend.remove();
-  }
-  
-  // Si pas de livreurs, ne rien afficher
-  if (numberOfDeliverers === 0) {
-    return;
-  }
-  
-  // Créer la nouvelle légende
-  const legend = document.createElement('div');
-  legend.className = 'deliverer-legend';
-  
-  const title = document.createElement('h4');
-  title.textContent = 'Livreurs';
-  legend.appendChild(title);
-  
-  // Ajouter chaque livreur avec sa couleur
-  delivererColors.forEach((color, delivererId) => {
-    if (delivererId > numberOfDeliverers) return; // Ne pas afficher les livreurs non utilisés
-    const item = document.createElement('div');
-    item.className = 'deliverer-legend-item';
-    
-    const colorDot = document.createElement('span');
-    colorDot.className = 'deliverer-color-dot';
-    colorDot.style.backgroundColor = color;
-    
-    const label = document.createElement('span');
-    label.className = 'deliverer-legend-label';
-    label.textContent = `Livreur ${delivererId}`;
-    
-    item.appendChild(colorDot);
-    item.appendChild(label);
-    legend.appendChild(item);
-  });
-  
-  // Ajouter la légende au container de la carte
-  const mapContainer = document.getElementById('map');
-  mapContainer.appendChild(legend);
-}
-
 // Charger la map en fonction du fichier XML choisi
 function load_xml_map() {
   console.log("Loading XML map...");
@@ -267,6 +249,8 @@ function load_xml_map() {
       alert("Veuillez ajouter un fichier XML");
       return;
     }
+
+    blockButtons();
 
     let formData = new FormData();
     formData.append("file", file);
@@ -295,6 +279,9 @@ function load_xml_map() {
 
         // Réinitialiser la liste des edges
         edges_list = edges;
+
+        // Reset the global state related to deliveries
+        resetGlobalState();
 
         // Variables pour calculer les bounds
         let topLeftNode = null;
@@ -354,12 +341,24 @@ function load_xml_map() {
           planButton.style.backgroundColor = "var(--primary-green)";
           planButton.style.color = "white";
         }
+
+        unblockButtons();
       })
-      .catch((error) => console.error("Error loading XML map:", error));
+      .catch((error) => {
+        console.error("Error loading XML map:", error);
+        unblockButtons();
+        alert("Erreur lors du chargement du plan (voir console).");
+      });
   };
 
   input.oncancel = () => {
     alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
+  };
+
+  input.onabort = () => {
+    alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
   };
 
   input.click();
@@ -388,12 +387,15 @@ function load_xml_delivery() {
     let formData = new FormData();
     formData.append("file", deliveryFile);
 
+    blockButtons();
+
     fetch("/uploadDeliveries", {
       method: "POST",
       body: formData,
     })
       .then((response) => {
         if (!response.ok) throw new Error("HTTP error " + response.status);
+        unblockButtons();
         return response.json();
       })
       .then((data) => {
@@ -417,16 +419,18 @@ function load_xml_delivery() {
 
         console.log("nodeIdToDeliveryId Map:", nodeIdToDeliveryId);
 
-        // Reset des Requests de la tournée
-        requestMap.clear();
+        // Reset global state related to deliveries
+        resetGlobalState();
 
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           // Ajouter le deliveryId au node dans le POI
           const nodeId = Number(id);
           const deliveryId = nodeIdToDeliveryId.get(nodeId);
-          
-          console.log(`Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`);
-          
+
+          console.log(
+            `Processing POI with id ${nodeId}, deliveryId: ${deliveryId}`
+          );
+
           if (poi.node) {
             poi.node.deliveryId = deliveryId;
           }
@@ -442,6 +446,9 @@ function load_xml_delivery() {
         Object.entries(data.poiMap).forEach(([id, poi]) => {
           tourPOIMap.set(Number(id), poi);
         });
+
+        updateNumberOfRequests();
+        console.log("Number of requests:", numberOfRequests);
 
         console.log("Final requestMap:", requestMap);
         console.log("Updated tourPOIMap:", tourPOIMap);
@@ -489,15 +496,17 @@ function load_xml_delivery() {
 
           const icon = createArrowIcon(color, direction);
 
-          const marker = L.marker([element.latitude, element.longitude], { icon }).addTo(map);
-          
+          const marker = L.marker([element.latitude, element.longitude], {
+            icon,
+          }).addTo(map);
+
           // Stocker les informations du marker pour le hover
           marker.deliveryId = element.deliveryId;
           marker.color = color;
           marker.direction = direction;
-          
+
           nodeMarkers.push(marker);
-          
+
           // Grouper les markers par deliveryId
           if (!deliveryIdToMarkers[element.deliveryId]) {
             deliveryIdToMarkers[element.deliveryId] = [];
@@ -514,17 +523,18 @@ function load_xml_delivery() {
         generateDelivererColors(getNumberOfDeliverers());
         updateDelivererDisplay();
       })
-
       .catch((err) => {
         console.error("Error fetching /uploadDeliveries:", err);
         alert(
           "Erreur lors du chargement de la demande de livraison (voir console)."
         );
+        unblockButtons();
       });
   };
 
   input.oncancel = () => {
     alert("Veuillez ajouter un fichier XML");
+    unblockButtons();
   };
 
   input.click();
@@ -551,11 +561,30 @@ function toggleEdges() {
   edgesVisible = !edgesVisible;
 }
 
+// Function to block buttons
+function blockButtons() {
+  const btns = document.getElementsByClassName("user-action-button");
+  for (let btn of btns) {
+    btn.disabled = true;
+  }
+}
+
+// Function to unblock buttons
+function unblockButtons() {
+  const btns = document.getElementsByClassName("user-action-button");
+  for (let btn of btns) {
+    btn.disabled = false;
+  }
+}
+
 function compute_tour() {
   if (!nodeMap || nodeMap.size === 0) {
     alert("Veuillez d'abord importer un plan avant de calculer une tournée.");
     return;
   }
+
+  blockButtons();
+  activeRequestCounter = 0;
 
   let assignement = generateDeliverersAssignment();
   console.log("Deliverers assignment:", assignement);
@@ -578,17 +607,16 @@ function compute_tour() {
 
 // Compute the tour for a single deliverer and draw it on the map
 function computeSingleTour(deliverer, poiMap) {
-
   console.log(`Computing tour for ${deliverer} with POIs:`, poiMap);
   // Prepare data to send to backend to compute the tour
   let body = {
     allNodes: Object.fromEntries(nodeMap),
     allEdges: Array.from(edges_list),
-    tour: poiMap,  // Map<Long, POI>
+    tour: poiMap, // Map<Long, POI>
   };
 
   console.log("Computing tour...");
-
+  activeRequestCounter++;
   fetch("http://localhost:8080/runTSP", {
     method: "POST",
     headers: {
@@ -608,10 +636,19 @@ function computeSingleTour(deliverer, poiMap) {
 
       var bestSolution = data.solutionOrder;
       var POIbestSolution = bestSolution;
-      var tour = data.solutionPaths;  // Map<String, Map<Long, Long>>
+      var tour = data.solutionPaths; // Map<String, Map<Long, Long>>
       //var LocalTimebestSolution = bestSolution.map((bs) => bs.time); //List<LocalTime>
 
-      const delivererColor = delivererColors.get(parseInt(deliverer)) || "#000000";
+      const delivererId = parseInt(deliverer);
+      allDeliverersTours[delivererId] = {
+        delivererId: delivererId,
+        tourOrder: POIbestSolution,
+        tourDetails: [],
+        color: delivererColors.get(delivererId),
+      };
+
+      const delivererColor =
+        delivererColors.get(parseInt(deliverer)) || "#000000";
 
       const layerGroup = delivererLayerGroups.get(parseInt(deliverer));
       if (layerGroup) {
@@ -622,10 +659,38 @@ function computeSingleTour(deliverer, poiMap) {
         let fromId = POIbestSolution[i];
         let toId = POIbestSolution[i + 1];
         console.log(`Drawing tour segment from ${fromId} to ${toId}`);
+
+        const fromNode = nodeMap.get(parseInt(fromId));
+        const toNode = nodeMap.get(parseInt(toId));
+        const fromPOI = tourPOIMap.get(fromId);
+        const toPOI = tourPOIMap.get(toId);
+
+        allDeliverersTours[delivererId].tourDetails.push({
+          from: {
+            id: fromId,
+            type: fromPOI?.type || "UNKNOWN",
+            latitude: fromNode?.latitude,
+            longitude: fromNode?.longitude,
+          },
+          to: {
+            id: toId,
+            type: toPOI?.type || "UNKNOWN",
+            latitude: toNode?.latitude,
+            longitude: toNode?.longitude,
+          },
+        });
+
         let subtour = null;
         let key = `(${fromId}, ${toId})`;
         for (el in tour) {
-          console.log("Tour element:", el, "  Tour[el]:", tour[el], " Searching for key:", key);
+          console.log(
+            "Tour element:",
+            el,
+            "  Tour[el]:",
+            tour[el],
+            " Searching for key:",
+            key
+          );
           if (key in tour[el]) {
             subtour = tour[el][key];
           }
@@ -668,7 +733,15 @@ function computeSingleTour(deliverer, poiMap) {
           nextId = subtour[currentId];
         }
       }
-    })
+      activeRequestCounter--;
+      // Unblock buttons only after all async requests are done
+      if (activeRequestCounter === 0) {
+        unblockButtons();
+      }
+    }
+  )
+
+    
     .catch((err) => {
       console.error("Error fetching /runTSP:", err);
     });
@@ -737,7 +810,7 @@ function generateDeliveriesList(
     deliveryItem.addEventListener("mouseenter", () => {
       highlightMarkers(deliveryId, true);
     });
-    
+
     deliveryItem.addEventListener("mouseleave", () => {
       highlightMarkers(deliveryId, false);
     });
@@ -755,10 +828,10 @@ function generateDeliveriesList(
 function highlightMarkers(deliveryId, highlight) {
   const markers = deliveryIdToMarkers[deliveryId];
   if (!markers) return;
-  
+
   const size = highlight ? 48 : 32; // Taille agrandie ou normale
-  
-  markers.forEach(marker => {
+
+  markers.forEach((marker) => {
     const newIcon = createArrowIcon(marker.color, marker.direction, size);
     marker.setIcon(newIcon);
   });
@@ -778,7 +851,7 @@ function updateDeliverersList() {
 }
 
 const input = document.getElementById("numberOfDeliverers");
-input.addEventListener("input", updateDeliverersList);
+input.addEventListener("change", updateDeliverersList);
 
 function generateDeliverersAssignment() {
   const numberOfDeliverers = getNumberOfDeliverers();
@@ -818,4 +891,428 @@ function generateDeliverersAssignment() {
   });
 
   return assignment;
+}
+
+const plusBtn = document.getElementById("plusBtn");
+console.log("Plus button element:", plusBtn);
+const minusBtn = document.getElementById("minusBtn");
+console.log("Minus button element:", minusBtn);
+
+plusBtn.addEventListener("click", () => {
+  let current = parseInt(numberOfDeliverers);
+  console.log("Current number of deliverers:", current);
+  console.log("Total number of requests:", numberOfRequests);
+  if (current < numberOfRequests) {
+    numberOfDeliverers = current + 1;
+    document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
+    updateDeliverersList();
+  }
+});
+
+minusBtn.addEventListener("click", () => {
+  let current = parseInt(numberOfDeliverers);
+  if (current > 1) {
+    numberOfDeliverers = current - 1;
+    document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
+    updateDeliverersList();
+  }
+});
+
+function updateNumberOfRequests() {
+  numberOfRequests = requestMap.size;
+}
+// Fonction pour exporter les tournées en JSON
+// Fonction pour exporter les tournées en JSON avec toutes les données nécessaires
+function exportToursToJSON() {
+  // Vérifier qu'il y a des tournées à exporter
+  if (Object.keys(allDeliverersTours).length === 0) {
+    alert("Aucune tournée à exporter. Veuillez d'abord calculer les tournées.");
+    return;
+  }
+
+  // Vérifier que le plan et les POIs sont chargés
+  if (!nodeMap || nodeMap.size === 0) {
+    alert("Le plan n'est pas chargé. Impossible d'exporter.");
+    return;
+  }
+
+  if (!tourPOIMap || tourPOIMap.size === 0) {
+    alert("Les points de pickup/delivery ne sont pas chargés. Impossible d'exporter.");
+    return;
+  }
+
+  // Créer l'objet JSON complet avec toutes les informations
+  const exportData = {
+    exportDate: new Date().toISOString(),
+    version: "2.0",
+    
+    // Informations sur le plan (tous les noeuds et arêtes)
+    map: {
+      nodes: Array.from(nodeMap.entries()).map(([id, node]) => ({
+        id: id,
+        latitude: node.latitude,
+        longitude: node.longitude
+      })),
+      edges: edges_list.map(edge => ({
+        originId: edge.originId,
+        destinationId: edge.destinationId,
+        length: edge.length
+      }))
+    },
+    
+    // Informations sur les pickups et deliveries
+    deliveries: {
+      pois: Array.from(tourPOIMap.entries()).map(([id, poi]) => ({
+        id: id,
+        type: poi.type,
+        nodeId: poi.node?.id,
+        deliveryId: poi.node?.deliveryId,
+        associatedPoI: poi.associatedPoI,
+        duration: poi.duration
+      })),
+      pairColors: pairColors
+    },
+    
+    // Informations sur les livreurs et leurs tournées
+    deliverers: {
+      numberOfDeliverers: getNumberOfDeliverers(),
+      colors: Array.from(delivererColors.entries()).map(([id, color]) => ({
+        delivererId: id,
+        color: color
+      })),
+      
+      // Tournées détaillées avec les trajets complets
+      tours: Object.entries(allDeliverersTours).map(([delivererId, tourData]) => {
+        // Récupérer les lignes de cette tournée
+        const delivererIdInt = parseInt(delivererId);
+        const layerGroup = delivererLayerGroups.get(delivererIdInt);
+        const tourLines = [];
+        
+        if (layerGroup) {
+          layerGroup.eachLayer((layer) => {
+            if (layer instanceof L.Polyline) {
+              const latlngs = layer.getLatLngs();
+              tourLines.push({
+                from: { lat: latlngs[0].lat, lng: latlngs[0].lng },
+                to: { lat: latlngs[1].lat, lng: latlngs[1].lng }
+              });
+            }
+          });
+        }
+        
+        return {
+          delivererId: delivererIdInt,
+          color: tourData.color,
+          tourOrder: tourData.tourOrder,
+          tourDetails: tourData.tourDetails,
+          // Trajets exacts entre chaque segment
+          exactPaths: tourLines
+        };
+      }),
+      
+      // Assignation des deliveries aux livreurs
+      assignments: generateDeliverersAssignment()
+    }
+  };
+
+  // Convertir en JSON avec indentation pour la lisibilité
+  const jsonString = JSON.stringify(exportData, null, 2);
+
+  // Créer un blob et télécharger le fichier
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  
+  // Créer un lien de téléchargement temporaire
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `tournee_complete_${new Date().toISOString().split('T')[0]}.json`;
+  
+  // Déclencher le téléchargement
+  document.body.appendChild(link);
+  link.click();
+  
+  // Nettoyer
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  console.log("Complete tour exported successfully:", exportData);
+  alert("Tournée complète exportée avec succès !");
+}
+
+// Fonction pour importer une tournée complète depuis un JSON (avec plan, pickups/deliveries et trajets)
+function importToursFromJSON() {
+  console.log("Importing complete tour from JSON...");
+
+  let input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+
+  input.onchange = (e) => {
+    let file = e.target.files[0];
+
+    if (!file) {
+      alert("Veuillez sélectionner un fichier JSON");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        console.log("Imported complete data:", importedData);
+
+        // Vérifier le format du fichier
+        if (!importedData.map || !importedData.deliveries || !importedData.deliverers) {
+          alert("Format JSON invalide : données manquantes (map, deliveries ou deliverers)");
+          return;
+        }
+
+        // ===== 1. CHARGER LE PLAN (NODES ET EDGES) =====
+        console.log("Loading map data...");
+        
+        // Nettoyer les anciens markers et edges du plan
+        nodeMarkers.forEach((m) => map.removeLayer(m));
+        nodeMarkers = [];
+        edgeLines.forEach((l) => map.removeLayer(l));
+        edgeLines = [];
+        
+        // Charger les nodes
+        nodeMap.clear();
+        importedData.map.nodes.forEach(node => {
+          nodeMap.set(node.id, {
+            id: node.id,
+            latitude: node.latitude,
+            longitude: node.longitude
+          });
+        });
+        
+        // Charger les edges
+        edges_list = importedData.map.edges.map(edge => ({
+          originId: edge.originId,
+          destinationId: edge.destinationId,
+          length: edge.length
+        }));
+        
+        // Créer les polylines des edges (non affichées par défaut)
+        importedData.map.edges.forEach(edge => {
+          const startNode = nodeMap.get(edge.originId);
+          const endNode = nodeMap.get(edge.destinationId);
+          if (startNode && endNode) {
+            const latlngs = [
+              [startNode.latitude, startNode.longitude],
+              [endNode.latitude, endNode.longitude]
+            ];
+            const line = L.polyline(latlngs, { color: "#50d76b" });
+            edgeLines.push(line);
+          }
+        });
+        
+        // Ajuster la vue sur le plan
+        if (importedData.map.nodes.length > 0) {
+          const lats = importedData.map.nodes.map(n => n.latitude);
+          const lngs = importedData.map.nodes.map(n => n.longitude);
+          const bounds = L.latLngBounds(
+            [Math.min(...lats), Math.min(...lngs)],
+            [Math.max(...lats), Math.max(...lngs)]
+          );
+          map.flyToBounds(bounds, { duration: 2.0 });
+        }
+        
+        // Activer le bouton "Afficher le plan"
+        toggleEdgesBtn = document.getElementById("toggleEdgesBtn");
+        if (toggleEdgesBtn) {
+          toggleEdgesBtn.style.display = "inline-block";
+          toggleEdgesBtn.textContent = "Afficher le plan";
+          edgesVisible = false;
+          planLoaded = true;
+          
+          const planButton = document.querySelector(".buttons button:nth-child(1)");
+          if (planButton) {
+            planButton.style.backgroundColor = "var(--primary-green)";
+            planButton.style.color = "white";
+          }
+        }
+        
+        // ===== 2. CHARGER LES PICKUPS ET DELIVERIES =====
+        console.log("Loading pickups and deliveries...");
+        
+        // Charger les POIs
+        tourPOIMap.clear();
+        requestMap.clear();
+        pairColors = importedData.deliveries.pairColors || {};
+        
+        importedData.deliveries.pois.forEach(poi => {
+          const poiObj = {
+            type: poi.type,
+            node: nodeMap.get(poi.nodeId),
+            associatedPoI: poi.associatedPoI,
+            duration: poi.duration
+          };
+          
+          // Ajouter le deliveryId au node si disponible
+          if (poiObj.node && poi.deliveryId !== undefined) {
+            poiObj.node.deliveryId = poi.deliveryId;
+          }
+          
+          tourPOIMap.set(poi.id, poiObj);
+          
+          // Ajouter aux requests si c'est un pickup (sauf warehouse)
+          if (poi.type === "PICKUP" && poi.deliveryId !== -1) {
+            requestMap.set(poi.id, poiObj);
+          }
+        });
+        
+        // Créer les markers pour les pickups/deliveries
+        deliveryIdToMarkers = {};
+        importedData.deliveries.pois.forEach(poi => {
+          const node = nodeMap.get(poi.nodeId);
+          if (!node) return;
+          
+          // Warehouse
+          if (poi.deliveryId === -1) {
+            nodeMarkers.push(
+              L.marker([node.latitude, node.longitude], {
+                icon: warehouseIcon
+              }).addTo(map)
+            );
+            return;
+          }
+          
+          // Pickup ou Delivery
+          const color = pairColors[poi.deliveryId] || getRandomColor();
+          if (!pairColors[poi.deliveryId]) {
+            pairColors[poi.deliveryId] = color;
+          }
+          
+          const direction = poi.type === "PICKUP" ? "up" : "down";
+          const icon = createArrowIcon(color, direction);
+          
+          const marker = L.marker([node.latitude, node.longitude], { icon }).addTo(map);
+          marker.deliveryId = poi.deliveryId;
+          marker.color = color;
+          marker.direction = direction;
+          
+          nodeMarkers.push(marker);
+          
+          if (!deliveryIdToMarkers[poi.deliveryId]) {
+            deliveryIdToMarkers[poi.deliveryId] = [];
+          }
+          deliveryIdToMarkers[poi.deliveryId].push(marker);
+        });
+        
+        // ===== 3. CONFIGURER LES LIVREURS =====
+        console.log("Configuring deliverers...");
+        
+        const importedNumberOfDeliverers = importedData.deliverers.numberOfDeliverers;
+        
+        // Mettre à jour le nombre de livreurs
+        const deliverersInput = document.getElementById("numberOfDeliverers");
+        if (deliverersInput) {
+          deliverersInput.value = importedNumberOfDeliverers;
+        }
+        
+        // Charger les couleurs des livreurs
+        delivererColors.clear();
+        importedData.deliverers.colors.forEach(({ delivererId, color }) => {
+          delivererColors.set(delivererId, color);
+        });
+        
+        // Générer la liste des deliveries avec les bons assignments
+        generateDeliveriesList(requestMap.values(), importedNumberOfDeliverers, pairColors);
+        
+        // Appliquer les assignments depuis le JSON
+        if (importedData.deliverers.assignments) {
+          Object.entries(importedData.deliverers.assignments).forEach(([delivererId, pois]) => {
+            Object.keys(pois).forEach(poiId => {
+              const poi = tourPOIMap.get(parseInt(poiId));
+              if (poi && poi.type === "PICKUP" && poi.node && poi.node.deliveryId !== -1) {
+                const select = document.querySelector(`select[data-delivery-id="${poiId}"]`);
+                if (select) {
+                  select.value = delivererId;
+                }
+              }
+            });
+          });
+        }
+        
+        // Créer les layer groups pour les livreurs
+        generateDelivererColors(importedNumberOfDeliverers);
+        updateDelivererDisplay();
+        
+        // ===== 4. CHARGER LES TOURNÉES AVEC LES TRAJETS EXACTS =====
+        console.log("Loading tour paths...");
+        
+        // Nettoyer les anciennes tournées
+        edgeTourLines.forEach((l) => map.removeLayer(l));
+        edgeTourLines = [];
+        
+        for (const layerGroup of delivererLayerGroups.values()) {
+          layerGroup.clearLayers();
+        }
+        
+        // Reconstruire allDeliverersTours
+        allDeliverersTours = {};
+        importedData.deliverers.tours.forEach(tourData => {
+          allDeliverersTours[tourData.delivererId] = {
+            delivererId: tourData.delivererId,
+            tourOrder: tourData.tourOrder,
+            tourDetails: tourData.tourDetails,
+            color: tourData.color
+          };
+        });
+        
+        // Dessiner les trajets exacts
+        importedData.deliverers.tours.forEach(tourData => {
+          const delivererIdInt = tourData.delivererId;
+          const delivererColor = tourData.color || delivererColors.get(delivererIdInt) || "#000000";
+          const layerGroup = delivererLayerGroups.get(delivererIdInt);
+          
+          if (!layerGroup) {
+            console.error(`No layer group found for deliverer ${delivererIdInt}`);
+            return;
+          }
+          
+          layerGroup.addTo(map);
+          
+          // Dessiner tous les segments exacts du trajet
+          if (tourData.exactPaths && tourData.exactPaths.length > 0) {
+            tourData.exactPaths.forEach(pathSegment => {
+              const latlngs = [
+                [pathSegment.from.lat, pathSegment.from.lng],
+                [pathSegment.to.lat, pathSegment.to.lng]
+              ];
+              
+              const line = L.polyline(latlngs, {
+                color: delivererColor,
+                weight: 4,
+                opacity: 0.7
+              }).addTo(layerGroup);
+              
+              edgeTourLines.push(line);
+            });
+          }
+          
+          console.log(`Tour drawn for deliverer ${delivererIdInt} with ${tourData.exactPaths?.length || 0} segments`);
+        });
+        
+        alert(`Tournée complète importée avec succès !`);
+
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+        alert("Erreur lors de la lecture du fichier JSON : " + error.message);
+      }
+    };
+
+    reader.onerror = () => {
+      alert("Erreur lors de la lecture du fichier");
+    };
+
+    reader.readAsText(file);
+  };
+
+  input.oncancel = () => {
+    console.log("Import cancelled");
+  };
+
+  input.click();
 }
