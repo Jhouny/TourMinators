@@ -45,6 +45,7 @@ var activeRequestCounter = 0; // Counter for 'still-calculating' requests
 var requestList = []; // Liste des demandes de livraison
 var delivererList = []; // Liste des livreurs
 
+var delivererETA = {}; // Map delivererId -> ETA string
 var numberOfDeliverers = 1; // Nombre de livreurs (par défaut 1)
 var numberOfRequests = 1; // Nombre de demandes de livraison (initialement 1)
 
@@ -80,6 +81,11 @@ function resetGlobalState() {
   deliveryIdToMarkers = {};
   pairColors = {};
   edgeTourLines = [];
+  numberOfDeliverers = 1;
+  numberOfRequests = 0;
+  delivererETA = {};
+  allDeliverersTours = {};
+  delivererList = [];
   for (const layerGroup of delivererLayerGroups.values()) {
     layerGroup.clearLayers();
   }
@@ -133,12 +139,7 @@ function createDelivererLayerGroups() {
     });
   } else if (delivererLayerGroups.size < getNumberOfDeliverers()) {
     // Ajouter les layer groups manquants
-    for (
-      let i = delivererLayerGroups.size + 1;
-      i <= getNumberOfDeliverers();
-      i++
-    ) {
-      const color = delivererColors.get(i);
+    for ( let i = delivererLayerGroups.size + 1; i <= getNumberOfDeliverers(); i++ ) {
       delivererLayerGroups.set(i, L.layerGroup());
     }
   }
@@ -195,12 +196,11 @@ function updateLayerControl() {
     const layerGroup = delivererLayerGroups.get(delivererId);
     if (layerGroup) {
       // Utiliser du HTML pour afficher la couleur dans le nom
-      overlayMaps[
-        `<span style="display: inline-flex; align-items: center;">
-        <span style="width: 12px; height: 12px; background-color: ${color}; 
-        border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
-        Livreur ${delivererId}
-      </span>`
+      overlayMaps[`
+        <span style="display: inline-flex; align-items: center;">
+          <span style="width: 12px; height: 12px; background-color: ${color}; border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
+          ${delivererId in delivererETA ? `Livreur ${delivererId} - ETA ${delivererETA[delivererId]}` : `Livreur ${delivererId} - ETA --:--`}
+        </span>`
       ] = layerGroup;
     }
   });
@@ -723,13 +723,17 @@ function computeSingleTour(deliverer, poiMap) {
       for (const [id, arrivalTimeObj] of Object.entries(arrivalTimes)) {
         nodeId = arrivalTimeObj.left;
         arrivalTime = arrivalTimeObj.right;
-        console.log(`Setting arrival time for node ${nodeId}: ${arrivalTime}`);
         const marker = nodeMarkers.find((m) => m.nodeId === parseInt(nodeId));
         if (marker) {
-          console.log(`Found marker for node ${nodeId}, updating popup.`);
           marker.setPopupContent(`Type: ${marker.type}<br>Arrival Time: ${arrivalTime}`);
         }
       }
+
+      // Update ETA for deliverer in the layer control
+      // Get last element in arrivalTimes
+      const lastArrival = arrivalTimes[arrivalTimes.length - 1].right || "Unknown";
+      delivererETA[delivererId] = lastArrival;
+      updateLayerControl();
 
       activeRequestCounter--;
       // Unblock buttons only after all async requests are done
