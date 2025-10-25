@@ -495,15 +495,21 @@ function load_xml_delivery() {
           const direction = element.type === "pickup" ? "up" : "down";
 
           const icon = createArrowIcon(color, direction);
-
+          const popUp = L.popup({
+            closeButton: false,
+            autoClose: false,
+            className: "custom-popup",
+          }).setContent(`Type: ${element.type}`);
           const marker = L.marker([element.latitude, element.longitude], {
             icon,
-          }).addTo(map);
+          }).addTo(map).bindPopup(popUp);
 
           // Stocker les informations du marker pour le hover
           marker.deliveryId = element.deliveryId;
           marker.color = color;
           marker.direction = direction;
+          marker.type = element.type;
+          marker.nodeId = element.id;
 
           nodeMarkers.push(marker);
 
@@ -713,23 +719,18 @@ function computeSingleTour(deliverer, poiMap) {
         }
       }
 
-      // Update arrival times in the deliveries list
-      for (let i = 0; i < bestSolution.length; i++) {
-        const nodeId = bestSolution[i];
-        const arrivalTime = arrivalTimes[i].right;
-        const deliveryItem = document.getElementById(`delivery-item-${nodeId}`);
-        console.log(`Updating arrival time for node ${nodeId}: ${arrivalTime}`);
-        if (deliveryItem) {
-          const etaSpan = deliveryItem.querySelector(".eta-span");
-          console.log(`Found ETA span for node ${nodeId}`);
-          if (etaSpan) {
-            etaSpan.textContent = `ETA: ${arrivalTime}`;
-            etaSpan.style.display = "block"; // Show the ETA
-          }
+      // Add arrival times to markers' popups
+      for (const [id, arrivalTimeObj] of Object.entries(arrivalTimes)) {
+        nodeId = arrivalTimeObj.left;
+        arrivalTime = arrivalTimeObj.right;
+        console.log(`Setting arrival time for node ${nodeId}: ${arrivalTime}`);
+        const marker = nodeMarkers.find((m) => m.nodeId === parseInt(nodeId));
+        if (marker) {
+          console.log(`Found marker for node ${nodeId}, updating popup.`);
+          marker.setPopupContent(`Type: ${marker.type}<br>Arrival Time: ${arrivalTime}`);
         }
       }
 
-      // Unblock buttons when all requests are done
       activeRequestCounter--;
       // Unblock buttons only after all async requests are done
       if (activeRequestCounter === 0) {
@@ -759,7 +760,6 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
   filteredDeliveries.forEach((delivery, index) => {
     const deliveryItem = document.createElement("div");
     deliveryItem.className = "delivery-item";
-    deliveryItem.id = `delivery-item-${delivery.node.id}`;
 
     // 🔹 Récupérer la couleur associée - utiliser le deliveryId du node
     const deliveryId = delivery.node?.deliveryId ?? index;
@@ -790,12 +790,6 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
       select.appendChild(option);
     }
 
-    // ETA time display
-    const etaSpan = document.createElement("span");
-    etaSpan.className = "eta-span";
-    etaSpan.textContent = "ETA: --:--";
-    //etaSpan.style.display = "none"; // Removed from DOM for now
-
     // 🔹 Ajouter les événements hover
     deliveryItem.addEventListener("mouseenter", () => {
       highlightMarkers(deliveryId, true);
@@ -803,18 +797,12 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
 
     deliveryItem.addEventListener("mouseleave", () => {
       highlightMarkers(deliveryId, false);
-      //etaSpan.style.display = "none"; // Hide the ETA
-    });
-
-    deliveryItem.addEventListener("click", () => {
-      etaSpan.style.display = "block"; // Show the ETAz
     });
 
     // Assembler les éléments
     deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
-    deliveryItem.appendChild(etaSpan);
 
     deliveriesListContainer.appendChild(deliveryItem);
   });
