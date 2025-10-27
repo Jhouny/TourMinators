@@ -1,3 +1,15 @@
+document.addEventListener("DOMContentLoaded", function () {
+  // Code to run when the DOM is fully loaded
+  
+  // Reset global state on page load
+  resetGlobalState();
+
+  // Reset number of deliverers input
+  const input = document.getElementById("numberOfDeliverers");
+  input.value = 1;
+});
+
+
 // Coordonnées GPS du centre de la carte (ici Lyon) à l'initialisation
 let lat = 45.764;
 let lon = 4.8357;
@@ -1009,6 +1021,7 @@ function importToursFromJSON() {
 
     if (!file) {
       alert("Veuillez sélectionner un fichier JSON");
+      unblockButtons();
       return;
     }
 
@@ -1020,6 +1033,7 @@ function importToursFromJSON() {
         // Vérifier le format du fichier
         if (!importedData.map || !importedData.deliveries || !importedData.deliverers) {
           alert("Format JSON invalide : données manquantes (map, deliveries ou deliverers)");
+          unblockButtons();
           return;
         }
 
@@ -1245,15 +1259,17 @@ function importToursFromJSON() {
         });
         
         alert(`Tournée complète importée avec succès !`);
-
+        unblockButtons();
       } catch (error) {
         console.error("Error parsing JSON:", error);
         alert("Erreur lors de la lecture du fichier JSON : " + error.message);
+        unblockButtons();
       }
     };
 
     reader.onerror = () => {
       alert("Erreur lors de la lecture du fichier");
+      unblockButtons();
     };
 
     reader.readAsText(file);
