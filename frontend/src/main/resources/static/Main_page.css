@@ -44,7 +44,7 @@ body, html {
 }
 
 .header .buttons {
-    display: flex;
+    display: inline-block;
     gap: 15px;
 }
 
@@ -294,7 +294,6 @@ body, html {
   color: #555;
 }
 
-<<<<<<< HEAD
 .delete-btn {
     position: absolute;
     right: 5px;
@@ -306,8 +305,9 @@ body, html {
 
 .delete-btn:hover {
     background-color: rgba(255,0,0,0.1);
-    border-radius: 3px;
-=======
+    border-radius: 3px;   
+}
+
 .input-wrapper {
     display: inline-flex;
     border: 1px solid #ccc;
@@ -381,5 +381,4 @@ body, html {
 button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
->>>>>>> main
 }
