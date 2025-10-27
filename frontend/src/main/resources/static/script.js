@@ -66,6 +66,7 @@ var layerControl = null; // Contrôle des couches Leaflet
 var delivererColors = new Map(); // Map delivererId -> couleur
 
 var allDeliverersTours = {}; // Map delivererId -> tour data
+var assignment = {}; // Global assignment variable
 
 // Génère une couleur hexadécimale aléatoire (évite les verts)
 function getRandomColor() {
@@ -585,7 +586,7 @@ function compute_tour() {
   blockButtons();
   activeRequestCounter = 0;
 
-  let assignement = generateDeliverersAssignment();
+  assignment = generateDeliverersAssignment();
 
   // Diplay the edges tour lines above the existing edges lines
   // Remove previous tour lines
@@ -598,7 +599,7 @@ function compute_tour() {
   }
 
   // Make separate requests for each deliverer
-  for (const [deliverer, poiMap] of Object.entries(assignement)) {
+  for (const [deliverer, poiMap] of Object.entries(assignment)) {
     computeSingleTour(deliverer, poiMap);
   }
 }
@@ -834,7 +835,7 @@ input.addEventListener("change", updateDeliverersList);
 function generateDeliverersAssignment() {
   const numberOfDeliverers = getNumberOfDeliverers();
 
-  const assignment = {};
+  assignment = {};
   for (let i = 1; i <= numberOfDeliverers; i++) {
     assignment[i] = {};
   }
@@ -987,8 +988,11 @@ function exportToursToJSON() {
         };
       }),
       
-      // Assignation des deliveries aux livreurs
-      assignments: generateDeliverersAssignment()
+      // Assigning of pickups/deliveries to deliverers
+      assignments: assignment,
+
+      // Assignment of tour times
+      delivererETA: delivererETA
     }
   };
 
@@ -1026,13 +1030,12 @@ function importToursFromJSON() {
   input.onchange = (e) => {
     let file = e.target.files[0];
 
-    blockButtons();
-
     if (!file) {
       alert("Veuillez sélectionner un fichier JSON");
-      unblockButtons();
       return;
     }
+
+    blockButtons();
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -1141,6 +1144,8 @@ function importToursFromJSON() {
           }
         });
         
+        updateNumberOfRequests();
+
         // Créer les markers pour les pickups/deliveries
         deliveryIdToMarkers = {};
         importedData.deliveries.pois.forEach(poi => {
@@ -1181,7 +1186,8 @@ function importToursFromJSON() {
         
         // ===== 3. CONFIGURER LES LIVREURS =====
         const importedNumberOfDeliverers = importedData.deliverers.numberOfDeliverers;
-        
+        numberOfDeliverers = importedNumberOfDeliverers;
+
         // Mettre à jour le nombre de livreurs
         const deliverersInput = document.getElementById("numberOfDeliverers");
         if (deliverersInput) {
@@ -1212,6 +1218,9 @@ function importToursFromJSON() {
           });
         }
         
+        // Assign deliverer ETAs
+        delivererETA = importedData.deliverers.delivererETA || {};
+
         // Créer les layer groups pour les livreurs
         generateDelivererColors(importedNumberOfDeliverers);
         updateDelivererDisplay();
