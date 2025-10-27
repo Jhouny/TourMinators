@@ -32,9 +32,11 @@
                 <div class="map-container">
                     <div class="map-controls">
                         <button id="toggleEdgesBtn" onclick="toggleEdges()" style="display:none;">Afficher le plan</button>
-                        <input id="inputPickup" type="text" placeholder="Pickup Address to Add" />
-                        <input id="inputDelivery" type="text" placeholder="Delivery Address to Add"/>
-                        <button id="testAddNode" onclick="addPOI()">Ajouter le Pickup-Delivery test</button>
+                        <div id="container-adresse">
+                        <input class="input-adresse" id="inputPickup" type="text" placeholder="Adresse de pickup" />
+                        <input class="input-adresse" id="inputDelivery" type="text" placeholder="Adresse de livraison"/>
+                        <button id="testAddNode" onclick="addPOI()">Ajouter</button>
+                        </div>
                     </div>  
                     <div class="map" id="map"></div>
                 </div>

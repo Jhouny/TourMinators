@@ -353,6 +353,9 @@ function load_xml_map() {
           planButton.style.color = "white";
         }
 
+        // Simulate clicking the confirm deliverer button to reset deliverer count
+        document.getElementById("confirmBtn").click();
+
         unblockButtons();
       })
       .catch((error) => {
@@ -588,6 +591,11 @@ function compute_tour() {
 
   assignment = generateDeliverersAssignment();
 
+  if (Object.keys(assignment).length === 0) {
+    unblockButtons();
+    return;
+  }
+
   // Diplay the edges tour lines above the existing edges lines
   // Remove previous tour lines
   edgeTourLines.forEach((l) => map.removeLayer(l));
@@ -765,11 +773,6 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
       console.warn("Skipping POI without deliveryId:", delivery);
       return; // skip this entry
     }
-    console.log(
-      `Delivery ID: ${deliveryId}, Color: ${pairColors[deliveryId]}, Available colors:`,
-      pairColors
-    );
-
 
     // 🔹 Créer la pastille colorée
     const colorDot = document.createElement("span");
@@ -868,6 +871,12 @@ function generateDeliverersAssignment() {
   const warehousePOI = Array.from(tourPOIMap.values()).find(
     (poi) => poi.type === "WAREHOUSE"
   );
+
+  if (!warehousePOI) {
+    alert ("Aucun entrepôt trouvé dans les POIs de la tournée. Veuillez soumettre un fichier de demande valide.");
+    return assignment;
+  }
+
   for (let i = 1; i <= numberOfDeliverers; i++) {
     assignment[i][warehousePOI.node.id] = warehousePOI;
   }
@@ -1330,40 +1339,35 @@ function importToursFromJSON() {
   input.click();
 }
 
-async function getCoordinatesFromAddress(address) {
+function getCoordinatesFromAddress(address) {
   if (!address || !address.trim()) return null;
   const encoded = encodeURIComponent(address.trim());
 
   // Add an email param for the public Nominatim service (replace with your email or app contact)
-  const email = encodeURIComponent("vi.zocrato@gmail.com");
-  const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&email=${email}`;
-  console.log("Nominatim URL:", url);
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        // Can't set User-Agent from browsers. Email param above helps.
-        "Accept": "application/json"
-      }
-    });
+  const url = `https://data.geopf.fr/geocodage/search?q=${encoded}`;
+  return fetch(url, {
+    method: "GET",
+    headers: {
+      "Accept": "application/json"
+    }
+  }).then(res => {
     if (!res.ok) {
-      console.warn("Nominatim returned HTTP", res.status);
+      console.warn("Returned HTTP: ", res.status);
       return null;
     }
-    const json = await res.json();
-    if (!Array.isArray(json) || json.length === 0) {
-      console.warn("No results from Nominatim for address:", address);
-    return null;}
-    const best = json[0];
-    console.log("Geocoding result:", best);
-    lat = parseFloat(best.lat);
-    lon = parseFloat(best.lon);
-    return { lat : lat, lon: lon};
-  }
-  catch (err) {
+    return res.json();
+  }).then(json => {
+    console.log("Geocoding result for address", address, ":", json);
+    if (!json || !json.features || json.features.length === 0) {
+      console.warn("No results for address:", address);
+      return null;
+    }
+    const best = json.features[0].geometry.coordinates;
+    return { lat : parseFloat(best[1]), lon: parseFloat(best[0]) };
+  }).catch(err => {
     console.error("Geocoding error", err);
     return null;
-  }
+  });
 }
 
 async function getNodeIdsByNames(pickupName, deliveryName) {
@@ -1372,7 +1376,6 @@ async function getNodeIdsByNames(pickupName, deliveryName) {
 
   const coords1 = await getCoordinatesFromAddress(pickupName);     // {lat, lon} or null
   const coords2 = await getCoordinatesFromAddress(deliveryName);
-  console.log("Coordinates for pickup:", coords1, "delivery:", coords2);
   if (!coords1 || !coords2) {
     // handle not found (return nulls, throw, or inform UI)
     return [pickupId, deliveryId];
@@ -1399,19 +1402,18 @@ async function getNodeIdsByNames(pickupName, deliveryName) {
     }
   });
   const MAXDISTANCE = 0.05; // approx ~5km (in degrees)
-  console.log("Minimum distances - pickup:", minDistPickup, "delivery:", minDistDelivery);
   if (minDistPickup >= MAXDISTANCE || minDistDelivery >= MAXDISTANCE) {
     console.warn("Pickup or delivery nodes too far away from the current chart. Please enter another address.");
   }
-  console.log("Found node IDs - pickup:", pickupId, "delivery:", deliveryId);
   return [pickupId, deliveryId];
 }
 
 async function addPOI() {
   if(!planLoaded) {
-    alert("Good morning client (Killian). Nice try to break our code. Please load the map first.");
+    alert("Good morning client (Killian). You'll have to try harder than that to break our code. Please load the map first.");
     return false;
   }
+
   const pickupName = document.getElementById("inputPickup").value;
   const deliveryName = document.getElementById("inputDelivery").value;
 
@@ -1423,10 +1425,9 @@ async function addPOI() {
   }
 
   if (pickupId === deliveryId) {
-    alert("Le point de pickup et de delivery correspondent au même noeud. Choisir une autre adresse.");
+    alert("Les points de pickup et delivery correspondent au même noeud. Choisir une autre adresse.");
     return false;
   }
-
 
   const pickupNode = nodeMap.get(pickupId);
   const deliveryNode = nodeMap.get(deliveryId);
@@ -1480,13 +1481,11 @@ async function addPOI() {
   // Mettre à jour l'UI
   generateDeliveriesList(requestMap.values(), getNumberOfDeliverers(), pairColors);
   generateDelivererColors(getNumberOfDeliverers());
-  updateDelivererLegend();
+  updateDeliverersList();
 
   // Optionnel : vider les inputs après ajout
   document.getElementById("inputPickup").value = "";
   document.getElementById("inputDelivery").value = "";
-
-  console.log("POI pair added:", pairId, pickupId, deliveryId);
 
   return true;
 }
