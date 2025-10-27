@@ -67,6 +67,13 @@ body, html {
     border: 2px solid var(--primary-green);
 }
 
+.header button:disabled {
+    background-color: #cccccc;
+    border-color: #aaaaaa;
+    cursor: not-allowed;
+    color: #666666;
+}
+
 .header button:hover {
     background-color: var(--secondary-green); 
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -140,10 +147,9 @@ body, html {
 }
 
 .delivery-number-people {
-    background-color: var(--white);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .delivery-number-people p {
@@ -165,6 +171,10 @@ body, html {
 .delivery-number-people input:focus {
     outline: none;
     border-color: var(--primary-green);
+}
+
+.delivery-number-people span {
+    margin-right: 5px;
 }
 
 .deliveries-list {
@@ -228,6 +238,17 @@ body, html {
   flex-shrink: 0;
 }
 
+/* Personnalisation optionnelle du contrôle de couches Leaflet */
+.leaflet-control-layers {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-control-layers-expanded {
+  padding: 10px;
+  min-width: 180px;
+}
 .deliverer-legend {
   position: absolute;
   top: 10px;
@@ -238,6 +259,9 @@ body, html {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   min-width: 80px;
+  max-height: 60vh;
+  overflow-y: auto; 
+  overflow-x: hidden; 
 }
 
 .deliverer-legend h4 {
@@ -270,6 +294,7 @@ body, html {
   color: #555;
 }
 
+<<<<<<< HEAD
 .delete-btn {
     position: absolute;
     right: 5px;
@@ -282,4 +307,79 @@ body, html {
 .delete-btn:hover {
     background-color: rgba(255,0,0,0.1);
     border-radius: 3px;
+=======
+.input-wrapper {
+    display: inline-flex;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#numberOfDeliverers {
+    width: 60px;
+    text-align: center;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    line-height: normal;
+    appearance: textfield;
+    -moz-appearance:textfield;
+}
+
+.deliverers-controls {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #ccc;
+}
+
+.deliverers-controls button {
+    width: 25px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    font-size: 14px;
+    line-height: 20px;
+    cursor: pointer;
+    border: none;
+    background-color: #f8f8f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.deliverers-controls button:hover {
+    background-color: #e0e0e0;
+}
+
+#plusBtn {
+    border-bottom: 1px solid #ccc;
+}
+
+#minusBtn {
+    border-bottom: none;
+}
+
+#confirmBtn {
+    padding: 0 10px;
+    background-color: var(--secondary-green);
+    color: var(--white);
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    border-radius: 4px;
+}
+
+#confirmBtn:hover {
+    background-color: #45c35a;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+>>>>>>> main
 }

@@ -1,4 +1,4 @@
-# TourMinators
+# TourMinators &nbsp; &nbsp; [![Unit Tests with Maven](https://github.com/Jhouny/TourMinators/actions/workflows/maven-test.yml/badge.svg)](https://github.com/Jhouny/TourMinators/actions/workflows/maven-test.yml)
 
 ## Structure du projet
 
