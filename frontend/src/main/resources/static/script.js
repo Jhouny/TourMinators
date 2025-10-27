@@ -872,6 +872,19 @@ function generateDeliverersAssignment() {
   return assignment;
 }
 
+const toggleBnWBtn = document.getElementById("toggleBlackAndWhite");
+toggleBnWBtn.addEventListener("click", () => {
+  // Apply black and white filter to the map tiles
+  const mapTiles = document.querySelectorAll(".leaflet-tile-pane");
+  mapTiles.forEach((tile) => {
+    if (toggleBnWBtn.checked) {
+      tile.style.filter = "grayscale(100%)";
+    } else {
+      tile.style.filter = "none";
+    } 
+  });
+});
+
 const plusBtn = document.getElementById("plusBtn");
 const minusBtn = document.getElementById("minusBtn");
 const confirmBtn = document.getElementById("confirmBtn");

@@ -111,14 +111,36 @@ body, html {
   border-radius: 20px;
   cursor: pointer;
   font-weight: 600;
+  font-size: small;
   transition: all 0.3s ease;
   margin-top: 20px; 
   margin-left: 20px;
   margin-top: 10px;
+  display: inline-block;
 }
 
 #toggleEdgesBtn.active {
   background-color: var(--secondary-green);
+}
+
+#toggleBlackAndWhiteLabel {
+  background-color: var(--secondary-green);
+  color: var(--white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: small;
+  transition: all 0.3s ease;
+  margin-top: 20px; 
+  margin-left: 20px;
+  margin-top: 10px;
+  display: inline-block;
+}
+
+#toggleBlackAndWhite:checked + #toggleBlackAndWhiteLabel {
+  background-color: var(--primary-green);
 }
 
 .content-wrapper {
@@ -346,23 +368,6 @@ body, html {
     border-bottom: none;
 }
 
-#confirmBtn {
-    padding: 0 10px;
-    background-color: var(--secondary-green);
-    color: var(--white);
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    border-radius: 4px;
-}
-
-#confirmBtn:hover {
-    background-color: #45c35a;
-}
 
 button:disabled {
     background-color: #cccccc;
