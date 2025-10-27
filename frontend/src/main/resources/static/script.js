@@ -323,7 +323,10 @@ function load_xml_map() {
               [endNode.latitude, endNode.longitude],
             ];
             // On ajoute les edges mais sans les afficher pour l'instant
-            let line = L.polyline(latlngs, { color: "#50d76b" });
+            let line = L.polyline(latlngs, {
+              color: "#50d76b",
+              opacity: 0.5
+            });
             edgeLines.push(line);
           }
         });
@@ -694,7 +697,10 @@ function computeSingleTour(deliverer, poiMap) {
               [endNode.latitude, endNode.longitude],
             ];
             edgeTourLines.push(
-              L.polyline(latlngs, { color: delivererColor }).addTo(layerGroup)
+              L.polyline(latlngs, {
+                color: delivererColor,
+                weight: 5,
+              }).addTo(layerGroup)
             );
           }
 
@@ -868,13 +874,13 @@ function generateDeliverersAssignment() {
 
 const plusBtn = document.getElementById("plusBtn");
 const minusBtn = document.getElementById("minusBtn");
+const confirmBtn = document.getElementById("confirmBtn");
 
 plusBtn.addEventListener("click", () => {
   let current = parseInt(numberOfDeliverers);
   if (current < numberOfRequests) {
     numberOfDeliverers = current + 1;
     document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
-    updateDeliverersList();
   }
 });
 
@@ -883,8 +889,11 @@ minusBtn.addEventListener("click", () => {
   if (current > 1) {
     numberOfDeliverers = current - 1;
     document.getElementById("numberOfDeliverers").value = numberOfDeliverers;
-    updateDeliverersList();
   }
+});
+
+confirmBtn.addEventListener("click", () => {
+  updateDeliverersList();
 });
 
 function updateNumberOfRequests() {
@@ -1073,7 +1082,10 @@ function importToursFromJSON() {
               [startNode.latitude, startNode.longitude],
               [endNode.latitude, endNode.longitude]
             ];
-            const line = L.polyline(latlngs, { color: "#50d76b" });
+            const line = L.polyline(latlngs, { 
+              color: "#50d76b",
+              opacity: 0.5
+            });
             edgeLines.push(line);
           }
         });
@@ -1256,8 +1268,7 @@ function importToursFromJSON() {
               
               const line = L.polyline(latlngs, {
                 color: delivererColor,
-                weight: 4,
-                opacity: 0.7
+                weight: 5
               }).addTo(layerGroup);
               
               edgeTourLines.push(line);
