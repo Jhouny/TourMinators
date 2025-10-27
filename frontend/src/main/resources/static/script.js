@@ -549,10 +549,11 @@ function generateDeliveriesList(
   // Comme deliveries est un Map.values(), on le transforme en tableau
   const deliveriesArray = Array.from(deliveries);
 
-  // Filtrer pour exclure le warehouse (deliveryId === -1)
+  // Filtrer pour exclure le warehouse (deliveryId === -1) et aussi les entrées undefined/null
   const filteredDeliveries = deliveriesArray.filter(
-    (delivery) => delivery.node?.deliveryId !== -1
+    (delivery) => delivery.node?.deliveryId !== -1 && delivery.node?.deliveryId != null && delivery.node !== undefined
   );
+
 
   filteredDeliveries.forEach((delivery, index) => {
     const deliveryItem = document.createElement("div");
@@ -566,11 +567,15 @@ function generateDeliveriesList(
     // 🔹 Récupérer la couleur associée - utiliser le deliveryId du node
     const deliveryId = delivery.node?.deliveryId ?? index;
     const color = pairColors[deliveryId] || "#999";
-
+    if (deliveryId == null) {
+      console.warn("Skipping POI without deliveryId:", delivery);
+      return; // skip this entry
+    }
     console.log(
       `Delivery ID: ${deliveryId}, Color: ${pairColors[deliveryId]}, Available colors:`,
       pairColors
     );
+
 
     // 🔹 Créer la pastille colorée
     const colorDot = document.createElement("span");
@@ -603,10 +608,21 @@ function generateDeliveriesList(
       highlightMarkers(deliveryId, false);
     });
 
+    // Créer le bouton delete (petit X rouge) qui appelle deletePOIByDeliveryId(pairId)
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-btn";
+    deleteBtn.type = "button";
+    deleteBtn.title = "Supprimer";
+    deleteBtn.textContent = "×";
+    // appeler la fonction existante en inline pour suivre ton modèle simple
+    deleteBtn.setAttribute("onclick", `deletePOIByDeliveryId(${deliveryId})`);
+
     // Assembler les éléments
     deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
+    deliveryItem.appendChild(deleteBtn);
+
 
     deliveriesListContainer.appendChild(deliveryItem);
   });
@@ -664,7 +680,13 @@ function generateDeliverersAssignment() {
         deliveryPOI = poi;
       }
     });
+    
 
+    // If there are no nodes, alert and skip
+    if (!deliveryPOI) {
+      console.warn("No delivery POI found for deliveryId. Node could have been deleted using deleteByID", deliveryId);
+      return;
+    }
     // Ajouter les POIs au livreur sélectionné
     const delivererKey = `livreur ${selectedDeliverer}`;
     assignment[delivererKey][deliveryId] = pickupPOI;
@@ -782,7 +804,7 @@ async function addPOI() {
       lastPairId = poi.node.deliveryId;    }
   } // À vérifier
 
-  pairId = lastPairId+1;
+  let pairId = lastPairId + 1;
   pickupNode.deliveryId = pairId;
   deliveryNode.deliveryId = pairId;
 
@@ -836,10 +858,95 @@ async function addPOI() {
   return true;
 }
 
-async function deletePOI() {
-  if(!planLoaded) {
-    alert("Good morning client (Killian). Nice try to break our code. Please load the map first.");
-    return false;
-  }
-  const deliveryName = document.getElementById("inputPickupDeliveryID").value;
+
+async function deletePOIByDeliveryId(delId) {
+    if (!planLoaded) {
+        alert("Veuillez charger une carte d'abord.");
+        return false;
+    }
+
+    // Normaliser l'id et vérifier sa validité
+    const parsedId = Number(delId);
+    if (!Number.isInteger(parsedId) || isNaN(parsedId)) {
+      console.warn("deletePOIByDeliveryId called with invalid id:", delId);
+      return false;
+    }
+    
+    // Supprimer immédiatement le/les divs correspondants dans la liste (UX instantané)
+    try {
+      const selector = `.delivery-item[deliveryID="${parsedId}"]`;
+      const items = document.querySelectorAll(selector);
+      if (items && items.length > 0) {
+        items.forEach(it => it.remove());
+        console.log(`Removed ${items.length} delivery-item DOM element(s) for deliveryID ${parsedId}`);
+      } else {
+        // fallback: essayer attribut en lowercase si jamais généré différemment
+        const altItems = document.querySelectorAll(`.delivery-item[deliveryId="${parsedId}"]`);
+        if (altItems && altItems.length > 0) {
+          altItems.forEach(it => it.remove());
+          console.log(`Removed ${altItems.length} delivery-item DOM element(s) for deliveryId ${parsedId}`);
+        }
+      }
+    } catch (e) {
+      console.warn("Error removing delivery-item DOM elements:", e);
+    }
+
+    // Remove markers from map
+    if (deliveryIdToMarkers[delId]) {
+        deliveryIdToMarkers[delId].forEach((m) => {
+            try { map.removeLayer(m); } catch(e) {}
+        });
+        delete deliveryIdToMarkers[delId];
+        nodeMarkers = nodeMarkers.filter((m) => m.deliveryId !== delId);
+    }
+
+    // Vérifier qu'il y a bien une paire correspondante à supprimer
+    let exists = false;
+    if (deliveryIdToMarkers[parsedId] && deliveryIdToMarkers[parsedId].length > 0) {
+      exists = true;
+    } else {
+      for (let [, poi] of tourPOIMap) {
+        if (poi.node && poi.node.deliveryId === parsedId) {
+          exists = true;
+          break;
+        }
+      }
+    }
+    if (!exists) {
+      console.warn(`No POI pair found for deliveryId ${parsedId} — aborting deletion.`);
+      return false;
+    }
+
+    // Remove POIs from tourPOIMap and clear deliveryId on nodes
+    const tourKeysToDelete = [];
+    for (let [nodeId, poi] of tourPOIMap) {
+        if (poi.node && poi.node.deliveryId === delId) {
+            if (poi.node) poi.node.deliveryId = undefined;
+            tourKeysToDelete.push(nodeId);
+        }
+    }
+    tourKeysToDelete.forEach((k) => tourPOIMap.delete(k));
+
+    // Remove pickups from requestMap
+    const reqKeysToDelete = [];
+    for (let [nodeId, poi] of requestMap) {
+        if (poi.node && poi.node.deliveryId === delId) {
+            reqKeysToDelete.push(nodeId);
+        }
+    }
+    reqKeysToDelete.forEach((k) => requestMap.delete(k));
+
+    // Remove color
+    if (pairColors[delId]){
+      delete pairColors[delId];
+      console.log(`Deleted POI pair ${delId}`);
+    } 
+
+    // Update UI (regenerate list) and re-add delete buttons
+    generateDeliveriesList(requestMap.values(), getNumberOfDeliverers(), pairColors);
+    // re-générer couleurs / légende si besoin
+    generateDelivererColors(getNumberOfDeliverers());
+
+    
+    return true;
 }
