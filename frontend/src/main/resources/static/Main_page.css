@@ -109,6 +109,7 @@ body, html {
 }
 
 #container-adresse {
+    position: relative;
     display: flex;
     align-items: center;
     margin-left: 10px;
@@ -258,6 +259,16 @@ body, html {
   padding: 10px;
   min-width: 180px;
 }
+
+.arrow-icon {
+  /* Custom styles for arrow icons can be added here */
+}
+
+.highlighted-arrow-icon {
+  -webkit-filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .7));
+  filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .7));
+}
+
 .deliverer-legend {
   position: absolute;
   top: 10px;
@@ -312,6 +323,34 @@ body, html {
     box-sizing: border-box;
     width: 200px;
     height: 40px;
+}
+
+#suggestions-adresse {
+    position: absolute;
+    background-color: var(--white);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    width: 100%;
+    top: 100%;
+    left: 0;
+    margin-top: 3px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+}
+
+#suggestions-adresse:empty {
+    display: none;
+}
+
+.suggestion-option {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.suggestion-option:hover {
+    background-color: #f0f0f0;
 }
 
 #testAddNode {

@@ -123,14 +123,14 @@ function isGreenish(hexColor) {
 }
 
 // Makes an arrow icon pointing up or down with the given color
-function createArrowIcon(color, direction, size = 32) {
+function createArrowIcon(color, direction, size = 32, increased = false) {
   const rotation =
     direction === "down" ? "rotate(180 12 12)" : "rotate(0 12 12)";
 
   return L.divIcon({
-    className: "",
+    className: "", 
     html: `
-            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" 
+            <svg class="${ increased ? "highlighted-arrow-icon" : "arrow-icon" }" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"
                  viewBox="0 0 24 24">
                 <g transform="${rotation}">
                     <path fill="${color}" d="M12 2L5 9h4v9h6V9h4z"/>
@@ -836,7 +836,7 @@ function highlightMarkers(deliveryId, highlight) {
   const size = highlight ? 48 : 32; // Taille agrandie ou normale
 
   markers.forEach((marker) => {
-    const newIcon = createArrowIcon(marker.color, marker.direction, size);
+    const newIcon = createArrowIcon(marker.color, marker.direction, size, highlight);
     marker.setIcon(newIcon);
   });
 }
@@ -1339,7 +1339,8 @@ function importToursFromJSON() {
   input.click();
 }
 
-function getCoordinatesFromAddress(address) {
+// Geocoding API interface
+function geocodingAPIRequest(address) {
   if (!address || !address.trim()) return null;
   const encoded = encodeURIComponent(address.trim());
 
@@ -1356,7 +1357,30 @@ function getCoordinatesFromAddress(address) {
       return null;
     }
     return res.json();
-  }).then(json => {
+  }).catch(err => {
+    console.error("Geocoding error", err);
+    return null;
+  });
+}
+// Function to retrieve a list of matching addresses for autocomplete
+function getAddressSuggestions(query) {
+  let json = geocodingAPIRequest(query);
+  return json.then(json => {
+    if (!json || !json.features || json.features.length === 0) {
+      console.warn("No suggestions for query:", query);
+      return [];
+    }
+    const suggestions = json.features.map(feature => feature.properties.label);
+    return suggestions;
+  }).catch(err => {
+    console.error("Geocoding error", err);
+    return [];
+  });
+}
+// Function to get coordinates from an address using Geocoding API
+function getCoordinatesFromAddress(address) {
+  let json = geocodingAPIRequest(address);
+  return json.then(json => {
     console.log("Geocoding result for address", address, ":", json);
     if (!json || !json.features || json.features.length === 0) {
       console.warn("No results for address:", address);
@@ -1370,6 +1394,70 @@ function getCoordinatesFromAddress(address) {
   });
 }
 
+let debounceTimer = null;
+const DELAY_MS = 500;
+// Event listeners for input fields with debouncing for API calls
+document.getElementById("inputPickup").addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+  getAddressSuggestions(document.getElementById("inputPickup").value)
+      .then(addresses => {
+        // Add the options to the suggestions list
+        const dataList = document.getElementById("suggestions-adresse");
+        dataList.innerHTML = "";
+        if (addresses) {
+          for (const address of addresses) {
+            const option = document.createElement("option");
+            option.className = "suggestion-option";
+            option.value = address;
+            option.textContent = address;
+            option.addEventListener("click", () => {
+              document.getElementById("inputPickup").value = address;
+              // Empty the suggestions list
+              dataList.innerHTML = "";
+            });
+            dataList.appendChild(option);
+          }
+        }
+      });
+  }, DELAY_MS);
+});
+document.getElementById("inputDelivery").addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    getAddressSuggestions(document.getElementById("inputDelivery").value)
+      .then(addresses => {
+        // Add the options to the suggestions list
+        const dataList = document.getElementById("suggestions-adresse");
+        dataList.innerHTML = "";
+        if (addresses) {
+          for (const address of addresses) {
+            const option = document.createElement("option");
+            option.className = "suggestion-option";
+            option.value = address;
+            option.textContent = address;
+            option.addEventListener("click", () => {
+              document.getElementById("inputDelivery").value = address;
+              // Empty the suggestions list
+              dataList.innerHTML = "";
+            });
+            dataList.appendChild(option);
+          }
+        }
+      });
+  }, DELAY_MS);
+})
+
+// Function to clear the suggestions list when losing focus
+function clearSuggestionsOnBlur() {
+  setTimeout(() => {
+    const dataList = document.getElementById("suggestions-adresse");
+    dataList.innerHTML = "";
+  }, 200);
+}
+document.getElementById("inputPickup").addEventListener("blur", clearSuggestionsOnBlur);
+document.getElementById("inputDelivery").addEventListener("blur", clearSuggestionsOnBlur);
+
 async function getNodeIdsByNames(pickupName, deliveryName) {
   let pickupId = null;
   let deliveryId = null;
@@ -1380,8 +1468,8 @@ async function getNodeIdsByNames(pickupName, deliveryName) {
     // handle not found (return nulls, throw, or inform UI)
     return [pickupId, deliveryId];
   }
-  minDistPickup = Infinity;
-  minDistDelivery = Infinity;
+  let minDistPickup = Infinity;
+  let minDistDelivery = Infinity;
 
   nodeMap.forEach((node, id) => {
     const distToPickup = Math.sqrt(
@@ -1401,9 +1489,10 @@ async function getNodeIdsByNames(pickupName, deliveryName) {
       deliveryId = id;
     }
   });
-  const MAXDISTANCE = 0.05; // approx ~5km (in degrees)
+  const MAXDISTANCE = 0.001; // approx ~100m (in degrees)
   if (minDistPickup >= MAXDISTANCE || minDistDelivery >= MAXDISTANCE) {
-    console.warn("Pickup or delivery nodes too far away from the current chart. Please enter another address.");
+    alert("Les points de pickup ou delivery sont trop éloignés de la carte actuelle. Veuillez essayer une autre adresse.");
+    return [null, null];
   }
   return [pickupId, deliveryId];
 }
@@ -1436,7 +1525,7 @@ async function addPOI() {
   for (let [, poi] of tourPOIMap) {
     if (poi.node.deliveryId && poi.node.deliveryId > lastPairId) {
       lastPairId = poi.node.deliveryId;    }
-  } // À vérifier
+  }
 
   let pairId = lastPairId + 1;
   pickupNode.deliveryId = pairId;
@@ -1445,10 +1534,10 @@ async function addPOI() {
   const pickupPOI = { type: "PICKUP", node: pickupNode, associatedPoI: deliveryId, duration: null };
   const deliveryPOI = { type: "DELIVERY", node: deliveryNode, associatedPoI: pickupId, duration: null };
 
-  // requestMap contient les PICKUP (comme load_xml_delivery)
+  // requestMap contains PICKUP entries (like load_xml_delivery)
   requestMap.set(pickupId, pickupPOI);
 
-  // tourPOIMap doit contenir tous les POIs (pickup + delivery) pour compute_tour
+  // tourPOIMap must contain all POIs (pickup + delivery) for compute_tour
   tourPOIMap.set(pickupId, pickupPOI);
   tourPOIMap.set(deliveryId, deliveryPOI);
 
@@ -1459,7 +1548,7 @@ async function addPOI() {
   }
   const color = pairColors[pairId];
 
-  // Créer et ajouter les markers sur la carte (pickup = up, delivery = down)
+  // Create and add markers to the map (pickup = up, delivery = down)
   const pickupIcon = createArrowIcon(color, "up");
   const deliveryIcon = createArrowIcon(color, "down");
 
@@ -1473,17 +1562,17 @@ async function addPOI() {
   deliveryMarker.color = color;
   deliveryMarker.direction = "down";
 
-  // Stocker les markers pour gestion hover / highlight / suppression ultérieure
+  // Store markers for hover/highlight/later deletion management
   nodeMarkers.push(pickupMarker, deliveryMarker);
   if (!deliveryIdToMarkers[pairId]) deliveryIdToMarkers[pairId] = [];
   deliveryIdToMarkers[pairId].push(pickupMarker, deliveryMarker);
 
-  // Mettre à jour l'UI
+  // Update the UI
   generateDeliveriesList(requestMap.values(), getNumberOfDeliverers(), pairColors);
   generateDelivererColors(getNumberOfDeliverers());
   updateDeliverersList();
 
-  // Optionnel : vider les inputs après ajout
+  // Optional: clear inputs after adding
   document.getElementById("inputPickup").value = "";
   document.getElementById("inputDelivery").value = "";
 
