@@ -810,7 +810,7 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
 
     // Créer le bouton delete (petit X rouge) qui appelle deletePOIByDeliveryId(pairId)
     const deleteBtn = document.createElement("button");
-    deleteBtn.className = "delete-btn";
+    deleteBtn.className = "delete-btn user-action-button";
     deleteBtn.type = "button";
     deleteBtn.title = "Supprimer";
     deleteBtn.textContent = "×";
