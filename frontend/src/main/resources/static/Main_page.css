@@ -101,6 +101,18 @@ body, html {
 
 .map-controls {
   height: 50px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  align-items: center;
+  justify-content: space-between;
+  display: flex;
+}
+
+#container-adresse {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
 }
 
 #toggleEdgesBtn {
@@ -112,9 +124,7 @@ body, html {
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
-  margin-top: 20px; 
-  margin-left: 20px;
-  margin-top: 10px;
+  margin-right: 10px;
 }
 
 #toggleEdgesBtn.active {
@@ -133,7 +143,7 @@ body, html {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 .right-panel {
@@ -249,6 +259,16 @@ body, html {
   padding: 10px;
   min-width: 180px;
 }
+
+.arrow-icon {
+  /* Custom styles for arrow icons can be added here */
+}
+
+.highlighted-arrow-icon {
+  -webkit-filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .7));
+  filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .7));
+}
+
 .deliverer-legend {
   position: absolute;
   top: 10px;
@@ -292,6 +312,69 @@ body, html {
 .deliverer-legend-label {
   font-size: 13px;
   color: #555;
+}
+
+.input-adresse {
+    padding: 8px 12px;
+    margin-right: 10px;
+    border: 2px solid #DDDDDD;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+    width: 200px;
+    height: 40px;
+}
+
+#suggestions-adresse {
+    position: absolute;
+    background-color: var(--white);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    width: 100%;
+    top: 100%;
+    left: 0;
+    margin-top: 3px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+}
+
+#suggestions-adresse:empty {
+    display: none;
+}
+
+.suggestion-option {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.suggestion-option:hover {
+    background-color: #f0f0f0;
+}
+
+#testAddNode {
+    background-color: var(--primary-green);
+    color: var(--white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.delete-btn {
+    right: 5px;
+    color: red;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 0 5px;
+}
+
+.delete-btn:hover {
+    background-color: rgba(255,0,0,0.1);
+    border-radius: 3px;
 }
 
 .input-wrapper {

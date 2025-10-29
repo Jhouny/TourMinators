@@ -123,14 +123,14 @@ function isGreenish(hexColor) {
 }
 
 // Makes an arrow icon pointing up or down with the given color
-function createArrowIcon(color, direction, size = 32) {
+function createArrowIcon(color, direction, size = 32, increased = false) {
   const rotation =
     direction === "down" ? "rotate(180 12 12)" : "rotate(0 12 12)";
 
   return L.divIcon({
-    className: "",
+    className: "", 
     html: `
-            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" 
+            <svg class="${ increased ? "highlighted-arrow-icon" : "arrow-icon" }" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"
                  viewBox="0 0 24 24">
                 <g transform="${rotation}">
                     <path fill="${color}" d="M12 2L5 9h4v9h6V9h4z"/>
@@ -352,6 +352,9 @@ function load_xml_map() {
           planButton.style.backgroundColor = "var(--primary-green)";
           planButton.style.color = "white";
         }
+
+        // Simulate clicking the confirm deliverer button to reset deliverer count
+        document.getElementById("confirmBtn").click();
 
         unblockButtons();
       })
@@ -588,6 +591,11 @@ function compute_tour() {
 
   assignment = generateDeliverersAssignment();
 
+  if (Object.keys(assignment).length === 0) {
+    unblockButtons();
+    return;
+  }
+
   // Diplay the edges tour lines above the existing edges lines
   // Remove previous tour lines
   edgeTourLines.forEach((l) => map.removeLayer(l));
@@ -748,9 +756,11 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
   const deliveriesArray = Array.from(deliveries);
 
   // Filter out the deliveries with deliveryId -1 (warehouse)
+  // Filtrer pour exclure le warehouse (deliveryId === -1) et aussi les entrées undefined/null
   const filteredDeliveries = deliveriesArray.filter(
-    (delivery) => delivery.node?.deliveryId !== -1
+    (delivery) => delivery.node?.deliveryId !== -1 && delivery.node?.deliveryId != null && delivery.node !== undefined
   );
+
 
   filteredDeliveries.forEach((delivery, index) => {
     const deliveryItem = document.createElement("div");
@@ -759,6 +769,10 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
     // 🔹 Récupérer la couleur associée - utiliser le deliveryId du node
     const deliveryId = delivery.node?.deliveryId ?? index;
     const color = pairColors[deliveryId] || "#999";
+    if (deliveryId == null) {
+      console.warn("Skipping POI without deliveryId:", delivery);
+      return; // skip this entry
+    }
 
     // 🔹 Créer la pastille colorée
     const colorDot = document.createElement("span");
@@ -794,10 +808,21 @@ function generateDeliveriesList( deliveries, numberOfDeliverers = 1, pairColors 
       highlightMarkers(deliveryId, false);
     });
 
+    // Créer le bouton delete (petit X rouge) qui appelle deletePOIByDeliveryId(pairId)
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-btn";
+    deleteBtn.type = "button";
+    deleteBtn.title = "Supprimer";
+    deleteBtn.textContent = "×";
+    // appeler la fonction existante en inline pour suivre ton modèle simple
+    deleteBtn.setAttribute("onclick", `deletePOIByDeliveryId(${deliveryId})`);
+
     // Assembler les éléments
     deliveryItem.appendChild(colorDot);
     deliveryItem.appendChild(label);
     deliveryItem.appendChild(select);
+    deliveryItem.appendChild(deleteBtn);
+
 
     deliveriesListContainer.appendChild(deliveryItem);
   });
@@ -811,7 +836,7 @@ function highlightMarkers(deliveryId, highlight) {
   const size = highlight ? 48 : 32; // Taille agrandie ou normale
 
   markers.forEach((marker) => {
-    const newIcon = createArrowIcon(marker.color, marker.direction, size);
+    const newIcon = createArrowIcon(marker.color, marker.direction, size, highlight);
     marker.setIcon(newIcon);
   });
 }
@@ -846,6 +871,12 @@ function generateDeliverersAssignment() {
   const warehousePOI = Array.from(tourPOIMap.values()).find(
     (poi) => poi.type === "WAREHOUSE"
   );
+
+  if (!warehousePOI) {
+    alert ("Aucun entrepôt trouvé dans les POIs de la tournée. Veuillez soumettre un fichier de demande valide.");
+    return assignment;
+  }
+
   for (let i = 1; i <= numberOfDeliverers; i++) {
     assignment[i][warehousePOI.node.id] = warehousePOI;
   }
@@ -863,7 +894,13 @@ function generateDeliverersAssignment() {
         deliveryPOI = poi;
       }
     });
+    
 
+    // If there are no nodes, alert and skip
+    if (!deliveryPOI) {
+      console.warn("No delivery POI found for deliveryId. Node could have been deleted using deleteByID", deliveryId);
+      return;
+    }
     // Ajouter les POIs au livreur sélectionné
     assignment[selectedDeliverer][deliveryId] = pickupPOI;
     assignment[selectedDeliverer][deliveryPOI.node.id] = deliveryPOI;
@@ -1300,4 +1337,337 @@ function importToursFromJSON() {
   };
 
   input.click();
+}
+
+// Geocoding API interface
+function geocodingAPIRequest(address) {
+  if (!address || !address.trim()) return null;
+  const encoded = encodeURIComponent(address.trim());
+
+  // Add an email param for the public Nominatim service (replace with your email or app contact)
+  const url = `https://data.geopf.fr/geocodage/search?q=${encoded}`;
+  return fetch(url, {
+    method: "GET",
+    headers: {
+      "Accept": "application/json"
+    }
+  }).then(res => {
+    if (!res.ok) {
+      console.warn("Returned HTTP: ", res.status);
+      return null;
+    }
+    return res.json();
+  }).catch(err => {
+    console.error("Geocoding error", err);
+    return null;
+  });
+}
+// Function to retrieve a list of matching addresses for autocomplete
+function getAddressSuggestions(query) {
+  let json = geocodingAPIRequest(query);
+  return json.then(json => {
+    if (!json || !json.features || json.features.length === 0) {
+      console.warn("No suggestions for query:", query);
+      return [];
+    }
+    const suggestions = json.features.map(feature => feature.properties.label);
+    return suggestions;
+  }).catch(err => {
+    console.error("Geocoding error", err);
+    return [];
+  });
+}
+// Function to get coordinates from an address using Geocoding API
+function getCoordinatesFromAddress(address) {
+  let json = geocodingAPIRequest(address);
+  return json.then(json => {
+    console.log("Geocoding result for address", address, ":", json);
+    if (!json || !json.features || json.features.length === 0) {
+      console.warn("No results for address:", address);
+      return null;
+    }
+    const best = json.features[0].geometry.coordinates;
+    return { lat : parseFloat(best[1]), lon: parseFloat(best[0]) };
+  }).catch(err => {
+    console.error("Geocoding error", err);
+    return null;
+  });
+}
+
+let debounceTimer = null;
+const DELAY_MS = 500;
+// Event listeners for input fields with debouncing for API calls
+document.getElementById("inputPickup").addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+  getAddressSuggestions(document.getElementById("inputPickup").value)
+      .then(addresses => {
+        // Add the options to the suggestions list
+        const dataList = document.getElementById("suggestions-adresse");
+        dataList.innerHTML = "";
+        if (addresses) {
+          for (const address of addresses) {
+            const option = document.createElement("option");
+            option.className = "suggestion-option";
+            option.value = address;
+            option.textContent = address;
+            option.addEventListener("click", () => {
+              document.getElementById("inputPickup").value = address;
+              // Empty the suggestions list
+              dataList.innerHTML = "";
+            });
+            dataList.appendChild(option);
+          }
+        }
+      });
+  }, DELAY_MS);
+});
+document.getElementById("inputDelivery").addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    getAddressSuggestions(document.getElementById("inputDelivery").value)
+      .then(addresses => {
+        // Add the options to the suggestions list
+        const dataList = document.getElementById("suggestions-adresse");
+        dataList.innerHTML = "";
+        if (addresses) {
+          for (const address of addresses) {
+            const option = document.createElement("option");
+            option.className = "suggestion-option";
+            option.value = address;
+            option.textContent = address;
+            option.addEventListener("click", () => {
+              document.getElementById("inputDelivery").value = address;
+              // Empty the suggestions list
+              dataList.innerHTML = "";
+            });
+            dataList.appendChild(option);
+          }
+        }
+      });
+  }, DELAY_MS);
+})
+
+// Function to clear the suggestions list when losing focus
+function clearSuggestionsOnBlur() {
+  setTimeout(() => {
+    const dataList = document.getElementById("suggestions-adresse");
+    dataList.innerHTML = "";
+  }, 200);
+}
+document.getElementById("inputPickup").addEventListener("blur", clearSuggestionsOnBlur);
+document.getElementById("inputDelivery").addEventListener("blur", clearSuggestionsOnBlur);
+
+async function getNodeIdsByNames(pickupName, deliveryName) {
+  let pickupId = null;
+  let deliveryId = null;
+
+  const coords1 = await getCoordinatesFromAddress(pickupName);     // {lat, lon} or null
+  const coords2 = await getCoordinatesFromAddress(deliveryName);
+  if (!coords1 || !coords2) {
+    // handle not found (return nulls, throw, or inform UI)
+    return [pickupId, deliveryId];
+  }
+  let minDistPickup = Infinity;
+  let minDistDelivery = Infinity;
+
+  nodeMap.forEach((node, id) => {
+    const distToPickup = Math.sqrt(
+      Math.pow(node.latitude - coords1.lat, 2) +
+      Math.pow(node.longitude - coords1.lon, 2)
+    );
+    const distToDelivery = Math.sqrt(
+      Math.pow(node.latitude - coords2.lat, 2) +
+      Math.pow(node.longitude - coords2.lon, 2)
+    );
+    if (distToPickup < minDistPickup) {
+      minDistPickup = distToPickup;
+      pickupId = id;
+    }
+    if (distToDelivery < minDistDelivery) {
+      minDistDelivery = distToDelivery;
+      deliveryId = id;
+    }
+  });
+  const MAXDISTANCE = 0.001; // approx ~100m (in degrees)
+  if (minDistPickup >= MAXDISTANCE || minDistDelivery >= MAXDISTANCE) {
+    alert("Les points de pickup ou delivery sont trop éloignés de la carte actuelle. Veuillez essayer une autre adresse.");
+    return [null, null];
+  }
+  return [pickupId, deliveryId];
+}
+
+async function addPOI() {
+  if(!planLoaded) {
+    alert("Good morning client (Killian). You'll have to try harder than that to break our code. Please load the map first.");
+    return false;
+  }
+
+  const pickupName = document.getElementById("inputPickup").value;
+  const deliveryName = document.getElementById("inputDelivery").value;
+
+  const [pickupId, deliveryId] = await getNodeIdsByNames(pickupName, deliveryName);
+
+  if (!pickupId || !deliveryId) {
+    console.warn("Could not find node(s) for addresses", pickupName, deliveryName, pickupId, deliveryId);
+    return false;
+  }
+
+  if (pickupId === deliveryId) {
+    alert("Les points de pickup et delivery correspondent au même noeud. Choisir une autre adresse.");
+    return false;
+  }
+
+  const pickupNode = nodeMap.get(pickupId);
+  const deliveryNode = nodeMap.get(deliveryId);
+
+  let lastPairId = 0;
+  for (let [, poi] of tourPOIMap) {
+    if (poi.node.deliveryId && poi.node.deliveryId > lastPairId) {
+      lastPairId = poi.node.deliveryId;    }
+  }
+
+  let pairId = lastPairId + 1;
+  pickupNode.deliveryId = pairId;
+  deliveryNode.deliveryId = pairId;
+
+  const pickupPOI = { type: "PICKUP", node: pickupNode, associatedPoI: deliveryId, duration: null };
+  const deliveryPOI = { type: "DELIVERY", node: deliveryNode, associatedPoI: pickupId, duration: null };
+
+  // requestMap contains PICKUP entries (like load_xml_delivery)
+  requestMap.set(pickupId, pickupPOI);
+
+  // tourPOIMap must contain all POIs (pickup + delivery) for compute_tour
+  tourPOIMap.set(pickupId, pickupPOI);
+  tourPOIMap.set(deliveryId, deliveryPOI);
+
+  if (!pairColors[pairId]) {
+    pairColors[pairId] = getRandomColor();
+  } else{
+    console.warn("Pair color already exists for pairId. Verify if pairID is unique", pairId, ":", pairColors[pairId]);
+  }
+  const color = pairColors[pairId];
+
+  // Create and add markers to the map (pickup = up, delivery = down)
+  const pickupIcon = createArrowIcon(color, "up");
+  const deliveryIcon = createArrowIcon(color, "down");
+
+  const pickupMarker = L.marker([pickupNode.latitude, pickupNode.longitude], { icon: pickupIcon }).addTo(map);
+  pickupMarker.deliveryId = pairId;
+  pickupMarker.color = color;
+  pickupMarker.direction = "up";
+
+  const deliveryMarker = L.marker([deliveryNode.latitude, deliveryNode.longitude], { icon: deliveryIcon }).addTo(map);
+  deliveryMarker.deliveryId = pairId;
+  deliveryMarker.color = color;
+  deliveryMarker.direction = "down";
+
+  // Store markers for hover/highlight/later deletion management
+  nodeMarkers.push(pickupMarker, deliveryMarker);
+  if (!deliveryIdToMarkers[pairId]) deliveryIdToMarkers[pairId] = [];
+  deliveryIdToMarkers[pairId].push(pickupMarker, deliveryMarker);
+
+  // Update the UI
+  generateDeliveriesList(requestMap.values(), getNumberOfDeliverers(), pairColors);
+  generateDelivererColors(getNumberOfDeliverers());
+  updateDeliverersList();
+
+  // Optional: clear inputs after adding
+  document.getElementById("inputPickup").value = "";
+  document.getElementById("inputDelivery").value = "";
+
+  return true;
+}
+
+
+async function deletePOIByDeliveryId(delId) {
+    if (!planLoaded) {
+        alert("Veuillez charger une carte d'abord.");
+        return false;
+    }
+
+    // Normaliser l'id et vérifier sa validité
+    const parsedId = Number(delId);
+    if (!Number.isInteger(parsedId) || isNaN(parsedId)) {
+      console.warn("deletePOIByDeliveryId called with invalid id:", delId);
+      return false;
+    }
+    
+    // Supprimer immédiatement le/les divs correspondants dans la liste (UX instantané)
+    try {
+      const selector = `.delivery-item[deliveryID="${parsedId}"]`;
+      const items = document.querySelectorAll(selector);
+      if (items && items.length > 0) {
+        items.forEach(it => it.remove());
+        console.log(`Removed ${items.length} delivery-item DOM element(s) for deliveryID ${parsedId}`);
+      } else {
+        // fallback: essayer attribut en lowercase si jamais généré différemment
+        const altItems = document.querySelectorAll(`.delivery-item[deliveryId="${parsedId}"]`);
+        if (altItems && altItems.length > 0) {
+          altItems.forEach(it => it.remove());
+          console.log(`Removed ${altItems.length} delivery-item DOM element(s) for deliveryId ${parsedId}`);
+        }
+      }
+    } catch (e) {
+      console.warn("Error removing delivery-item DOM elements:", e);
+    }
+
+    // Remove markers from map
+    if (deliveryIdToMarkers[delId]) {
+        deliveryIdToMarkers[delId].forEach((m) => {
+            try { map.removeLayer(m); } catch(e) {}
+        });
+        delete deliveryIdToMarkers[delId];
+        nodeMarkers = nodeMarkers.filter((m) => m.deliveryId !== delId);
+    }
+
+    // Vérifier qu'il y a bien une paire correspondante à supprimer
+    let exists = false;
+    if (deliveryIdToMarkers[parsedId] && deliveryIdToMarkers[parsedId].length > 0) {
+      exists = true;
+    } else {
+      for (let [, poi] of tourPOIMap) {
+        if (poi.node && poi.node.deliveryId === parsedId) {
+          exists = true;
+          break;
+        }
+      }
+    }
+    if (!exists) {
+      console.warn(`No POI pair found for deliveryId ${parsedId} — aborting deletion.`);
+      return false;
+    }
+
+    // Remove POIs from tourPOIMap and clear deliveryId on nodes
+    const tourKeysToDelete = [];
+    for (let [nodeId, poi] of tourPOIMap) {
+        if (poi.node && poi.node.deliveryId === delId) {
+            if (poi.node) poi.node.deliveryId = undefined;
+            tourKeysToDelete.push(nodeId);
+        }
+    }
+    tourKeysToDelete.forEach((k) => tourPOIMap.delete(k));
+
+    // Remove pickups from requestMap
+    const reqKeysToDelete = [];
+    for (let [nodeId, poi] of requestMap) {
+        if (poi.node && poi.node.deliveryId === delId) {
+            reqKeysToDelete.push(nodeId);
+        }
+    }
+    reqKeysToDelete.forEach((k) => requestMap.delete(k));
+
+    // Remove color
+    if (pairColors[delId]){
+      delete pairColors[delId];
+      console.log(`Deleted POI pair ${delId}`);
+    } 
+
+    // Update UI (regenerate list) and re-add delete buttons
+    generateDeliveriesList(requestMap.values(), getNumberOfDeliverers(), pairColors);
+    // re-générer couleurs / légende si besoin
+    generateDelivererColors(getNumberOfDeliverers());
+
+    
+    return true;
 }
