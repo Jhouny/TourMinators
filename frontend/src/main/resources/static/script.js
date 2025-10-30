@@ -710,6 +710,11 @@ function computeSingleTour(deliverer, poiMap) {
                 weight: 5,
               }).addTo(layerGroup)
             );
+            L.polylineDecorator(edgeTourLines[edgeTourLines.length - 1], {
+              patterns: [
+                { offset: '50%', repeat: 0, symbol: L.Symbol.arrowHead({ pixelSize: 10, polygon: false, pathOptions: { stroke: true, color: delivererColor } }) }
+              ]
+            }).addTo(layerGroup);
           }
 
           currentId = nextId;
@@ -1307,7 +1312,12 @@ function importToursFromJSON() {
                 color: delivererColor,
                 weight: 5
               }).addTo(layerGroup);
-              
+              L.polylineDecorator(line, {
+                patterns: [
+                  { offset: '50%', repeat: 0, symbol: L.Symbol.arrowHead({ pixelSize: 10, polygon: false, pathOptions: { stroke: true, color: delivererColor } }) }
+                ]
+              }).addTo(layerGroup);
+
               edgeTourLines.push(line);
             });
           }
