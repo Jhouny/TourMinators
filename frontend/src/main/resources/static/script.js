@@ -632,7 +632,13 @@ function computeSingleTour(deliverer, poiMap) {
     body: JSON.stringify(body),
   })
     .then((response) => {
-      if (!response.ok) throw new Error("HTTP error " + response.status);
+      if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error("No valid path found between some points of interest.");
+        } else {
+          throw new Error("HTTP error " + response);
+        }
+      }
       return response.json();
     })
     .then((data) => {
@@ -747,8 +753,10 @@ function computeSingleTour(deliverer, poiMap) {
       }
     })
     .catch((err) => {
-      console.error("Error fetching /runTSP:", err);
-      alert("Erreur lors du calcul de la tournée: " + err.message);
+      console.error("Error fetching /runTSP:", err.message);
+      if (err.message === "No valid path found between some points of interest.") {
+          alert("Aucun chemin valide n'a été trouvé entre certains points d'intérêt. Veuillez vérifier les demandes de livraison et/ou le plan.");
+      }
       unblockButtons(); // Unblock buttons on error
     });
 }
