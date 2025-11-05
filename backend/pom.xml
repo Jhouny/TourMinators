@@ -85,4 +85,16 @@
     <artifactId>backend</artifactId>
     <packaging>jar</packaging>
 
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.12.0</version>
+                <configuration>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

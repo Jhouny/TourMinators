@@ -13,7 +13,7 @@ public class DeliveryRequestParser {
 
     /**
      * Parse un fichier de livraisons XML et retourne :
-     * Map<nodeId, Triple<Node, deliveryId, duration>>
+     * Map&lt;nodeId, Triple&lt;Node, deliveryId, duration&gt;&gt;
      * deliveryId = -1 pour entrepôt, identifiant unique pour chaque livraison.
      * 
      * Chaque Node se voit aussi attribuer un attribut "type" dans ses métadonnées :
