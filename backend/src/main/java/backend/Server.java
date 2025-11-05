@@ -53,7 +53,15 @@ public class Server {
         // deliveries
         // Then order them such that the total travel cost is minimized
         TSP2 solver = new TSP2(3000, g);
-        solver.chercheSolution();
+        try {
+            solver.chercheSolution();
+        } catch (Exception e) {
+            // Return an error response if exception due to "no path between nodes"
+            System.err.println("Error during TSP computation: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "No valid path found between some points of interest.");
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
 
         // Get the solution order and paths
         LinkedList<Long> solutionOrder = solver.getSolutionOrder();
