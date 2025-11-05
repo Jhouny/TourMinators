@@ -223,7 +223,7 @@ function updateLayerControl() {
       overlayMaps[`
         <span style="display: inline-flex; align-items: center;">
           <span style="width: 12px; height: 12px; background-color: ${color}; border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #ccc;"></span>
-          ${delivererId in delivererETA ? `Deliverer ${delivererId} - ETA ${delivererETA[delivererId]}` : `Deliverer ${delivererId} - ETA --:--`}
+          ${delivererId in delivererETA ? `Livreur ${delivererId} - Arrivée ${delivererETA[delivererId]}` : `Livreur ${delivererId} - Arrivée --:--`}
         </span>`
       ] = layerGroup;
     }
@@ -508,7 +508,7 @@ function load_xml_delivery() {
             closeButton: false,
             autoClose: false,
             className: "custom-popup",
-          }).setContent(`Type: ${element.type}`);
+          }).setContent(`Type: ${element.type == "pickup" ? "RETRAIT" : "LIVRAISON"}`);
           const marker = L.marker([element.latitude, element.longitude], {
             icon,
           }).addTo(map).bindPopup(popUp);
@@ -517,7 +517,7 @@ function load_xml_delivery() {
           marker.deliveryId = element.deliveryId;
           marker.color = color;
           marker.direction = direction;
-          marker.type = element.type;
+          marker.type = element.type == "pickup" ? "RETRAIT" : "LIVRAISON";
           marker.nodeId = element.id;
 
           nodeMarkers.push(marker);
@@ -744,7 +744,7 @@ function computeSingleTour(deliverer, poiMap) {
         const arrivalTime = arrivalTimeObj.right;
         const marker = nodeMarkers.find((m) => m.nodeId === parseInt(nodeId));
         if (marker) {
-          marker.setPopupContent(`Type: ${marker.type}<br>Arrival Time: ${arrivalTime}`);
+          marker.setPopupContent(`Type: ${marker.type}<br>Temps d'Arrivée: ${arrivalTime}`);
         }
       }
 
