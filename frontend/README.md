@@ -13,4 +13,15 @@
    ```
     mvn spring-boot:run
    ```
-5. Open your web browser and go to `http://localhost:8080` to access the frontend.
+5. Open your web browser and go to `http://localhost:8090` to access the frontend.
+
+## API Endpoints
+
+The client interacts with the frontend server through the following endpoints:
+
+- `POST /upload` :
+  - **input:** XML file containing map data (nodes and edges).
+  - **output:** Parsed JSON object containing nodes and edges.
+- `POST /uploadDeliveries` :
+  - **input:** JSON object containing delivery points and their details.
+  - **output:** Parsed JSON object containing delivery point information.

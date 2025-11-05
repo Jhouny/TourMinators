@@ -1,16 +1,16 @@
 # TourMinators &nbsp; &nbsp; [![Unit Tests with Maven](https://github.com/Jhouny/TourMinators/actions/workflows/maven-test.yml/badge.svg)](https://github.com/Jhouny/TourMinators/actions/workflows/maven-test.yml)
 
-## Structure du projet
+Path optimization solver for the Traveling Salesman Problem (TSP) using WA* and Branch and Bound solution. The project is structured into two main modules : a backend module for the core logic and path planning; and a frontend module for user interaction. It is built using Java with Spring Boot for the backend and plain JavaScript for the frontend.
 
-Sample project structure for a multi-module Maven project:
-[Multi-Module Project with Maven](https://www.geeksforgeeks.org/advance-java/multi-module-project-with-maven/)
+## Project Structure
 
-pour build and run les fichiers java :
+To build, test and execute each server, navigate to its directory and run:
 
-build [en étant dans le dossier contenant nos fichiers .java]: javac *.java
---> fichiers MaClasse.class
+e.g. in the `backend` directory:
+```bash
+mvn clean package spring-boot:run
+```
 
-run [en étant dans le dossier du pachage] : java package.MaClasse
-
-
-## Frontend : [Frontend README](frontend/README.md)
+## Module READMEs
+### Frontend : [Frontend README](frontend/README.md)
+### Backend : [Backend README](backend/README.md)
