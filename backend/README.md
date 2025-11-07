@@ -16,3 +16,13 @@ The backend exposes the following RESTful API endpoint:
 - `POST /runTSP` : 
   - **input:** JSON object containing the list of valid nodes, points of interest and start node.
   - **output:** JSON object containing the optimized path, time taken to reach each node.
+
+## Java Doc
+
+Java Doc documentation can be generated using the following command:
+
+```bash
+mvn site
+```
+
+You can find the generated documentation in `target/site/apidocs/index.html`.
