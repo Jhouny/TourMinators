@@ -25,3 +25,9 @@ The client interacts with the frontend server through the following endpoints:
 - `POST /uploadDeliveries` :
   - **input:** JSON object containing delivery points and their details.
   - **output:** Parsed JSON object containing delivery point information.
+
+## Java Doc
+Java Doc can be generated using the following Maven command:
+```
+mvn site
+```
