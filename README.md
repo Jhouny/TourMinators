@@ -3,7 +3,7 @@
 Path optimization solver for the Traveling Salesman Problem (TSP) using WA* and Branch and Bound solution. The project is structured into two main modules : a backend module for the core logic and path planning; and a frontend module for user interaction. It is built using Java with Spring Boot for the backend and plain JavaScript for the frontend.
 
 ## Documentation
-Comprehensive documentation is available at: [TourMinators Documentation](https://jhouny.github.io/TourMinators/docs/index.html)
+Comprehensive documentation is available at: [TourMinators Documentation](https://jhouny.github.io/TourMinators/docs/)
 
 If you wish to generate the documentation locally, you can use the following Maven command in each module directory:
 
